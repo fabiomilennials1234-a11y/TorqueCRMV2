@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#111318" />
+    <meta name="color-scheme" content="dark" />
+    <meta name="description" content="Torque — gestao comercial orientada a pipelines." />
+    <title>Torque</title>
+    <script>
+      // Prevent FOUC — apply theme before first paint
+      (function() {
+        var t = localStorage.getItem('torque-theme');
+        if (!t) t = window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
+        if (t === 'dark') document.documentElement.classList.add('dark');
+      })();
+    </script>
+  </head>
+  <body class="bg-bg text-ink antialiased selection:bg-accent/30 selection:text-ink">
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

@@ -1,0 +1,247 @@
+@import "@fontsource/dm-serif-display/400.css";
+@import "@fontsource/inter/400.css";
+@import "@fontsource/inter/500.css";
+@import "@fontsource/inter/600.css";
+@import "@fontsource/inter/700.css";
+@import "@fontsource/jetbrains-mono/400.css";
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ------------------------------------------------------------------
+ * Torque — Design Tokens
+ * Dual-theme: light + dark. Warm gold accent.
+ * All tokens in HSL (H S% L%) so Tailwind's <alpha-value> slot works.
+ * ------------------------------------------------------------------ */
+@layer base {
+  /* ---- Light theme (default) ---- */
+  :root {
+    /* Canvas */
+    --bg: 220 15% 97%;              /* off-white with slight blue tilt */
+    --surface: 0 0% 100%;           /* pure white for cards */
+    --elevated: 220 15% 97%;
+    --hairline: 220 10% 88%;        /* visible but gentle dividers */
+
+    /* Type */
+    --ink: 220 20% 12%;             /* near-black for text */
+    --ink-muted: 220 10% 42%;
+    --ink-dim: 220 7% 62%;
+
+    /* Accent — warm industrial gold */
+    --accent: 44 93% 54%;
+    --accent-soft: 44 50% 92%;
+
+    /* Semantic */
+    --success: 160 55% 42%;
+    --warning: 34 90% 50%;
+    --danger: 358 75% 54%;
+    --info: 210 70% 52%;
+
+    /* Stage palette */
+    --stage-1: 220 9% 64%;
+    --stage-2: 210 70% 58%;
+    --stage-3: 200 65% 52%;
+    --stage-4: 165 55% 48%;
+    --stage-5: 44 93% 54%;
+    --stage-6: 140 50% 48%;
+    --stage-7: 358 50% 50%;
+
+    /* Heat */
+    --heat-1: 210 60% 52%;
+    --heat-2: 170 55% 48%;
+    --heat-3: 44 93% 54%;
+    --heat-4: 34 90% 56%;
+    --heat-5: 358 75% 59%;
+
+    /* Channel */
+    --channel-whatsapp: 142 70% 45%;
+    --channel-messenger: 221 89% 60%;
+    --channel-instagram: 329 80% 55%;
+    --channel-sz: 260 65% 58%;
+
+    /* Countdown */
+    --countdown-safe: 160 55% 48%;
+    --countdown-warn: 34 90% 56%;
+    --countdown-urgent: 358 75% 59%;
+
+    /* Job */
+    --job-pending: 44 50% 55%;
+    --job-running: 210 70% 58%;
+    --job-completed: 160 55% 48%;
+    --job-failed: 358 75% 59%;
+
+    /* Radius */
+    --radius-sm: 4px;
+    --radius: 8px;
+    --radius-lg: 12px;
+    --radius-xl: 16px;
+
+    /* Clay — light theme values */
+    --clay-depth: 0.12;
+    --clay-highlight: 0.06;
+    --clay-inset: 0.08;
+    --clay-surface: 220 15% 99%;
+    --clay-surface-hover: 220 15% 97%;
+
+    /* Motion */
+    --ease-out-soft: cubic-bezier(0.2, 0.8, 0.2, 1);
+    --ease-in-out-precise: cubic-bezier(0.65, 0, 0.35, 1);
+  }
+
+  /* ---- Dark theme ---- */
+  .dark {
+    --bg: 220 15% 8%;               /* dark grey, not pure black */
+    --surface: 220 14% 11%;
+    --elevated: 220 13% 15%;
+    --hairline: 220 10% 22%;
+
+    --ink: 220 13% 93%;
+    --ink-muted: 220 9% 65%;
+    --ink-dim: 220 7% 45%;
+
+    --accent: 44 93% 54%;
+    --accent-soft: 44 50% 18%;
+
+    --success: 160 55% 48%;
+    --warning: 34 90% 56%;
+    --danger: 358 75% 59%;
+    --info: 210 70% 58%;
+
+    /* Clay — dark theme values (higher contrast) */
+    --clay-depth: 0.35;
+    --clay-highlight: 0.025;
+    --clay-inset: 0.05;
+    --clay-surface: 220 14% 13%;
+    --clay-surface-hover: 220 13% 16%;
+  }
+
+  html,
+  body,
+  #root {
+    height: 100%;
+  }
+
+  body {
+    font-family: theme("fontFamily.sans");
+    font-feature-settings: "ss01", "ss02", "cv11", "cv03";
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+    letter-spacing: -0.005em;
+    line-height: 1.6;
+  }
+
+  /* Display — serif for headings */
+  .font-display,
+  h1.display,
+  .display {
+    font-family: theme("fontFamily.display");
+    font-weight: 400;
+    letter-spacing: theme("letterSpacing.tightest");
+  }
+
+  /* Numeric / metric — monospaced slab for data precision */
+  .font-metric {
+    font-family: theme("fontFamily.mono");
+    font-variant-numeric: tabular-nums slashed-zero;
+    letter-spacing: -0.01em;
+  }
+
+  /* Scrollbars — hairline only */
+  ::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: hsl(var(--hairline));
+    border: 3px solid hsl(var(--bg));
+    border-radius: 999px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: hsl(var(--ink-dim));
+  }
+
+  /* Focus ring — precise, single hairline + offset glow */
+  :focus-visible {
+    outline: none;
+    box-shadow:
+      0 0 0 2px hsl(var(--bg)),
+      0 0 0 3px hsl(var(--accent));
+  }
+
+  /* Typography rhythm */
+  h1, h2, h3, h4 {
+    @apply font-display;
+    letter-spacing: theme("letterSpacing.tightest");
+  }
+
+  /* Subtle inner vignette — login page only */
+  .vignette {
+    position: relative;
+  }
+  .vignette::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background: radial-gradient(
+      ellipse at center,
+      transparent 55%,
+      hsl(var(--bg)) 120%
+    );
+  }
+}
+
+@layer components {
+  /* Clay surface — premium tactile card surface */
+  .clay-surface {
+    background:
+      linear-gradient(
+        145deg,
+        hsl(var(--clay-surface)) 0%,
+        hsl(var(--surface)) 50%,
+        hsl(var(--clay-surface-hover)) 100%
+      );
+    border-radius: theme("borderRadius.xl");
+  }
+
+  /* Clay KPI — variant for metric cells */
+  .clay-kpi {
+    background:
+      linear-gradient(
+        160deg,
+        hsl(var(--clay-surface)) 0%,
+        hsl(var(--surface)) 60%,
+        hsl(var(--clay-surface-hover)) 100%
+      );
+    position: relative;
+  }
+  .clay-kpi::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    pointer-events: none;
+    box-shadow:
+      inset 0 1px 1px 0 rgb(255 255 255 / var(--clay-inset)),
+      inset 0 -1px 1px 0 rgb(0 0 0 / 0.08);
+  }
+}
+
+@layer utilities {
+  /* Truncate multiline */
+  .clamp-1 { display: -webkit-box; -webkit-line-clamp: 1; -webkit-box-orient: vertical; overflow: hidden; }
+  .clamp-2 { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+  .clamp-3 { display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+
+  /* Text gradient — accent warm fade */
+  .text-accent-gradient {
+    background: linear-gradient(135deg, hsl(var(--accent)) 0%, hsl(34 80% 64%) 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+}
