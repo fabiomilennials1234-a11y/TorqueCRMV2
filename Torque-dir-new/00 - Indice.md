@@ -129,15 +129,17 @@ status: vivo
 
 ## Status atual
 
-**Etapa:** Sistema Base Frontend concluido (S00 ✅ 2026-04-18). Backend Go scaffold entregue (S01 ✅ scaffold 2026-04-19). Auth + Tenancy + RBAC entregues (S02 ✅ 2026-04-19). Runtime de S01+S02 (go mod tidy/build/test, migrate up) pendente no host do usuario.
+**Etapa:** S00 ✅ (2026-04-18). S01 ✅ scaffold (2026-04-19). S02 ✅ auth+tenancy+RBAC (2026-04-19). S03 ✅ security+observabilidade+audit+ratelimit (2026-04-19). Runtime (go mod tidy/build/test -race, migrate up) pendente no host do usuario.
 
-**S00** — ESLint flat (a11y + hooks + ban `dangerouslySetInnerHTML`), TS strict (`noUncheckedIndexedAccess` + `exactOptionalPropertyTypes`), Prettier + `prettier-plugin-tailwindcss`, Vitest (51 testes, 36 snapshots), CI, vocabulario canonico, renomeacao `--clay-*` → `--card-*`/`.tactile-*`, pos-login navigation por `ui_mode`, `useUiMode` + fallback localStorage.
+**S00** — ESLint flat (a11y + hooks + ban `dangerouslySetInnerHTML`), TS strict, Prettier, Vitest (51 testes), CI, vocabulario canonico, `--clay-*` → `--card-*`/`.tactile-*`, pos-login navigation por `ui_mode`.
 
-**S01** — `torque-api/` com chi + pgx v5 + zerolog, probes, middleware stack com `StripOrganizationID`, migrations 0001–0003, Docker multi-stage distroless nonroot, Makefile, teste de concorrencia do unique partial index de Task.
+**S01** — `torque-api/` chi + pgx v5 + zerolog + probes + middleware stack com `StripOrganizationID`, migrations 0001–0003, Docker distroless nonroot, teste de concorrencia do partial index de Task.
 
-**S02** — Migration 0004 (`refresh_tokens` com hash sha256 + rotation chain + reuse detection). Services `password`/`jwt`/`token`/`permission`. Repositories `user` + `refresh` (tx SERIALIZABLE, RevokeChain via recursive CTE). Middleware `Authenticator`/`RequireAuth`/`TenantScope`/`CSRF`/`RequireFeature`/`RequireRole`/`RequireMaster`. Handlers `/api/v1/auth/{login,refresh,logout,me}`, `/api/v1/me/preferences`, `/api/bootstrap`. Cookies `__torque_session` (httpOnly Strict), `__torque_refresh` (Path=/api/v1/auth), `__torque_csrf` (double-submit). Tests unitarios (password/jwt/token/CSRF/RBAC) + integration gated por `DATABASE_URL`.
+**S02** — Migration 0004 `refresh_tokens`. Services password/jwt/token/permission. Repositories user+refresh (SERIALIZABLE + RevokeChain via recursive CTE). Middleware Authenticator/RequireAuth/TenantScope/CSRF/RequireFeature/RequireRole/RequireMaster. Handlers `/api/v1/auth/{login,refresh,logout,me}`, `/api/v1/me/preferences`, `/api/bootstrap`.
 
-Proxima sprint: **S03** — CSP nonce-based completo, HSTS preload, Sentry server-side com scrubbing de PII, audit log de mutations sensiveis, rate limiting, /api/bootstrap enriquecido.
+**S03** — Security headers parametrizados (CSP tight, HSTS 2yr preload em non-dev, COOP/CORP). Sentry SDK com PII scrubbing (cookies/headers/query/body/email + IPv4/IPv6 truncados). Audit service/repo usando `audit_log` existente (append-only, actor_type derivado da session, Actions canonicas, impersonation com target_org_id). Rate limiter in-memory token bucket anon-vs-auth com 429+Retry-After. `/api/bootstrap` enriquecido (SentryPublicDSN distinto do server, feature flags via env, server_time ISO-8601).
+
+Proxima sprint: **S04** — OpenAPI spec + WebSocket hub por tenant + async jobs (202 Accepted + poll + push).
 
 ---
 

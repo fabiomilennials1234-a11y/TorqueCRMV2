@@ -563,18 +563,19 @@ O bloco da sprint em §8 muda de "prospectivo" para "entregue":
 
 ---
 
-### Sprint S03 — Security Headers + Observabilidade + Bootstrap
+### Sprint S03 — Security Headers + Observabilidade + Audit + Rate Limit ✅ ENTREGUE (2026-04-19)
 
 | Campo | Valor |
 |-------|-------|
-| **Objetivo** | Hardening de segurança web e infraestrutura de observabilidade |
-| **Resultado esperado** | Todos os headers de segurança ativos, Sentry server, structured logging, audit log, /api/bootstrap |
-| **Dependências** | S02 (Auth funcional) |
-| **Agentes** | `general-purpose` (implementação), `code-reviewer` (security review) |
-| **Áreas afetadas** | Backend middleware, observabilidade |
-| **Stack** | Go middleware, zerolog, Sentry Go SDK, OpenTelemetry |
-| **Riscos** | CSP nonce pode quebrar scripts inline; CORS strict pode bloquear dev local |
-| **Critério de conclusão** | `curl -I` mostra todos os headers. Sentry captura erros. Logs estruturados em JSON. Audit log registra mutations sensíveis. /api/bootstrap retorna config runtime. |
+| **Objetivo** | Hardening de segurança web + observabilidade + audit trail + rate limiting |
+| **Resultado entregue** | **Security headers** (`SecurityHeadersWith(cfg)` parametrizavel): CSP tight (`default-src 'none'; frame-ancestors 'none'; base-uri 'none'; form-action 'none'` — API e pure-JSON, nonce fica no nginx que serve o HTML), HSTS 2 anos + includeSubDomains + preload (apenas fora de dev), X-Frame-Options DENY, X-Content-Type-Options nosniff, Referrer-Policy strict-origin-when-cross-origin, Permissions-Policy negando camera/mic/geo/payment/etc, COOP same-origin, CORP same-site. **Sentry Go SDK** (`internal/observability/sentry/`): Init idempotente (empty DSN = no-op), Recovery middleware (captura panic + reporta + loga + 500), BeforeSend com PII scrubbing (cookies + Authorization/Cookie/X-CSRF-Token/api_key/password/email redigidos; request body dropado; query string com chaves sensiveis substituidas; User.Email `[redacted]`; IPv4 truncado a /24, IPv6 a /48). **Audit** (`internal/repository/audit` + `internal/service/audit`): append-only em `audit_log` (ja existia desde 0002), actor_type derivado da session, Actions canonicas como constantes, Record/RecordSystem/RecordImpersonation; impersonation grava `target_org_id` (tenant queries encontram dos dois lados). **Rate limiter** (`internal/httpx/middleware/ratelimit.go`): token bucket in-memory via `golang.org/x/time/rate`, bucket key `u:<user_id>` se logado senao `ip:<client_ip>`, 5rps/10burst anon + 30rps/60burst auth por default, 429 com Retry-After calculado via Reserve().Delay(), janitor goroutine, TrustForwardedFor opcional. **Bootstrap enriquecido**: ServerTime ISO-8601, SentryDSN agora e o PublicDSN (server DSN nunca chega ao browser), FeatureFlags via env `FEATURE_FLAGS="a=true,b=false"`, cache headers. **Config** novos: SENTRY_DSN (server), SENTRY_PUBLIC_DSN (client), SENTRY_ENVIRONMENT, SENTRY_SAMPLE_RATE, SENTRY_TRACES_SAMPLE_RATE, RATELIMIT_ANON_RPS/BURST, RATELIMIT_USER_RPS/BURST, RATELIMIT_TRUST_PROXY, FEATURE_FLAGS. **Tests**: security_headers_test (defaults, HSTS off em dev, preload shape), ratelimit_test (burst→429, buckets distintos, X-Forwarded-For), sentry_test (scrubPII completo, IPv4/IPv6, nil safe), audit_integration_test (gated DATABASE_URL: record + impersonation round-trip). **Deps**: `github.com/getsentry/sentry-go v0.29.0`, `golang.org/x/time v0.7.0`. **Nota**: sem migration nova — `audit_log` ja estava em 0002. |
+| **Dependências** | S02 (Auth funcional) ✅ |
+| **Agentes** | Conductor → `agent-backend` + `agent-qa` |
+| **Áreas afetadas** | Backend middleware (security/ratelimit), observability/sentry (novo), service/audit (novo), repository/audit (novo), bootstrap enriquecido, config expandida, cmd/api/main.go re-wire |
+| **Stack** | Go middleware, zerolog, `getsentry/sentry-go`, `golang.org/x/time/rate`, Postgres audit_log |
+| **Riscos mitigados** | CSP conservadora evita surpresas — API nunca serve HTML, entao nonce nao se aplica (HTML CSP fica no nginx). HSTS preload so em non-dev. Rate limiter in-memory funciona para single-node, Redis vira em horizontal scaling. Sentry BeforeSend garante que senhas/tokens/emails NUNCA chegam ao servidor da Sentry. |
+| **Pendente runtime** | `go mod tidy` + `go build` + `migrate up` + `go test -race` localmente (Go/Docker ausentes no workspace). |
+| **Proximo passo** | Abrir **Sprint S04** — OpenAPI spec generation (kin-openapi) + WebSocket hub por tenant + async jobs (pattern 202 + poll + push via WS). |
 
 ---
 

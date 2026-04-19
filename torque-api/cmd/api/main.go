@@ -29,6 +29,7 @@ import (
 	"github.com/milennials/torque-api/internal/handler/health"
 	preferenceshandler "github.com/milennials/torque-api/internal/handler/preferences"
 	mw "github.com/milennials/torque-api/internal/httpx/middleware"
+	"github.com/milennials/torque-api/internal/observability/sentry"
 	refreshrepo "github.com/milennials/torque-api/internal/repository/refresh"
 	userrepo "github.com/milennials/torque-api/internal/repository/user"
 	jwtsvc "github.com/milennials/torque-api/internal/service/jwt"
@@ -56,13 +57,39 @@ func run() error {
 	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 	defer stop()
 
+	// Sentry is initialized early so panics during DB open still get captured.
+	// Empty DSN is a no-op, so dev without SENTRY_DSN just works.
+	sentryEnv := cfg.SentryEnvironment
+	if sentryEnv == "" {
+		sentryEnv = cfg.Env
+	}
+	if err := sentry.Init(sentry.Config{
+		DSN:              cfg.SentryDSN,
+		Environment:      sentryEnv,
+		Release:          cfg.AppVersion,
+		SampleRate:       cfg.SentrySampleRate,
+		TracesSampleRate: cfg.SentryTracesRate,
+	}); err != nil {
+		logger.Warn().Err(err).Msg("sentry init failed — continuing without reporting")
+	}
+	defer sentry.Flush(2 * time.Second)
+
 	pool, err := db.Open(ctx, cfg.DatabaseURL, logger)
 	if err != nil {
 		return err
 	}
 	defer pool.Close()
 
-	router := newRouter(cfg, logger, pool)
+	rl := mw.NewRateLimiter(mw.RateLimitConfig{
+		AnonRPS:           cfg.RateLimitAnonRPS,
+		AnonBurst:         cfg.RateLimitAnonBurst,
+		UserRPS:           cfg.RateLimitUserRPS,
+		UserBurst:         cfg.RateLimitUserBurst,
+		TrustForwardedFor: cfg.RateLimitTrustProxy,
+	})
+	defer rl.Close()
+
+	router := newRouter(cfg, logger, pool, rl)
 
 	srv := &http.Server{
 		Addr:              cfg.HTTPAddr,
@@ -124,19 +151,28 @@ func newLogger(cfg config.Config) zerolog.Logger {
 	return zerolog.New(os.Stdout).With().Timestamp().Str("service", "torque-api").Logger()
 }
 
-func newRouter(cfg config.Config, logger zerolog.Logger, pool *db.Pool) http.Handler {
+func newRouter(cfg config.Config, logger zerolog.Logger, pool *db.Pool, rl *mw.RateLimiter) http.Handler {
 	r := chi.NewRouter()
 
 	// Middleware order is deliberate:
-	//  RequestID → AccessLog  — so every access line carries the id.
-	//  Recover                — catches panics from everything below.
-	//  SecurityHeaders        — set early; cheap; applies to every response.
-	//  CORS                   — must run before StripOrganizationID so preflights pass.
-	//  StripOrganizationID    — enforces multi-tenancy invariant on mutations.
+	//  RequestID → AccessLog           — so every access line carries the id.
+	//  sentry.Recovery                 — catches panics + reports to Sentry.
+	//  SecurityHeaders                 — set early; cheap; applies to every response.
+	//  CORS                            — must run before StripOrganizationID so preflights pass.
+	//  StripOrganizationID             — enforces multi-tenancy invariant on mutations.
+	//  Authenticator (inside /api/v1)  — attaches session when cookie is valid.
+	//  RateLimit (inside /api/v1)      — uses session when present, else client IP.
 	r.Use(mw.RequestID)
 	r.Use(mw.AccessLog(logger))
-	r.Use(mw.Recover(logger))
-	r.Use(mw.SecurityHeaders)
+	r.Use(sentry.Recovery(logger))
+
+	// HSTS is disabled when the process runs over plain http in dev. In
+	// staging/prod the browser must never fall back to http.
+	r.Use(mw.SecurityHeadersWith(mw.SecurityHeadersConfig{
+		EnableHSTS:  cfg.Env != "dev",
+		HSTSMaxAge:  2 * 365 * 24 * time.Hour,
+		HSTSPreload: cfg.Env == "prod",
+	}))
 
 	if len(cfg.CORSOrigins) > 0 {
 		r.Use(cors.Handler(cors.Options{
@@ -182,8 +218,8 @@ func newRouter(cfg config.Config, logger zerolog.Logger, pool *db.Pool) http.Han
 		AppVersion:   cfg.AppVersion,
 		Env:          cfg.Env,
 		WSURL:        cfg.WSURL,
-		SentryDSN:    cfg.SentryDSN,
-		FeatureFlags: map[string]bool{},
+		SentryDSN:    cfg.SentryPublicDSN, // PUBLIC DSN only — never the server one
+		FeatureFlags: cfg.FeatureFlags,
 	}).Routes(r)
 
 	// --- API v1: auth entry points (pre-session) -----------------------
@@ -191,6 +227,9 @@ func newRouter(cfg config.Config, logger zerolog.Logger, pool *db.Pool) http.Han
 		// Authenticator is transparent — attaches session when cookie is
 		// valid, does not 401 when absent. Login/refresh/logout all need this.
 		v1.Use(mw.Authenticator(jsvc))
+		// Rate-limit sits AFTER Authenticator so the key uses user_id when
+		// present and falls back to IP for anonymous traffic.
+		v1.Use(rl.Middleware)
 
 		auth.Routes(v1) // /auth/login, /auth/refresh, /auth/logout
 
