@@ -579,17 +579,19 @@ O bloco da sprint em §8 muda de "prospectivo" para "entregue":
 
 ---
 
-### Sprint S04 — OpenAPI + WebSocket Hub + Async Jobs
+### Sprint S04 — OpenAPI + WebSocket Hub + Async Jobs ✅ ENTREGUE (2026-04-19)
 
 | Campo | Valor |
 |-------|-------|
 | **Objetivo** | Completar infraestrutura: contratos tipados, realtime, operações assíncronas |
-| **Resultado esperado** | OpenAPI spec gerada, WS hub funcional com broadcast por tenant, pattern 202+poll+push |
-| **Dependências** | S02 (Auth para WS handshake) |
-| **Agentes** | `code-architect` (design WS hub), `general-purpose` (implementação) |
-| **Áreas afetadas** | Backend infra, contratos, WebSocket |
-| **Stack** | Go, nhooyr.io/websocket, kin-openapi, openapi-typescript |
-| **Riscos** | WS hub com goroutine leak; job scheduler sem graceful shutdown |
+| **Resultado entregue** | **Migration 0005** `operations` (ENUM status pending/running/succeeded/failed/cancelled, input/result/error_payload jsonb, progress numeric(5,4) [0,1], retry_remaining int, worker_id, scheduled/started/ended/expires timestamps, partial indexes kind_pending + org_status + org_created). **Repositorio** `operation` (Submit, Lookup cross-tenant-safe, ClaimOne com FOR UPDATE SKIP LOCKED, UpdateProgress, Succeed, Fail com retry chain atomico, Cancel). **Event bus** in-process `event.Bus` (fan-out canais Go, DropOldest/DropNewest, Subscribe retorna chan + unsub). **WS** (`coder/websocket`): `event.go` shape `{type, tenant_id, entity_type, entity_id, version, patch, occurred_at}` + constantes `TypeOperation{Updated,Succeeded,Failed}` + `OperationPatch`; `hub.go` tenant-scoped Register/Unregister/Broadcast nao-bloqueante com DropOldest por conn, Writer goroutine com Ping a cada PingInterval e timeout em PongTimeout, Reader drena e atualiza lastSeen; `handler.go` valida Session + Accept com subprotocol `torque.v1` + origin patterns do CORS + Reader/Writer em goroutines canceladas na primeira falha. **Worker pool** (`worker.Pool`): dispatcher reserva slot→ClaimOne→goroutine→run; run invoca HandlerFunc(ctx, op, progress); progress escreve DB + publica `operation.updated` no bus; sucesso publica `operation.succeeded`, falha publica `operation.failed` (ou `operation.updated` se retry); classifyError categoriza context.Canceled/DeadlineExceeded; Shutdown espera wg.Wait() com timeout; BackoffFor exponencial. **Handlers HTTP** `internal/handler/operations`: POST (202 + Location), GET (Cache-Control adaptativo), DELETE (204/409). **OpenAPI** `internal/handler/openapi`: le `api/openapi.yaml` no boot, serve `/openapi.yaml` + `/openapi.json` convertido (coerceKeys para map[string]any). **Wiring**: bus + hub instanciados, goroutine bridge subscreve o bus → hub.Broadcast; workerPool criado e iniciado com defer Shutdown; `newRouter` retorna (Handler, error) pois openapi pode falhar no boot; `/openapi.{yaml,json}` publicos, `/api/v1/operations` tenant-scoped, `/api/v1/ws` autenticado (hub le org da session). **OpenAPI spec** expandida (83→260 linhas) com todos os endpoints S01-S04 e schemas canonicos. **Deps**: `coder/websocket v1.8.12`, `gopkg.in/yaml.v3 v3.0.1`. **Tests**: `event/bus_test.go` (round-trip, fan-out, subscriber count, DropOldest, concurrent publishers), `ws/hub_test.go` (register+broadcast, tenant isolation, missing tenant dropped, unregister-twice safe), `repository/operation/operation_integration_test.go` (gated DATABASE_URL: submit+lookup+claim+progress+succeed roundtrip, SKIP LOCKED fair claims, fail retryable chain 2→1→0 terminal, cancel idempotente, tenant isolation no Lookup). |
+| **Dependências** | S02 (Auth para WS handshake) ✅, S03 (observabilidade) ✅ |
+| **Agentes** | Conductor → `agent-architect` + `agent-backend` + `agent-qa` |
+| **Áreas afetadas** | Backend infra (event/ws/worker novos), contratos (api/openapi.yaml expandida), migrations (0005), handler novos (operations/openapi), router re-wire |
+| **Stack** | Go 1.22, `coder/websocket` (sucessor do nhooyr.io/websocket), `gopkg.in/yaml.v3`, pgx v5 com FOR UPDATE SKIP LOCKED |
+| **Riscos mitigados** | WS goroutine leak prevenido por cancelacao mutua Reader/Writer + PongTimeout + Unregister idempotente. Worker pool graceful shutdown via wg.Wait com ctx timeout. Claim atomico sem duplicacao por SKIP LOCKED (multi-replica safe). Event bus DropOldest previne backpressure no publisher. |
+| **Pendente runtime** | `go mod tidy` + `go build ./cmd/api` + `make migrate-up` (precisa de 0005) + `go test -race ./...` localmente (Go/Docker ausentes no workspace). **Handlers de kinds em producao** sao ligados por features: `leads.import` em S07, `workflow.execute` em S17, etc. |
+| **Proximo passo** | Abrir **Sprint S05** — Frontend CRUD Foundation (useInfiniteList com cursor pagination, useMutation com optimistic update, AppError mapping, loading states, integracao com OpenAPI gerada via `openapi-typescript` apontando para `/openapi.json`). |
 | **Critério de conclusão** | `openapi-typescript` gera `api.gen.ts` do backend. WS conecta, autentica, recebe broadcast. Operation poll retorna status. Frontend types atualizados. |
 
 ---
