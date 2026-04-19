@@ -596,18 +596,19 @@ O bloco da sprint em §8 muda de "prospectivo" para "entregue":
 
 ---
 
-### Sprint S05 — Frontend CRUD Foundation
+### Sprint S05 — Frontend CRUD Foundation ✅ ENTREGUE (2026-04-19)
 
 | Campo | Valor |
 |-------|-------|
 | **Objetivo** | Patterns reutilizáveis de CRUD no frontend: hooks genéricos, error handling, optimistic updates |
-| **Resultado esperado** | `useInfiniteList`, `useMutation` patterns, error boundaries wired, loading states |
-| **Dependências** | S04 (OpenAPI types gerados) |
-| **Agentes** | `general-purpose` (implementação) |
-| **Áreas afetadas** | Frontend hooks, api layer |
-| **Stack** | React, TanStack Query v5, TypeScript |
-| **Riscos** | Baixo — patterns bem documentados nos ADRs |
-| **Critério de conclusão** | Hook genérico de lista com cursor funcional. Mutation com optimistic update funcional. Error mapping de AppError funcional. |
+| **Resultado entregue** | **`src/api/queryKeys.ts`**: factory canonico por dominio (session/operations/leads/pipes/tasks) com all/list/detail — elimina query keys free-form nos call sites. **`src/api/errors.ts`**: FRIENDLY_MESSAGES PT-BR para codes canonicos (AUTH_EXPIRED, PERMISSION_DENIED, CSRF_*, RATE_LIMITED, NO_MEMBERSHIP, INVALID_CREDENTIALS, INTERNAL, ...), `friendlyMessage/isRetryable`, `notifyAppError` via CustomEvent `torque:toast` (desacoplado de toast lib). **Hooks**: `useAppMutation` (wrapper de useMutation com optimistic update + cancelQueries/setQueryData/rollback em onError, invalidate em onSettled, silent flag, errorContext), `useInfiniteList` (wrapper de useInfiniteQuery ADR-004 com pageParam=cursor, page_size, flatten → items, stop quando next_cursor=null — NUNCA offset), `useWSSubscribe` (filtro type-safe sobre TorqueWS.onMessage — single string ou array — valida shape TorqueEvent e dropa malformados, retorna unsub na cleanup), `useOperation{Submit,Status,Cancel}` (POST/GET/DELETE /api/v1/operations com poll adaptativo 2s em running / false em terminal + useWSSubscribe em operation.updated/.succeeded/.failed fazendo setQueryData — WS primary, poll fallback), `useBootstrap` (GET /api/bootstrap com staleTime: Infinity). **Componente**: `<QueryBoundary>` renderizador unificado (loading→Skeleton, error→EmptyState+Button.ghost('Tentar de novo'), empty→EmptyState customizavel). **Tests**: errors.test (friendlyMessage known/unknown/Error/null; isRetryable 429/5xx vs 4xx/non-Error; notifyAppError despacha CustomEvent com detail correto), queryKeys.test (estabilidade das keys + sem colisao list vs detail), useWSSubscribe.test (match single/array + malformed drop + unsub on unmount), useInfiniteList.test (first page sem cursor, next page com cursor do server, stop em next_cursor=null), useAppMutation.test (toast em AppError, silent suprime, invalidate invoca queryClient, optimistic aplica + rollback em erro). |
+| **Dependências** | S04 (OpenAPI + /api/v1/operations + /api/v1/ws + AppError no client.ts) ✅ |
+| **Agentes** | Conductor → `agent-frontend` + `agent-qa` |
+| **Áreas afetadas** | `src/api/` (2 novos: queryKeys, errors), `src/hooks/` (5 novos: useAppMutation, useInfiniteList, useWSSubscribe, useOperation, useBootstrap), `src/components/` (QueryBoundary). **Zero mudancas em backend** — sprint puramente frontend. |
+| **Stack** | React 18.3, TanStack Query v5, TypeScript strict, Vitest + Testing Library |
+| **Riscos mitigados** | useInfiniteList pina cursor (nao offset) — se backend tentar offset, quebra no type system. useAppMutation com optimistic faz cancelQueries antes do setQueryData (previne race entre mutation e refetch). WS subscribe valida shape — payloads malformados nao passam. notifyAppError e puro DOM event — zero coupling com biblioteca de toast. |
+| **Pendente runtime** | `npm test` + `npm run typecheck` + `npm run lint` localmente. Integracao end-to-end so em S06 (quando o backend S01-S04 rodar). |
+| **Proximo passo** | Abrir **Sprint S06** — integracao front↔back real: AuthProvider consome /auth/me, WSProvider conecta em `/api/v1/ws` apontado pelo useBootstrap, OrgSwitcher lista orgs do servidor, remover fixtures mock de cockpit/dashboard. |
 
 ---
 

@@ -129,7 +129,7 @@ status: vivo
 
 ## Status atual
 
-**Etapa:** S00 ✅. S01 ✅ scaffold. S02 ✅ auth+tenancy+RBAC. S03 ✅ security+observabilidade+audit+ratelimit. S04 ✅ OpenAPI+WS hub+async jobs (2026-04-19). Runtime (go mod tidy/build/test -race, migrate up) pendente no host do usuario.
+**Etapa:** S00 ✅. S01 ✅ scaffold. S02 ✅ auth+tenancy+RBAC. S03 ✅ security+observabilidade+audit+ratelimit. S04 ✅ OpenAPI+WS hub+async jobs. S05 ✅ frontend CRUD foundation (2026-04-19). Runtime backend (go mod tidy/build/test -race + migrate up) e frontend (npm test/typecheck/lint) pendentes no host.
 
 **S00** — ESLint flat (a11y + hooks + ban `dangerouslySetInnerHTML`), TS strict, Prettier, Vitest (51 testes), CI, vocabulario canonico, `--clay-*` → `--card-*`/`.tactile-*`, pos-login navigation por `ui_mode`.
 
@@ -139,9 +139,11 @@ status: vivo
 
 **S03** — Security headers parametrizados (CSP tight, HSTS 2yr preload em non-dev, COOP/CORP). Sentry SDK com PII scrubbing. Audit service/repo usando `audit_log` existente. Rate limiter in-memory. Bootstrap enriquecido.
 
-**S04** — Migration 0005 `operations` (ENUM + SKIP LOCKED claim + retry chain + progress/result/error jsonb). Event bus in-process (DropOldest/DropNewest). WS hub `ws.Hub` tenant-scoped via `coder/websocket` com ping/pong/PongTimeout. Worker pool goroutine + semaphore. Handlers `POST/GET/DELETE /api/v1/operations` + `GET /api/v1/ws`. `/openapi.{yaml,json}` publicos com spec expandida cobrindo todos os endpoints.
+**S04** — Migration 0005 `operations` (ENUM + SKIP LOCKED claim + retry chain). Event bus in-process. WS hub `ws.Hub` tenant-scoped via `coder/websocket`. Worker pool goroutine+semaphore. Handlers `POST/GET/DELETE /api/v1/operations` + `GET /api/v1/ws`. `/openapi.{yaml,json}` publicos.
 
-Proxima sprint: **S05** — Frontend CRUD Foundation (useInfiniteList/useMutation, optimistic updates, AppError mapping).
+**S05** — `src/api/{queryKeys,errors}.ts` (factory canonico + notifyAppError via CustomEvent). Hooks `useAppMutation` (optimistic+rollback+invalidate+silent), `useInfiniteList` (cursor ADR-004), `useWSSubscribe` (filtro por type), `useOperation{Submit,Status,Cancel}` (poll adaptativo + WS patch), `useBootstrap` (staleTime Infinity). Componente `<QueryBoundary>` loading/error/empty. Tests vitest cobrindo tudo.
+
+Proxima sprint: **S06** — integracao front↔back real (login, /me, WS badge ativo, OrgSwitcher, remocao dos mocks).
 
 ---
 
