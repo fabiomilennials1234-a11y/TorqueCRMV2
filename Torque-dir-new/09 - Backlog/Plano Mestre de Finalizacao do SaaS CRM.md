@@ -612,7 +612,7 @@ O bloco da sprint em §8 muda de "prospectivo" para "entregue":
 
 ---
 
-### Sprint S06 — Integração Frontend ↔ Backend
+### Sprint S06 — Integração Frontend ↔ Backend ✅ ENTREGUE (2026-04-19)
 
 | Campo | Valor |
 |-------|-------|

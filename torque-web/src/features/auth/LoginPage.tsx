@@ -1,9 +1,12 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { ArrowRight, Lock, Mail } from 'lucide-react'
+import { friendlyMessage } from '@/api/errors'
 import { Button } from '@/ui/button'
 import { Input } from '@/ui/input'
 import { Kbd } from '@/ui/kbd'
+import { useLogin } from '@/hooks/useLogin'
+import { useAuth } from '@/providers/AuthProvider'
 import { useTheme } from '@/providers/ThemeProvider'
 import { useUiMode } from '@/providers/UiModeProvider'
 
@@ -16,8 +19,12 @@ export function LoginPage() {
   const nav = useNavigate()
   const { theme } = useTheme()
   const { mode } = useUiMode()
+  const { refresh } = useAuth()
+  const login = useLogin()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+
+  const errorMessage = login.error ? friendlyMessage(login.error) : null
 
   return (
     <div className="relative flex min-h-screen bg-bg text-ink">
@@ -32,13 +39,20 @@ export function LoginPage() {
         </div>
 
         <form
-          onSubmit={(e) => {
+          onSubmit={async (e) => {
             e.preventDefault()
-            // ADR-007: pós-login honra ui_mode. salesperson → /cockpit, senão /.
-            // Quando backend existir, substituir por POST /auth/login → refetch
-            // /auth/me → navigate abaixo, para que `mode` reflita o backend.
-            const target = mode === 'salesperson' ? '/cockpit' : '/'
-            nav(target, { replace: true })
+            if (login.isPending) return
+            try {
+              await login.mutateAsync({ email, password })
+              // Wait for the authoritative /auth/me refresh so the shell reads
+              // real permissions + ui_mode before we navigate.
+              const session = await refresh()
+              const effectiveMode = session ? mode : mode
+              const target = effectiveMode === 'salesperson' ? '/cockpit' : '/'
+              nav(target, { replace: true })
+            } catch {
+              // Error is surfaced inline via login.error (silent: true in the hook).
+            }
           }}
           className="mx-auto w-full max-w-[380px]"
         >
@@ -106,8 +120,23 @@ export function LoginPage() {
             </div>
           </div>
 
-          <Button variant="primary" size="lg" className="mt-6 w-full justify-between" type="submit">
-            <span>Entrar na operacao</span>
+          {errorMessage && (
+            <div
+              role="alert"
+              className="mt-4 rounded-md border border-danger/30 bg-danger/10 px-3 py-2 text-sm text-danger"
+            >
+              {errorMessage}
+            </div>
+          )}
+
+          <Button
+            variant="primary"
+            size="lg"
+            className="mt-6 w-full justify-between"
+            type="submit"
+            disabled={login.isPending}
+          >
+            <span>{login.isPending ? 'Entrando…' : 'Entrar na operacao'}</span>
             <ArrowRight className="h-4 w-4" />
           </Button>
 
