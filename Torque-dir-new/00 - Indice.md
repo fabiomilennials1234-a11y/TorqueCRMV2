@@ -129,7 +129,7 @@ status: vivo
 
 ## Status atual
 
-**Etapa:** S00 ✅. S01 ✅ scaffold. S02 ✅ auth+tenancy+RBAC. S03 ✅ security+observabilidade+audit+ratelimit. S04 ✅ OpenAPI+WS hub+async jobs. S05 ✅ frontend CRUD foundation (2026-04-19). Runtime backend (go mod tidy/build/test -race + migrate up) e frontend (npm test/typecheck/lint) pendentes no host.
+**Etapa:** S00-S05 ✅. S06 ✅ integracao front↔back (2026-04-19). Runtime backend (go mod tidy/build/test -race + migrate up) e frontend (npm test/typecheck/lint) pendentes no host.
 
 **S00** — ESLint flat (a11y + hooks + ban `dangerouslySetInnerHTML`), TS strict, Prettier, Vitest (51 testes), CI, vocabulario canonico, `--clay-*` → `--card-*`/`.tactile-*`, pos-login navigation por `ui_mode`.
 
@@ -141,9 +141,11 @@ status: vivo
 
 **S04** — Migration 0005 `operations` (ENUM + SKIP LOCKED claim + retry chain). Event bus in-process. WS hub `ws.Hub` tenant-scoped via `coder/websocket`. Worker pool goroutine+semaphore. Handlers `POST/GET/DELETE /api/v1/operations` + `GET /api/v1/ws`. `/openapi.{yaml,json}` publicos.
 
-**S05** — `src/api/{queryKeys,errors}.ts` (factory canonico + notifyAppError via CustomEvent). Hooks `useAppMutation` (optimistic+rollback+invalidate+silent), `useInfiniteList` (cursor ADR-004), `useWSSubscribe` (filtro por type), `useOperation{Submit,Status,Cancel}` (poll adaptativo + WS patch), `useBootstrap` (staleTime Infinity). Componente `<QueryBoundary>` loading/error/empty. Tests vitest cobrindo tudo.
+**S05** — queryKeys + errors pipeline + hooks (useAppMutation, useInfiniteList, useWSSubscribe, useOperation*, useBootstrap) + QueryBoundary + vitest coverage.
 
-Proxima sprint: **S06** — integracao front↔back real (login, /me, WS badge ativo, OrgSwitcher, remocao dos mocks).
+**S06** — AuthProvider real via `/api/v1/auth/me` (mock removida), WSProvider conectando `ws_url` do `useBootstrap`, `useLogin` + LoginPage com inline error, fix de path do refresh endpoint.
+
+Proxima sprint: **S07** — F01 Backend: Leads + Pipes + Stages (CRUD com cursor pagination + eventos WS).
 
 ---
 
