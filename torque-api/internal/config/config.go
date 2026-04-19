@@ -28,6 +28,28 @@ type Config struct {
 	WriteTimeout    time.Duration // HTTP write timeout
 	IdleTimeout     time.Duration // HTTP idle timeout
 	CORSOrigins     []string      // allow-list; empty means closed
+
+	// --- Auth / session (S02) ---
+	//
+	// JWTSecret signs access tokens (HS256). MUST be >= 32 bytes.
+	JWTSecret []byte
+	// AccessTTL is the lifetime of the __torque_session JWT. 15 min is the
+	// default; go shorter in prod once refresh is proven in the wild.
+	AccessTTL time.Duration
+	// RefreshTTL is the lifetime of the __torque_refresh opaque cookie.
+	RefreshTTL time.Duration
+	// CookieDomain optionally scopes auth cookies to a parent domain.
+	// Empty → host-only cookies (recommended unless the frontend lives on a
+	// sibling subdomain).
+	CookieDomain string
+	// CookieSecure forces the Secure flag. Must be true in prod; may be false
+	// in dev when the frontend is served over plain http://localhost.
+	CookieSecure bool
+
+	// --- Bootstrap (S02 teaser; fills out in S03) ---
+	SentryDSN   string
+	WSURL       string
+	AppVersion  string
 }
 
 // Load reads the config from the environment. Returns an error if any required
@@ -56,6 +78,15 @@ func Load() (Config, error) {
 		WriteTimeout:    mustDuration("WRITE_TIMEOUT", "15s"),
 		IdleTimeout:     mustDuration("IDLE_TIMEOUT", "60s"),
 		CORSOrigins:     parseCSV(os.Getenv("CORS_ORIGINS")),
+
+		JWTSecret:    []byte(os.Getenv("JWT_SECRET")),
+		AccessTTL:    mustDuration("ACCESS_TTL", "15m"),
+		RefreshTTL:   mustDuration("REFRESH_TTL", "720h"), // 30 days
+		CookieDomain: os.Getenv("COOKIE_DOMAIN"),
+
+		SentryDSN:  os.Getenv("SENTRY_DSN"),
+		WSURL:      getenv("WS_URL", ""),
+		AppVersion: getenv("APP_VERSION", "dev"),
 	}
 
 	if c.DatabaseURL == "" {
@@ -70,7 +101,34 @@ func Load() (Config, error) {
 		return Config{}, fmt.Errorf("invalid LOG_LEVEL %q", c.LogLevel)
 	}
 
+	// JWT_SECRET is required everywhere — do not ship a default. At least 32
+	// bytes so HS256 is not trivially brute-forceable.
+	if len(c.JWTSecret) < 32 {
+		return Config{}, fmt.Errorf("JWT_SECRET must be set and >= 32 bytes (got %d)", len(c.JWTSecret))
+	}
+
+	// Secure cookies are mandatory outside dev. Tolerating insecure cookies in
+	// prod would degrade the SameSite=Strict guarantee against downgrade.
+	if c.Env == "dev" {
+		// Default: respect COOKIE_SECURE if user set it, else false.
+		c.CookieSecure = getenvBool("COOKIE_SECURE", false)
+	} else {
+		c.CookieSecure = true
+	}
+
 	return c, nil
+}
+
+func getenvBool(key string, fallback bool) bool {
+	v := strings.ToLower(os.Getenv(key))
+	switch v {
+	case "1", "true", "yes", "on":
+		return true
+	case "0", "false", "no", "off":
+		return false
+	default:
+		return fallback
+	}
 }
 
 // IsProd reports whether the process is running in production.
