@@ -129,7 +129,7 @@ status: vivo
 
 ## Status atual
 
-**Etapa:** S00-S05 ✅. S06 ✅ integracao front↔back (2026-04-19). Runtime backend (go mod tidy/build/test -race + migrate up) e frontend (npm test/typecheck/lint) pendentes no host.
+**Etapa:** S00-S06 ✅. S07 ✅ F01 backend leads+pipes (2026-04-19). Runtime backend e frontend pendentes no host.
 
 **S00** — ESLint flat (a11y + hooks + ban `dangerouslySetInnerHTML`), TS strict, Prettier, Vitest (51 testes), CI, vocabulario canonico, `--clay-*` → `--card-*`/`.tactile-*`, pos-login navigation por `ui_mode`.
 
@@ -143,9 +143,11 @@ status: vivo
 
 **S05** — queryKeys + errors pipeline + hooks (useAppMutation, useInfiniteList, useWSSubscribe, useOperation*, useBootstrap) + QueryBoundary + vitest coverage.
 
-**S06** — AuthProvider real via `/api/v1/auth/me` (mock removida), WSProvider conectando `ws_url` do `useBootstrap`, `useLogin` + LoginPage com inline error, fix de path do refresh endpoint.
+**S06** — AuthProvider real via `/api/v1/auth/me`, WSProvider conectando `ws_url`, `useLogin` + LoginPage inline error.
 
-Proxima sprint: **S07** — F01 Backend: Leads + Pipes + Stages (CRUD com cursor pagination + eventos WS).
+**S07** — Repositorios `lead` (cursor ADR-004 + search + soft-delete) e `pipe` (Move atomico Serializable). Handlers `/api/v1/leads` CRUD + `/api/v1/pipes` list/stages/entries/move. Eventos `lead.{created,updated,deleted}` e `pipe_entry.moved` no bus.
+
+Proxima sprint: **S08** — F01 Frontend: Hub + KanbanPage com dados reais + DnD entre stages via pipe_entry.moved.
 
 ---
 

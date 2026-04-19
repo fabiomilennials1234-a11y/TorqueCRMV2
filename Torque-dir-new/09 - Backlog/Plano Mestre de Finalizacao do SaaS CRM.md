@@ -627,7 +627,7 @@ O bloco da sprint em §8 muda de "prospectivo" para "entregue":
 
 ---
 
-### Sprint S07 — F01 Backend: Leads + Pipes + Stages
+### Sprint S07 — F01 Backend: Leads + Pipes + Stages ✅ ENTREGUE (2026-04-19)
 
 | Campo | Valor |
 |-------|-------|
