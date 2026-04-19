@@ -8,6 +8,59 @@ Torque e um SaaS B2B multi-tenant CRM para times comerciais brasileiros que vend
 
 ---
 
+## Protocolo de git — sprints (INVARIANTE)
+
+**Regra cardinal travada:** Toda sprint (S00, S01, S02, ...) segue a topologia LINEAR CUMULATIVA. Nada de fan-out de S00.
+
+```
+main
+  ↑ merge via PR (release/tag)
+develop  ← trunk cumulativo. Cada sprint mergeada vira parte dele.
+  ↑ merge via PR ao fim de cada sprint
+sprint/S0X  ← nasce de `develop` atualizada (que ja tem S0X-1)
+```
+
+**Invariantes absolutas:**
+
+1. `sprint/S0X` SEMPRE nasce de `develop` com `git pull --ff-only` primeiro. Nunca de `main`, nunca de outra `sprint/*` em andamento (exceto dependencia explicita declarada no Plano Mestre).
+2. Nenhum trabalho de sprint vai direto em `develop` — sempre via branch propria + PR.
+3. Merge da sprint em `develop` usa `merge commit` (nao squash) para preservar a granularidade dos commits por dominio no historico.
+4. A branch `sprint/S0X` permanece no remoto como ancora de auditoria apos o merge — nao deletar.
+5. Historico linear e cumulativo: S02 assume S01 entregue, S03 assume S02 entregue, etc. Paralelismo entre sprints esta PROIBIDO (regra cardinal "uma feature por vez").
+
+**Passos obrigatorios:**
+
+```bash
+# ANTES do primeiro edit
+git checkout develop
+git pull --ff-only origin develop
+git checkout -b sprint/S0X
+
+# DURANTE — commits logicos por dominio, nesta ordem:
+# 1. DBA       → feat(db):       migrations, seeds, schema
+# 2. Backend   → feat(backend):  services, repos, middlewares, handlers, config
+# 3. QA        → test(backend):  unit + integration
+# 4. Frontend  → feat(frontend): componentes, hooks, i18n
+# 5. Docs      → docs(vault):    STATE.md (D0xx), Indice, Plano Mestre, ADRs
+
+# AO FIM
+git push -u origin sprint/S0X
+gh pr create --base develop --head sprint/S0X --title "Sprint S0X — <objetivo>" --body "..."
+```
+
+**Nao fechar sprint sem:**
+- [ ] STATE.md atualizado com `D0xx` (decisao e entregaveis daquele sprint)
+- [ ] `Torque-dir-new/00 - Indice.md` status line refletindo S0X ✅
+- [ ] `Torque-dir-new/09 - Backlog/Plano Mestre de Finalizacao do SaaS CRM.md` §8 marcando a sprint ENTREGUE
+- [ ] Branch `sprint/S0X` pushada em `origin`
+- [ ] PR aberta contra `develop`
+
+**Referencia canonica:** `Torque-dir-new/09 - Backlog/Plano Mestre de Finalizacao do SaaS CRM.md` §8 → "Protocolo de Execução (obrigatório para TODA sprint)".
+
+**Justificativa da topologia linear (vs fan-out):** sprints de fundacao (S01–S06) tem dependencias verticais rigidas — S02 precisa do schema de S01, S04 precisa do auth de S02, S06 precisa de tudo. Fan-out forcaria cada sprint a reimplementar o que falta e explodiria em conflitos no merge. Decisao registrada em STATE.md como D012.
+
+---
+
 ## Protocolo de agentes (OBRIGATORIO)
 
 **Toda task, mudanca ou request segue este protocolo automaticamente:**

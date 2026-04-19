@@ -414,6 +414,109 @@ Trilha Operacional: F16                (última)
 
 ## 8. Sprints
 
+### Protocolo de Execução (obrigatório para TODA sprint)
+
+> **Regra cardinal de git.** Cada sprint tem sua própria branch `sprint/S0X`. Nunca commitar trabalho de sprint direto em `develop` ou `main`. A branch do sprint é a unidade de review, de rollback e de rastreabilidade — um sprint fechado vira um merge atômico.
+
+**1. Abertura da branch — ANTES do primeiro edit.**
+
+```bash
+git checkout develop
+git pull --ff-only origin develop
+git checkout -b sprint/S0X
+```
+
+A branch nasce de `develop` atualizada. Nunca da main, nunca de outro sprint em andamento (exceto quando S0X declara dependência explícita de um sprint anterior ainda não mergeado — nesse caso parta dele e anote no plano).
+
+**2. Commits lógicos por domínio — durante a execução.**
+
+Um sprint produz múltiplos commits, cada um atômico e auto-contido. Agrupamento canônico:
+
+| Ordem | Commit | Prefixo | Conteúdo típico |
+|-------|--------|---------|-----------------|
+| 1 | DBA | `feat(db):` ou `chore(db):` | Migrations up/down, seeds, schema changes |
+| 2 | Backend | `feat(backend):` | Services, repos, middlewares, handlers, config, go.mod |
+| 3 | QA | `test(backend):` | Unit + integration tests |
+| 4 | Frontend | `feat(frontend):` | Componentes, hooks, types gerados, i18n |
+| 5 | Docs | `docs(vault):` | STATE.md (novo Dxxx), Indice, Plano Mestre, ADRs, checklists |
+
+Não todos se aplicam a todo sprint. Sprints puramente backend dispensam o commit de frontend. Sprints só-docs são um único commit. O princípio é: **cada commit deve ser revisável isoladamente** — se a mudança de docs depende da de código, vão juntas; se independe, separa.
+
+Mensagens de commit seguem o padrão já estabelecido:
+- Título imperativo curto (≤72 chars), escopo entre parênteses.
+- Corpo explica o **porquê** e as decisões não óbvias, não o "o que" (o diff já diz).
+- Rodapé `Co-Authored-By: Claude Opus 4.7 (1M context) <noreply@anthropic.com>` quando aplicável.
+
+**3. Push da branch — ao final do sprint.**
+
+```bash
+git push -u origin sprint/S0X
+```
+
+O push acontece **após** o sprint estar logicamente fechado (todos os critérios de aceite batidos, STATE.md atualizado com o ADR `D0xx` daquele sprint). Push parcial só se o sprint travar e precisar de review antecipado.
+
+**4. Integração em `develop` — por PR, depois da validação.**
+
+```bash
+# GitHub PR (padrão):
+gh pr create --base develop --head sprint/S0X \
+  --title "Sprint S0X — <objetivo>" \
+  --body "$(cat <<'EOF'
+## Resumo
+<1 parágrafo: o que o sprint entregou>
+
+## Artefatos
+- Commits: lista por domínio
+- Migrations: 000X_nome
+- Endpoints: lista
+- Tests: unit + integration
+
+## Runtime handoff
+<o que o reviewer precisa rodar local para validar>
+
+## Referências
+- STATE.md D0xx
+- Plano Mestre §8 Sprint S0X
+EOF
+)"
+```
+
+Merge strategy: `merge commit` (não squash) para preservar a granularidade dos commits lógicos no histórico de `develop`. A branch `sprint/S0X` permanece no remoto como âncora de auditoria — não deletar.
+
+**5. Atualização do STATE.md.**
+
+Todo sprint produz UM registro novo na tabela de decisões (`D0xx`) com:
+- Data no formato `YYYY-MM-DD` absoluto.
+- Resumo técnico denso (o que foi entregue, por que, com quais trade-offs).
+- Pendências runtime se execução ficou transferida ao usuário.
+
+Também atualiza `Current Phase` e `Current Blockers` para refletir o novo estado.
+
+**6. Atualização do Indice.md.**
+
+Status line do Indice reflete: `S00 ✅`, `S01 ✅ scaffold`, `S02 ✅`, etc. Próxima sprint documentada como alvo.
+
+**7. Atualização deste Plano Mestre.**
+
+O bloco da sprint em §8 muda de "prospectivo" para "entregue":
+- Cabeçalho: `### Sprint S0X — <objetivo> ✅ ENTREGUE (YYYY-MM-DD)`
+- Campo **Resultado esperado** → **Resultado entregue** com a lista concreta de artefatos.
+- Adicionar linhas **Pendente runtime** (se houver) e **Proximo passo** apontando para a sprint seguinte.
+
+**Resumo em uma frase:** branch própria → commits por domínio → push → PR → merge em develop → STATE/Indice/Plano atualizados. Nenhuma sprint fecha sem os seis passos.
+
+**Checklist operacional para `agent-conductor`:**
+
+- [ ] `git checkout -b sprint/S0X develop` feito antes de qualquer edit.
+- [ ] Commits separados por domínio (DBA → Backend → QA → Frontend → Docs).
+- [ ] `git push -u origin sprint/S0X` executado.
+- [ ] STATE.md tem `D0xx` daquele sprint.
+- [ ] Indice.md status line atualizada.
+- [ ] Plano Mestre §8 marca a sprint ENTREGUE com artefatos concretos.
+- [ ] PR aberta em `develop` (opcional — pode ser deferido para agrupar múltiplas sprints, mas recomendado por sprint).
+
+---
+
 ### Sprint S00 — Fechar Sistema Base Frontend (+ bloco Cockpit) ✅ CONCLUÍDO (2026-04-18)
 
 | Campo | Valor |
