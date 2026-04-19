@@ -50,6 +50,27 @@ type Config struct {
 	SentryDSN   string
 	WSURL       string
 	AppVersion  string
+
+	// --- Observability (S03) ---
+	// SentryPublicDSN is the client-side DSN (safe to ship to the browser).
+	// Intentionally distinct from SentryDSN (server-side, private). Empty is
+	// allowed in dev; prod CI should enforce presence.
+	SentryPublicDSN   string
+	SentryEnvironment string
+	SentrySampleRate  float64
+	SentryTracesRate  float64
+
+	// --- Rate limiting (S03) ---
+	RateLimitAnonRPS    float64
+	RateLimitAnonBurst  int
+	RateLimitUserRPS    float64
+	RateLimitUserBurst  int
+	RateLimitTrustProxy bool
+
+	// --- Feature flags exposed in /api/bootstrap ---
+	// Shape: "flag1=true,flag2=false". Everything in here is public — do NOT
+	// gate security-sensitive features behind a bootstrap flag.
+	FeatureFlags map[string]bool
 }
 
 // Load reads the config from the environment. Returns an error if any required
@@ -87,6 +108,19 @@ func Load() (Config, error) {
 		SentryDSN:  os.Getenv("SENTRY_DSN"),
 		WSURL:      getenv("WS_URL", ""),
 		AppVersion: getenv("APP_VERSION", "dev"),
+
+		SentryPublicDSN:   os.Getenv("SENTRY_PUBLIC_DSN"),
+		SentryEnvironment: getenv("SENTRY_ENVIRONMENT", ""),
+		SentrySampleRate:  getenvFloat("SENTRY_SAMPLE_RATE", 1.0),
+		SentryTracesRate:  getenvFloat("SENTRY_TRACES_SAMPLE_RATE", 0.0),
+
+		RateLimitAnonRPS:    getenvFloat("RATELIMIT_ANON_RPS", 5),
+		RateLimitAnonBurst:  getenvInt("RATELIMIT_ANON_BURST", 10),
+		RateLimitUserRPS:    getenvFloat("RATELIMIT_USER_RPS", 30),
+		RateLimitUserBurst:  getenvInt("RATELIMIT_USER_BURST", 60),
+		RateLimitTrustProxy: getenvBool("RATELIMIT_TRUST_PROXY", false),
+
+		FeatureFlags: parseFlags(os.Getenv("FEATURE_FLAGS")),
 	}
 
 	if c.DatabaseURL == "" {
@@ -177,4 +211,50 @@ func MustAtoi(key, fallback string) int {
 		panic(fmt.Errorf("env %s: %w", key, err))
 	}
 	return v
+}
+
+func getenvInt(key string, fallback int) int {
+	raw := os.Getenv(key)
+	if raw == "" {
+		return fallback
+	}
+	v, err := strconv.Atoi(raw)
+	if err != nil {
+		return fallback
+	}
+	return v
+}
+
+func getenvFloat(key string, fallback float64) float64 {
+	raw := os.Getenv(key)
+	if raw == "" {
+		return fallback
+	}
+	v, err := strconv.ParseFloat(raw, 64)
+	if err != nil {
+		return fallback
+	}
+	return v
+}
+
+// parseFlags accepts "a=true,b=false" and returns a boolean map.
+// Unknown values are treated as false; keys are trimmed and lowercased.
+func parseFlags(raw string) map[string]bool {
+	if raw == "" {
+		return map[string]bool{}
+	}
+	out := map[string]bool{}
+	for _, pair := range strings.Split(raw, ",") {
+		eq := strings.IndexByte(pair, '=')
+		if eq < 0 {
+			continue
+		}
+		key := strings.TrimSpace(strings.ToLower(pair[:eq]))
+		val := strings.TrimSpace(strings.ToLower(pair[eq+1:]))
+		if key == "" {
+			continue
+		}
+		out[key] = val == "1" || val == "true" || val == "yes" || val == "on"
+	}
+	return out
 }

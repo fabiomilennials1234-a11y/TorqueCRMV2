@@ -10,6 +10,7 @@ package bootstrap
 
 import (
 	"net/http"
+	"time"
 
 	"github.com/go-chi/chi/v5"
 
@@ -18,13 +19,21 @@ import (
 
 // Config is the public runtime config surface. Every field is safe to ship
 // to an unauthenticated client.
+//
+// Anything sensitive — JWT secret, DB credentials, server-only DSNs — MUST
+// NOT be added here. A good sanity check: if you would paste this response
+// into a public status page, every field should be safe. Otherwise do not
+// include it.
 type Config struct {
-	AppVersion   string            `json:"app_version"`
-	Env          string            `json:"env"`
-	WSURL        string            `json:"ws_url"`
-	SentryDSN    string            `json:"sentry_dsn"`
-	FeatureFlags map[string]bool   `json:"feature_flags"`
-	Extras       map[string]string `json:"extras,omitempty"`
+	AppVersion      string            `json:"app_version"`
+	Env             string            `json:"env"`
+	WSURL           string            `json:"ws_url"`
+	SentryDSN       string            `json:"sentry_dsn"`       // public DSN only (client-side)
+	FeatureFlags    map[string]bool   `json:"feature_flags"`
+	Extras          map[string]string `json:"extras,omitempty"`
+	// ServerTime lets the client detect clock drift on cold start. Formatted
+	// as ISO-8601 UTC (Z suffix) per the wire convention (Multi-tenancy.md).
+	ServerTime string `json:"server_time"`
 }
 
 // Handler serves the bootstrap endpoint.
@@ -44,5 +53,11 @@ func (h *Handler) Routes(r chi.Router) {
 func (h *Handler) get(w http.ResponseWriter, _ *http.Request) {
 	// Aggressive public cache: config is stable; client invalidates on deploy.
 	w.Header().Set("Cache-Control", "public, max-age=60, stale-while-revalidate=600")
-	httpx.WriteJSON(w, http.StatusOK, h.cfg)
+	// Snapshot server_time per request so the client can detect clock drift.
+	resp := h.cfg
+	resp.ServerTime = time.Now().UTC().Format(time.RFC3339)
+	if resp.FeatureFlags == nil {
+		resp.FeatureFlags = map[string]bool{}
+	}
+	httpx.WriteJSON(w, http.StatusOK, resp)
 }
