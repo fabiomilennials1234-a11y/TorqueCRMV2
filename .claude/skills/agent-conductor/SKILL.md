@@ -19,6 +19,52 @@ Antes de qualquer triagem, leia:
 
 ---
 
+## Passo 0: Protocolo de git — sprints (INVARIANTE, verificar ANTES de triagar)
+
+Se a task e parte de uma sprint (S00, S01, ..., S0X), voce DEVE garantir a topologia linear cumulativa antes de delegar qualquer trabalho:
+
+**Verificacao obrigatoria — na abertura:**
+
+```bash
+# 1. Identificar a sprint atual no Plano Mestre §8
+# 2. Checar o branch atual:
+git branch --show-current
+# 3. Se nao estiver em sprint/S0X da sprint atual, ABORTAR e abrir a branch correta:
+git checkout develop
+git pull --ff-only origin develop
+git checkout -b sprint/S0X
+```
+
+**Nunca** delegar trabalho de sprint com:
+- branch `develop` como working branch (commit direto proibido)
+- branch `main` como working branch
+- branch de sprint anterior ja mergeada
+- branch de outra sprint em paralelo
+
+**Durante a sprint** — orientar os especialistas a agruparem entregaveis para os commits logicos por dominio:
+
+| Ordem | Commit | Prefixo | Conteudo |
+|-------|--------|---------|----------|
+| 1 | DBA | `feat(db):` ou `chore(db):` | Migrations up/down, seeds, schema |
+| 2 | Backend | `feat(backend):` | Services, repos, middlewares, handlers, config |
+| 3 | QA | `test(backend):` | Unit + integration tests |
+| 4 | Frontend | `feat(frontend):` | Componentes, hooks, types gerados, i18n |
+| 5 | Docs | `docs(vault):` | STATE.md (D0xx), Indice, Plano Mestre, ADRs |
+
+**Ao fechar a sprint — checklist inviolavel:**
+
+- [ ] STATE.md atualizado com `D0xx` (decisao + entregaveis concretos)
+- [ ] `Torque-dir-new/00 - Indice.md` status line reflete S0X ✅
+- [ ] `Torque-dir-new/09 - Backlog/Plano Mestre de Finalizacao do SaaS CRM.md` §8 marca a sprint ENTREGUE com artefatos
+- [ ] `git push -u origin sprint/S0X` executado
+- [ ] PR aberta contra `develop` via `gh pr create --base develop`
+
+Se qualquer item do checklist nao foi atendido, a sprint NAO esta fechada — o Conductor deve voltar e completar antes de abrir a proxima.
+
+**Referencia canonica:** `CLAUDE.md` §"Protocolo de git — sprints" + `Plano Mestre §8 Protocolo de Execução`. Justificativa da topologia linear em STATE.md D012.
+
+---
+
 ## Processo de triagem (5 passos)
 
 ### Passo 1: Classificar dominio
@@ -111,10 +157,14 @@ Apos TODA execucao, atualize:
 - **NUNCA** pule a triagem. Toda task passa por voce primeiro.
 - **NUNCA** deixe um agente operar sem contexto carregado (vault + .specs/).
 - **NUNCA** declare pronto sem atualizar Obsidian.
+- **NUNCA** permita commit de sprint em `develop` ou `main` direto — exigir `sprint/S0X` propria.
+- **NUNCA** abrir uma sprint sem `develop` atualizada (`git pull --ff-only origin develop`).
+- **NUNCA** feche uma sprint sem STATE.md D0xx + Indice + Plano Mestre §8 ENTREGUE + push + PR.
 - **SEMPRE** identifique TODOS os dominios afetados — nao rotear parcialmente.
 - **SEMPRE** use a ordem de dependencia correta em tasks multi-agente.
 - **SEMPRE** mantenha STATE.md atualizado com decisoes e licoes.
 - **SEMPRE** forneca briefing denso e autossuficiente ao agente.
+- **SEMPRE** respeite a topologia linear cumulativa: sprint/S0X nasce de `develop` (com S0X-1 ja mergeada), nunca de `main` nem de outra sprint em paralelo.
 
 ---
 
