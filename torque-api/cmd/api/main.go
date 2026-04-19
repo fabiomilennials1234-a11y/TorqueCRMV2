@@ -24,16 +24,22 @@ import (
 
 	"github.com/milennials/torque-api/internal/config"
 	"github.com/milennials/torque-api/internal/db"
+	"github.com/milennials/torque-api/internal/event"
 	authhandler "github.com/milennials/torque-api/internal/handler/auth"
 	"github.com/milennials/torque-api/internal/handler/bootstrap"
 	"github.com/milennials/torque-api/internal/handler/health"
+	"github.com/milennials/torque-api/internal/handler/openapi"
+	operationshandler "github.com/milennials/torque-api/internal/handler/operations"
 	preferenceshandler "github.com/milennials/torque-api/internal/handler/preferences"
 	mw "github.com/milennials/torque-api/internal/httpx/middleware"
 	"github.com/milennials/torque-api/internal/observability/sentry"
+	operationrepo "github.com/milennials/torque-api/internal/repository/operation"
 	refreshrepo "github.com/milennials/torque-api/internal/repository/refresh"
 	userrepo "github.com/milennials/torque-api/internal/repository/user"
 	jwtsvc "github.com/milennials/torque-api/internal/service/jwt"
 	"github.com/milennials/torque-api/internal/service/permission"
+	"github.com/milennials/torque-api/internal/worker"
+	"github.com/milennials/torque-api/internal/ws"
 )
 
 // version is stamped at build time via -ldflags. Defaults to "dev" in local runs.
@@ -89,7 +95,44 @@ func run() error {
 	})
 	defer rl.Close()
 
-	router := newRouter(cfg, logger, pool, rl)
+	// Event bus + WebSocket hub. The bus is the only way domain services
+	// publish real-time patches; the hub is the only sink that reaches the
+	// browser. Bridging is a single goroutine that drains the bus and hands
+	// each event to hub.Broadcast.
+	bus := event.NewBus(event.DropOldest)
+	hub := ws.NewHub(ws.DefaultHubConfig(), logger)
+	busSub, busUnsub := bus.Subscribe(256)
+	defer busUnsub()
+	go func() {
+		for evt := range busSub {
+			hub.Broadcast(evt)
+		}
+	}()
+
+	// Worker pool. S04 ships the infrastructure; handlers per-kind are wired
+	// by future sprints (leads import, bulk workflows, etc).
+	operations := operationrepo.New(pool)
+	workerPool := worker.New(worker.Config{
+		Concurrency:  4,
+		PollInterval: 2 * time.Second,
+		PollJitter:   500 * time.Millisecond,
+	}, operations, bus, logger, []worker.Handler{
+		// Intentionally empty here — handlers are registered as features ship.
+	})
+	workerPool.Start(ctx)
+	defer func() {
+		shutdownCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+		defer cancel()
+		if err := workerPool.Shutdown(shutdownCtx); err != nil {
+			logger.Warn().Err(err).Msg("worker shutdown timed out")
+		}
+	}()
+
+	router, err := newRouter(cfg, logger, pool, rl, hub, operations)
+	if err != nil {
+		return err
+	}
+
 
 	srv := &http.Server{
 		Addr:              cfg.HTTPAddr,
@@ -151,7 +194,14 @@ func newLogger(cfg config.Config) zerolog.Logger {
 	return zerolog.New(os.Stdout).With().Timestamp().Str("service", "torque-api").Logger()
 }
 
-func newRouter(cfg config.Config, logger zerolog.Logger, pool *db.Pool, rl *mw.RateLimiter) http.Handler {
+func newRouter(
+	cfg config.Config,
+	logger zerolog.Logger,
+	pool *db.Pool,
+	rl *mw.RateLimiter,
+	hub *ws.Hub,
+	operations *operationrepo.Repository,
+) (http.Handler, error) {
 	r := chi.NewRouter()
 
 	// Middleware order is deliberate:
@@ -222,6 +272,13 @@ func newRouter(cfg config.Config, logger zerolog.Logger, pool *db.Pool, rl *mw.R
 		FeatureFlags: cfg.FeatureFlags,
 	}).Routes(r)
 
+	// OpenAPI spec served from disk (api/openapi.yaml). Fails fast if missing.
+	specHandler, err := openapi.New("api/openapi.yaml")
+	if err != nil {
+		return nil, err
+	}
+	specHandler.Routes(r)
+
 	// --- API v1: auth entry points (pre-session) -----------------------
 	r.Route("/api/v1", func(v1 chi.Router) {
 		// Authenticator is transparent — attaches session when cookie is
@@ -244,10 +301,17 @@ func newRouter(cfg config.Config, logger zerolog.Logger, pool *db.Pool, rl *mw.R
 			priv.Group(func(t chi.Router) {
 				t.Use(mw.TenantScope)
 				preferenceshandler.New(users).Routes(t)
-				// Feature handlers land here in S04+ (leads, pipes, etc).
+				operationshandler.New(operations).Routes(t)
+				// Feature handlers land here in S05+ (leads, pipes, etc).
 			})
+
+			// WebSocket upgrade — authenticated + session carries org_id.
+			// Not under TenantScope because the hub reads org from the session
+			// directly and does not need the chi-level scope.
+			wsHandler := ws.NewHandler(hub, logger, cfg.CORSOrigins)
+			priv.Handle("/ws", wsHandler)
 		})
 	})
 
-	return r
+	return r, nil
 }
