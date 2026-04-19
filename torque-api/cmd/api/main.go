@@ -28,12 +28,16 @@ import (
 	authhandler "github.com/milennials/torque-api/internal/handler/auth"
 	"github.com/milennials/torque-api/internal/handler/bootstrap"
 	"github.com/milennials/torque-api/internal/handler/health"
+	leadshandler "github.com/milennials/torque-api/internal/handler/leads"
 	"github.com/milennials/torque-api/internal/handler/openapi"
 	operationshandler "github.com/milennials/torque-api/internal/handler/operations"
+	pipeshandler "github.com/milennials/torque-api/internal/handler/pipes"
 	preferenceshandler "github.com/milennials/torque-api/internal/handler/preferences"
 	mw "github.com/milennials/torque-api/internal/httpx/middleware"
 	"github.com/milennials/torque-api/internal/observability/sentry"
+	leadrepo "github.com/milennials/torque-api/internal/repository/lead"
 	operationrepo "github.com/milennials/torque-api/internal/repository/operation"
+	piperepo "github.com/milennials/torque-api/internal/repository/pipe"
 	refreshrepo "github.com/milennials/torque-api/internal/repository/refresh"
 	userrepo "github.com/milennials/torque-api/internal/repository/user"
 	jwtsvc "github.com/milennials/torque-api/internal/service/jwt"
@@ -128,7 +132,7 @@ func run() error {
 		}
 	}()
 
-	router, err := newRouter(cfg, logger, pool, rl, hub, operations)
+	router, err := newRouter(cfg, logger, pool, rl, hub, operations, bus)
 	if err != nil {
 		return err
 	}
@@ -201,6 +205,7 @@ func newRouter(
 	rl *mw.RateLimiter,
 	hub *ws.Hub,
 	operations *operationrepo.Repository,
+	bus *event.Bus,
 ) (http.Handler, error) {
 	r := chi.NewRouter()
 
@@ -302,7 +307,8 @@ func newRouter(
 				t.Use(mw.TenantScope)
 				preferenceshandler.New(users).Routes(t)
 				operationshandler.New(operations).Routes(t)
-				// Feature handlers land here in S05+ (leads, pipes, etc).
+				leadshandler.New(leadrepo.New(pool), bus).Routes(t)
+				pipeshandler.New(piperepo.New(pool), bus).Routes(t)
 			})
 
 			// WebSocket upgrade — authenticated + session carries org_id.
