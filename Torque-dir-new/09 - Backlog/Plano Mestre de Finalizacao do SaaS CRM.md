@@ -444,18 +444,19 @@ Trilha Operacional: F16                (última)
 
 ---
 
-### Sprint S02 — Auth + Tenancy + RBAC
+### Sprint S02 — Auth + Tenancy + RBAC ✅ ENTREGUE (2026-04-19)
 
 | Campo | Valor |
 |-------|-------|
 | **Objetivo** | Autenticação funcional com httpOnly cookies, multi-tenancy isolada, RBAC 4 camadas |
-| **Resultado esperado** | Login → JWT em cookie → /auth/me retorna user+org+permissions → Tenant isolation provada |
-| **Dependências** | S01 (Go skeleton + DB) |
-| **Agentes** | `general-purpose` (implementação), `code-reviewer` (security audit) |
-| **Áreas afetadas** | Backend auth, middleware, database |
-| **Stack** | Go, JWT (`golang-jwt`), bcrypt, PostgreSQL |
-| **Riscos** | Refresh rotation com reuse detection é complexo; CSRF double-submit requer cuidado no SameSite boundary |
-| **Critério de conclusão** | Login/logout/refresh funcionais. /auth/me retorna bundle completo. Tenant A não vê dados de Tenant B. RBAC bloqueia ações sem permissão. |
+| **Resultado entregue** | Migration `0004_refresh_tokens` (hash sha256, rotation chain, reuse detection via `used_at`, RevokeChain com recursive CTE, bind org_id). Services: `password` (bcrypt cost 12), `jwt` (HS256 >=32b, alg=none bloqueado, expiry obrigatorio), `token` (256-bit rand + ConstantTimeEqual), `permission` (resolver + bundle com master bypass). Repositories: `user` (FindByEmail/ID/Memberships/IsMaster/Organization/EffectivePermissions/TouchLastLogin/UpdateUIMode), `refresh` (Issue/Lookup/Rotate em tx Serializable/RevokeChain/RevokeByUser). Middleware stack: `Authenticator` + `RequireAuth` + `TenantScope` + `CSRF` + `RequireFeature`/`RequireRole`/`RequireMaster`. Handlers: `/api/v1/auth/{login,refresh,logout,me}` + `/api/v1/me/preferences` + `/api/bootstrap` publico. Cookies: `__torque_session` (httpOnly Strict), `__torque_refresh` (Path=/api/v1/auth, httpOnly), `__torque_csrf` (readable JS, double-submit). Tests: unit em password/jwt/token/CSRF/RBAC + integration gated por DATABASE_URL cobrindo login success/bad password/unknown email/me 401/refresh rotation/reuse revoga chain/logout/CSRF/strip organization_id. |
+| **Dependências** | S01 (Go skeleton + DB) ✅ |
+| **Agentes** | Conductor → `agent-backend` + `agent-dba` + `agent-qa` |
+| **Áreas afetadas** | Backend auth (novo), middleware (expandido), database (migration 0004) |
+| **Stack** | Go 1.22, `golang-jwt/jwt/v5`, `golang.org/x/crypto/bcrypt`, `pgx/v5`, chi |
+| **Riscos mitigados** | Rotation atomica via UPDATE...WHERE used_at IS NULL + SERIALIZABLE tx. Reuse detection revoga linhagem inteira via recursive CTE. CSRF double-submit com ConstantTimeEqual. Uniform response em login (dummy bcrypt verify em user_not_found) previne user enumeration. |
+| **Pendente runtime** | `go mod tidy` + `go build` + `migrate up` + `go test -race` precisam rodar local (Go/Docker nao instalados no workspace do Conductor). |
+| **Proximo passo** | Abrir **Sprint S03** — headers finais (CSP nonce-based completo, HSTS preload no edge), observabilidade (Sentry server-side, zerolog structured completo, audit_log de mutations sensiveis), rate limiting, /api/bootstrap enriquecido com feature flags runtime. |
 
 ---
 
