@@ -3,10 +3,9 @@ info:
   title: Torque API
   version: 0.1.0
   description: |
-    Torque CRM backend. This is the S01 skeleton — health probes only.
-    Sprint S02 onwards adds /auth, /me, /leads, /tasks, etc.
-
-    Conventions (ADR-001): wire uses snake_case; frontend transforms to camelCase.
+    Torque CRM backend. Conventions (ADR-001): wire uses snake_case; frontend
+    transforms to camelCase. Session is carried in httpOnly cookies; never
+    ship a Bearer token.
   contact:
     name: Torque engineering
   license:
@@ -20,64 +19,322 @@ servers:
 
 tags:
   - name: probes
-    description: Liveness and readiness checks.
-
-components:
-  schemas:
-    LiveResponse:
-      type: object
-      required: [status, version]
-      properties:
-        status:  { type: string, example: "ok" }
-        version: { type: string, example: "dev" }
-
-    ReadyResponse:
-      type: object
-      required: [status, version, db]
-      properties:
-        status:  { type: string, enum: [ok, degraded] }
-        version: { type: string }
-        db:      { type: string, enum: [ok, unreachable] }
-
-    ErrorResponse:
-      type: object
-      required: [code, message]
-      properties:
-        code:    { type: string, example: "INTERNAL" }
-        message: { type: string }
-        details: { type: object, additionalProperties: true }
+    description: Orchestrator health and readiness checks.
+  - name: public
+    description: Unauthenticated surface.
+  - name: auth
+    description: Session lifecycle (login, refresh, logout, me).
+  - name: me
+    description: Authenticated-user-scoped endpoints.
+  - name: operations
+    description: Async jobs (ADR-006; 202 Accepted + poll + WS push).
 
 paths:
   /healthz:
     get:
       tags: [probes]
       summary: Liveness probe
-      description: |
-        Returns 200 while the process is up. No dependency checks — this is the
-        signal orchestrators use to decide *restart*, not *route*.
       responses:
         "200":
-          description: OK
+          description: Process is alive
           content:
             application/json:
-              schema: { $ref: "#/components/schemas/LiveResponse" }
+              schema: { $ref: "#/components/schemas/Health" }
 
   /readyz:
     get:
       tags: [probes]
-      summary: Readiness probe
-      description: |
-        Returns 200 only when all critical dependencies are reachable (DB at
-        minimum). Returns 503 when the DB cannot be pinged. Orchestrators use
-        this to decide whether to *route traffic*.
+      summary: Readiness probe (DB pool ping)
+      responses:
+        "200": { description: Ready to serve traffic }
+        "503": { description: Not ready }
+
+  /api/bootstrap:
+    get:
+      tags: [public]
+      summary: Runtime configuration for the browser
       responses:
         "200":
-          description: OK
+          description: Public runtime config (safe for anonymous clients)
           content:
             application/json:
-              schema: { $ref: "#/components/schemas/ReadyResponse" }
-        "503":
-          description: Service unavailable
+              schema: { $ref: "#/components/schemas/Bootstrap" }
+
+  /openapi.yaml:
+    get:
+      tags: [public]
+      summary: This specification (YAML)
+      responses:
+        "200": { description: spec source }
+
+  /openapi.json:
+    get:
+      tags: [public]
+      summary: This specification (JSON)
+      responses:
+        "200": { description: spec re-serialized as JSON }
+
+  /api/v1/auth/login:
+    post:
+      tags: [auth]
+      summary: Create a session
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/LoginRequest" }
+      responses:
+        "200":
+          description: Session established (cookies set)
           content:
             application/json:
-              schema: { $ref: "#/components/schemas/ReadyResponse" }
+              schema: { $ref: "#/components/schemas/LoginResponse" }
+        "401": { $ref: "#/components/responses/InvalidCredentials" }
+        "403": { description: No active organization membership }
+
+  /api/v1/auth/refresh:
+    post:
+      tags: [auth]
+      summary: Rotate refresh token
+      responses:
+        "200": { description: New cookies issued }
+        "401": { description: Refresh cookie missing, revoked, expired, or reused }
+
+  /api/v1/auth/logout:
+    post:
+      tags: [auth]
+      summary: Revoke the session and clear cookies
+      responses:
+        "204": { description: No Content }
+
+  /api/v1/auth/me:
+    get:
+      tags: [auth, me]
+      summary: Current user bundle
+      security: [{ cookieAuth: [] }]
+      responses:
+        "200":
+          description: User + organization + permissions + csrf_token
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Me" }
+        "401": { $ref: "#/components/responses/Unauthenticated" }
+
+  /api/v1/me/preferences:
+    patch:
+      tags: [me]
+      summary: Update per-user preferences (ADR-007 ui_mode)
+      security: [{ cookieAuth: [] }]
+      parameters:
+        - { $ref: "#/components/parameters/CSRFHeader" }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                ui_mode: { type: string, enum: [manager, salesperson] }
+      responses:
+        "200": { description: Updated }
+        "401": { $ref: "#/components/responses/Unauthenticated" }
+        "403": { description: CSRF mismatch }
+
+  /api/v1/operations:
+    post:
+      tags: [operations]
+      summary: Submit an async job (202 Accepted pattern, ADR-006)
+      security: [{ cookieAuth: [] }]
+      parameters:
+        - { $ref: "#/components/parameters/CSRFHeader" }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/OperationSubmit" }
+      responses:
+        "202":
+          description: Accepted; poll Location and/or subscribe to WS
+          headers:
+            Location:
+              schema: { type: string }
+              description: URL to poll
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Operation" }
+
+  /api/v1/operations/{id}:
+    get:
+      tags: [operations]
+      summary: Poll operation status
+      security: [{ cookieAuth: [] }]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        "200":
+          description: Current state
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Operation" }
+        "404": { description: Not found (or out of tenant scope) }
+    delete:
+      tags: [operations]
+      summary: Cancel an in-flight operation
+      security: [{ cookieAuth: [] }]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+        - { $ref: "#/components/parameters/CSRFHeader" }
+      responses:
+        "204": { description: Cancelled }
+        "409": { description: Already terminal or missing }
+
+  /api/v1/ws:
+    get:
+      tags: [operations]
+      summary: WebSocket upgrade (tenant-scoped broadcast)
+      description: |
+        Authenticated via the session cookie. On upgrade the server registers
+        the connection under the session's organization_id. Every broadcast is
+        tenant-isolated by the hub.
+
+        Event envelope: `{ type, tenant_id, entity_type, entity_id, version, patch, occurred_at }`.
+      security: [{ cookieAuth: [] }]
+      responses:
+        "101": { description: Switching Protocols }
+        "401": { $ref: "#/components/responses/Unauthenticated" }
+
+components:
+  securitySchemes:
+    cookieAuth:
+      type: apiKey
+      in: cookie
+      name: __torque_session
+
+  parameters:
+    CSRFHeader:
+      name: X-CSRF-Token
+      in: header
+      required: true
+      schema: { type: string }
+      description: Must echo the __torque_csrf cookie (double-submit).
+
+  responses:
+    Unauthenticated:
+      description: Authentication required
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/Error" }
+    InvalidCredentials:
+      description: Email or password is incorrect
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/Error" }
+
+  schemas:
+    Health:
+      type: object
+      properties:
+        status: { type: string, enum: [ok] }
+        version: { type: string }
+
+    Bootstrap:
+      type: object
+      properties:
+        app_version: { type: string }
+        env: { type: string, enum: [dev, staging, prod] }
+        ws_url: { type: string, format: uri }
+        sentry_dsn: { type: string, description: "Public client-side DSN" }
+        feature_flags:
+          type: object
+          additionalProperties: { type: boolean }
+        server_time: { type: string, format: date-time }
+
+    Error:
+      type: object
+      required: [code, message]
+      properties:
+        code: { type: string }
+        message: { type: string }
+        details:
+          type: object
+          additionalProperties: { type: string }
+
+    LoginRequest:
+      type: object
+      required: [email, password]
+      properties:
+        email: { type: string, format: email }
+        password: { type: string, format: password, minLength: 8 }
+        organization_slug: { type: string, nullable: true }
+
+    LoginResponse:
+      type: object
+      properties:
+        user: { $ref: "#/components/schemas/User" }
+        organization: { $ref: "#/components/schemas/Organization" }
+
+    Me:
+      type: object
+      properties:
+        user: { $ref: "#/components/schemas/User" }
+        organization: { $ref: "#/components/schemas/Organization" }
+        permissions:
+          type: array
+          items: { $ref: "#/components/schemas/Permission" }
+        csrf_token: { type: string }
+        is_master: { type: boolean }
+
+    User:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        email: { type: string, format: email }
+        display_name: { type: string }
+        role: { type: string, enum: [admin, membro] }
+        ui_mode: { type: string, enum: [manager, salesperson] }
+
+    Organization:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        slug: { type: string }
+        name: { type: string }
+        plan_id: { type: string, nullable: true }
+        payment_status: { type: string }
+        logo_url: { type: string, nullable: true }
+
+    Permission:
+      type: object
+      properties:
+        key: { type: string }
+        allowed: { type: boolean }
+        source: { type: string }
+
+    OperationSubmit:
+      type: object
+      required: [kind]
+      properties:
+        kind: { type: string }
+        input:
+          description: Arbitrary JSON passed to the worker.
+        retry_remaining: { type: integer, minimum: 0 }
+
+    Operation:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        kind: { type: string }
+        status: { type: string, enum: [pending, running, succeeded, failed, cancelled] }
+        progress: { type: number, minimum: 0, maximum: 1, nullable: true }
+        result: { description: "Present on success." }
+        error: { description: "Present on failure." }
+        retry_remaining: { type: integer }
+        created_at: { type: string, format: date-time }
+        started_at: { type: string, format: date-time, nullable: true }
+        ended_at: { type: string, format: date-time, nullable: true }
