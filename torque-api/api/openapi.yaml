@@ -1,0 +1,83 @@
+openapi: 3.1.0
+info:
+  title: Torque API
+  version: 0.1.0
+  description: |
+    Torque CRM backend. This is the S01 skeleton — health probes only.
+    Sprint S02 onwards adds /auth, /me, /leads, /tasks, etc.
+
+    Conventions (ADR-001): wire uses snake_case; frontend transforms to camelCase.
+  contact:
+    name: Torque engineering
+  license:
+    name: Proprietary
+
+servers:
+  - url: http://localhost:8080
+    description: Local development
+  - url: https://api.torque.app
+    description: Production
+
+tags:
+  - name: probes
+    description: Liveness and readiness checks.
+
+components:
+  schemas:
+    LiveResponse:
+      type: object
+      required: [status, version]
+      properties:
+        status:  { type: string, example: "ok" }
+        version: { type: string, example: "dev" }
+
+    ReadyResponse:
+      type: object
+      required: [status, version, db]
+      properties:
+        status:  { type: string, enum: [ok, degraded] }
+        version: { type: string }
+        db:      { type: string, enum: [ok, unreachable] }
+
+    ErrorResponse:
+      type: object
+      required: [code, message]
+      properties:
+        code:    { type: string, example: "INTERNAL" }
+        message: { type: string }
+        details: { type: object, additionalProperties: true }
+
+paths:
+  /healthz:
+    get:
+      tags: [probes]
+      summary: Liveness probe
+      description: |
+        Returns 200 while the process is up. No dependency checks — this is the
+        signal orchestrators use to decide *restart*, not *route*.
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/LiveResponse" }
+
+  /readyz:
+    get:
+      tags: [probes]
+      summary: Readiness probe
+      description: |
+        Returns 200 only when all critical dependencies are reachable (DB at
+        minimum). Returns 503 when the DB cannot be pinged. Orchestrators use
+        this to decide whether to *route traffic*.
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ReadyResponse" }
+        "503":
+          description: Service unavailable
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ReadyResponse" }

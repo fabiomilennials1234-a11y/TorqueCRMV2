@@ -1,0 +1,13 @@
+.git
+.gitignore
+.env
+*.env.local
+Dockerfile
+docker-compose.yml
+README.md
+Makefile
+tmp
+dist
+coverage.out
+coverage.html
+*.test

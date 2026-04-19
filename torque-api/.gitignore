@@ -1,0 +1,11 @@
+.env
+*.env.local
+/bin/
+/dist/
+/tmp/
+coverage.out
+coverage.html
+*.test
+# IDE
+.idea/
+.vscode/
