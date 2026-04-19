@@ -1,14 +1,14 @@
-import * as RD from "@radix-ui/react-dropdown-menu";
-import type { ComponentPropsWithoutRef } from "react";
-import { Check, ChevronRight } from "lucide-react";
-import { cn } from "@/lib/utils";
+import * as RD from '@radix-ui/react-dropdown-menu'
+import type { ComponentPropsWithoutRef } from 'react'
+import { Check, ChevronRight } from 'lucide-react'
+import { cn } from '@/lib/utils'
 
-export const DropdownMenu = RD.Root;
-export const DropdownMenuTrigger = RD.Trigger;
-export const DropdownMenuGroup = RD.Group;
-export const DropdownMenuPortal = RD.Portal;
-export const DropdownMenuSub = RD.Sub;
-export const DropdownMenuRadioGroup = RD.RadioGroup;
+export const DropdownMenu = RD.Root
+export const DropdownMenuTrigger = RD.Trigger
+export const DropdownMenuGroup = RD.Group
+export const DropdownMenuPortal = RD.Portal
+export const DropdownMenuSub = RD.Sub
+export const DropdownMenuRadioGroup = RD.RadioGroup
 
 export function DropdownMenuContent({
   className,
@@ -20,15 +20,15 @@ export function DropdownMenuContent({
       <RD.Content
         sideOffset={sideOffset}
         className={cn(
-          "z-50 min-w-[12rem] overflow-hidden rounded-md bg-elevated/90 backdrop-blur-xl p-1",
-          "shadow-elev-3 shadow-hairline",
-          "data-[state=open]:animate-scale-in",
-          className,
+          'z-50 min-w-[12rem] overflow-hidden rounded-md bg-elevated/90 p-1 backdrop-blur-xl',
+          'shadow-elev-3 shadow-hairline',
+          'data-[state=open]:animate-scale-in',
+          className
         )}
         {...props}
       />
     </RD.Portal>
-  );
+  )
 }
 
 export function DropdownMenuItem({
@@ -39,15 +39,15 @@ export function DropdownMenuItem({
   return (
     <RD.Item
       className={cn(
-        "relative flex cursor-pointer select-none items-center gap-2 rounded-sm px-2 py-1.5 text-sm text-ink-muted",
-        "outline-none data-[highlighted]:bg-elevated/80 data-[highlighted]:text-ink",
-        "data-[disabled]:pointer-events-none data-[disabled]:opacity-40",
-        inset && "pl-8",
-        className,
+        'relative flex cursor-pointer select-none items-center gap-2 rounded-sm px-2 py-1.5 text-sm text-ink-muted',
+        'outline-none data-[highlighted]:bg-elevated/80 data-[highlighted]:text-ink',
+        'data-[disabled]:pointer-events-none data-[disabled]:opacity-40',
+        inset && 'pl-8',
+        className
       )}
       {...props}
     />
-  );
+  )
 }
 
 export function DropdownMenuCheckboxItem({
@@ -58,11 +58,11 @@ export function DropdownMenuCheckboxItem({
 }: ComponentPropsWithoutRef<typeof RD.CheckboxItem>) {
   return (
     <RD.CheckboxItem
-      checked={checked}
+      {...(checked !== undefined ? { checked } : {})}
       className={cn(
-        "relative flex cursor-pointer select-none items-center gap-2 rounded-sm py-1.5 pl-7 pr-2 text-sm text-ink-muted",
-        "outline-none data-[highlighted]:bg-elevated/80 data-[highlighted]:text-ink",
-        className,
+        'relative flex cursor-pointer select-none items-center gap-2 rounded-sm py-1.5 pl-7 pr-2 text-sm text-ink-muted',
+        'outline-none data-[highlighted]:bg-elevated/80 data-[highlighted]:text-ink',
+        className
       )}
       {...props}
     >
@@ -73,7 +73,7 @@ export function DropdownMenuCheckboxItem({
       </span>
       {children}
     </RD.CheckboxItem>
-  );
+  )
 }
 
 export function DropdownMenuLabel({
@@ -82,34 +82,29 @@ export function DropdownMenuLabel({
 }: ComponentPropsWithoutRef<typeof RD.Label>) {
   return (
     <RD.Label
-      className={cn(
-        "px-2 pb-1 pt-2 text-2xs uppercase tracking-[0.1em] text-ink-dim",
-        className,
-      )}
+      className={cn('px-2 pb-1 pt-2 text-2xs uppercase tracking-[0.1em] text-ink-dim', className)}
       {...props}
     />
-  );
+  )
 }
 
 export function DropdownMenuSeparator({
   className,
   ...props
 }: ComponentPropsWithoutRef<typeof RD.Separator>) {
-  return (
-    <RD.Separator className={cn("-mx-1 my-1 h-px bg-hairline", className)} {...props} />
-  );
+  return <RD.Separator className={cn('-mx-1 my-1 h-px bg-hairline', className)} {...props} />
 }
 
-export function DropdownMenuShortcut({ className, ...props }: React.HTMLAttributes<HTMLSpanElement>) {
+export function DropdownMenuShortcut({
+  className,
+  ...props
+}: React.HTMLAttributes<HTMLSpanElement>) {
   return (
     <span
-      className={cn(
-        "ml-auto font-mono text-2xs text-ink-dim tracking-wider",
-        className,
-      )}
+      className={cn('ml-auto font-mono text-2xs tracking-wider text-ink-dim', className)}
       {...props}
     />
-  );
+  )
 }
 
 export function DropdownMenuSubTrigger({
@@ -121,17 +116,17 @@ export function DropdownMenuSubTrigger({
   return (
     <RD.SubTrigger
       className={cn(
-        "flex cursor-pointer select-none items-center gap-2 rounded-sm px-2 py-1.5 text-sm text-ink-muted",
-        "outline-none data-[highlighted]:bg-elevated/80 data-[highlighted]:text-ink",
-        inset && "pl-8",
-        className,
+        'flex cursor-pointer select-none items-center gap-2 rounded-sm px-2 py-1.5 text-sm text-ink-muted',
+        'outline-none data-[highlighted]:bg-elevated/80 data-[highlighted]:text-ink',
+        inset && 'pl-8',
+        className
       )}
       {...props}
     >
       {children}
       <ChevronRight className="ml-auto h-4 w-4" />
     </RD.SubTrigger>
-  );
+  )
 }
 
 export function DropdownMenuSubContent({
@@ -141,11 +136,11 @@ export function DropdownMenuSubContent({
   return (
     <RD.SubContent
       className={cn(
-        "z-50 min-w-[10rem] overflow-hidden rounded-md bg-elevated p-1 shadow-elev-3 shadow-hairline",
-        "data-[state=open]:animate-scale-in",
-        className,
+        'z-50 min-w-[10rem] overflow-hidden rounded-md bg-elevated p-1 shadow-elev-3 shadow-hairline',
+        'data-[state=open]:animate-scale-in',
+        className
       )}
       {...props}
     />
-  );
+  )
 }

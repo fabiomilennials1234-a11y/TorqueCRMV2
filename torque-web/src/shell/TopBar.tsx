@@ -1,9 +1,10 @@
-import { Bell, Search, Plus, Sun, Moon } from "lucide-react";
-import { Button } from "@/ui/button";
-import { Kbd } from "@/ui/kbd";
-import { Avatar } from "@/ui/avatar";
-import { Tooltip } from "@/ui/tooltip";
-import { useTheme } from "@/providers/ThemeProvider";
+import { Bell, Search, Plus, Sun, Moon } from 'lucide-react'
+import { Button } from '@/ui/button'
+import { Kbd } from '@/ui/kbd'
+import { Avatar } from '@/ui/avatar'
+import { Tooltip } from '@/ui/tooltip'
+import { useTheme } from '@/providers/ThemeProvider'
+import { UiModeToggle } from './UiModeToggle'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -12,16 +13,16 @@ import {
   DropdownMenuSeparator,
   DropdownMenuShortcut,
   DropdownMenuTrigger,
-} from "@/ui/dropdown";
+} from '@/ui/dropdown'
 
 export function TopBar({ onOpenCommand }: { onOpenCommand: () => void }) {
-  const { theme, toggle } = useTheme();
+  const { theme, toggle } = useTheme()
 
   return (
     <header className="sticky top-0 z-30 flex h-14 shrink-0 items-center gap-3 bg-bg/80 px-6 shadow-hairline-b backdrop-blur-xl">
       <button
         onClick={onOpenCommand}
-        className="group flex h-9 w-[340px] items-center gap-2.5 rounded-md bg-surface/80 pl-3 pr-2 text-left shadow-hairline hover:shadow-[inset_0_0_0_1px_hsl(var(--ink-dim)/0.4)] transition-shadow duration-150"
+        className="group flex h-9 w-[340px] items-center gap-2.5 rounded-md bg-surface/80 pl-3 pr-2 text-left shadow-hairline transition-shadow duration-150 hover:shadow-[inset_0_0_0_1px_hsl(var(--ink-dim)/0.4)]"
       >
         <Search className="h-3.5 w-3.5 text-ink-dim" strokeWidth={2} />
         <span className="flex-1 truncate text-sm text-ink-dim">
@@ -39,9 +40,13 @@ export function TopBar({ onOpenCommand }: { onOpenCommand: () => void }) {
           </Button>
         </Tooltip>
 
-        <Tooltip content={theme === "dark" ? "Tema claro" : "Tema escuro"}>
+        <div className="mx-1 h-5 w-px bg-hairline/60" aria-hidden />
+
+        <UiModeToggle variant="appshell" />
+
+        <Tooltip content={theme === 'dark' ? 'Tema claro' : 'Tema escuro'}>
           <Button variant="ghost" size="icon" onClick={toggle}>
-            {theme === "dark" ? (
+            {theme === 'dark' ? (
               <Sun className="h-4 w-4" strokeWidth={1.75} />
             ) : (
               <Moon className="h-4 w-4" strokeWidth={1.75} />
@@ -52,21 +57,21 @@ export function TopBar({ onOpenCommand }: { onOpenCommand: () => void }) {
         <Tooltip content="Notificacoes">
           <Button variant="ghost" size="icon" className="relative">
             <Bell className="h-4 w-4" strokeWidth={1.75} />
-            <span className="absolute top-1.5 right-1.5 h-1.5 w-1.5 rounded-full bg-accent ring-2 ring-bg" />
+            <span className="absolute right-1.5 top-1.5 h-1.5 w-1.5 rounded-full bg-accent ring-2 ring-bg" />
           </Button>
         </Tooltip>
 
         <UserMenu />
       </div>
     </header>
-  );
+  )
 }
 
 function UserMenu() {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <button className="ml-1 outline-none focus-visible:ring-2 focus-visible:ring-accent rounded-full">
+        <button className="ml-1 rounded-full outline-none focus-visible:ring-2 focus-visible:ring-accent">
           <Avatar size="md" fallback="FM" ring />
         </button>
       </DropdownMenuTrigger>
@@ -98,5 +103,5 @@ function UserMenu() {
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
-  );
+  )
 }

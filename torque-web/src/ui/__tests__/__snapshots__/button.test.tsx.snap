@@ -1,0 +1,68 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`Button > renders all sizes 1`] = `
+<div>
+  <div>
+    <button
+      class="inline-flex items-center justify-center gap-2 whitespace-nowrap font-medium tracking-tight transition-[color,background,box-shadow,transform] duration-150 ease-[var(--ease-out-soft)] focus-visible:outline-none disabled:pointer-events-none disabled:opacity-40 select-none bg-elevated text-ink shadow-hairline hover:bg-elevated/70 hover:shadow-[inset_0_0_0_1px_hsl(var(--ink-dim)/0.4)] h-6 px-2 text-xs rounded-sm"
+    >
+      xs
+    </button>
+    <button
+      class="inline-flex items-center justify-center gap-2 whitespace-nowrap font-medium tracking-tight transition-[color,background,box-shadow,transform] duration-150 ease-[var(--ease-out-soft)] focus-visible:outline-none disabled:pointer-events-none disabled:opacity-40 select-none bg-elevated text-ink shadow-hairline hover:bg-elevated/70 hover:shadow-[inset_0_0_0_1px_hsl(var(--ink-dim)/0.4)] h-8 px-3 text-[0.8125rem] rounded"
+    >
+      sm
+    </button>
+    <button
+      class="inline-flex items-center justify-center gap-2 whitespace-nowrap font-medium tracking-tight transition-[color,background,box-shadow,transform] duration-150 ease-[var(--ease-out-soft)] focus-visible:outline-none disabled:pointer-events-none disabled:opacity-40 select-none bg-elevated text-ink shadow-hairline hover:bg-elevated/70 hover:shadow-[inset_0_0_0_1px_hsl(var(--ink-dim)/0.4)] h-9 px-4 text-sm rounded-md"
+    >
+      md
+    </button>
+    <button
+      class="inline-flex items-center justify-center gap-2 whitespace-nowrap font-medium tracking-tight transition-[color,background,box-shadow,transform] duration-150 ease-[var(--ease-out-soft)] focus-visible:outline-none disabled:pointer-events-none disabled:opacity-40 select-none bg-elevated text-ink shadow-hairline hover:bg-elevated/70 hover:shadow-[inset_0_0_0_1px_hsl(var(--ink-dim)/0.4)] h-11 px-6 text-[0.9375rem] rounded-md"
+    >
+      lg
+    </button>
+  </div>
+</div>
+`;
+
+exports[`Button > renders default (secondary/md) 1`] = `
+<div>
+  <button
+    class="inline-flex items-center justify-center gap-2 whitespace-nowrap font-medium tracking-tight transition-[color,background,box-shadow,transform] duration-150 ease-[var(--ease-out-soft)] focus-visible:outline-none disabled:pointer-events-none disabled:opacity-40 select-none bg-elevated text-ink shadow-hairline hover:bg-elevated/70 hover:shadow-[inset_0_0_0_1px_hsl(var(--ink-dim)/0.4)] h-9 px-4 text-sm rounded-md"
+  >
+    Save
+  </button>
+</div>
+`;
+
+exports[`Button > renders disabled state 1`] = `
+<div>
+  <button
+    class="inline-flex items-center justify-center gap-2 whitespace-nowrap font-medium tracking-tight transition-[color,background,box-shadow,transform] duration-150 ease-[var(--ease-out-soft)] focus-visible:outline-none disabled:pointer-events-none disabled:opacity-40 select-none bg-elevated text-ink shadow-hairline hover:bg-elevated/70 hover:shadow-[inset_0_0_0_1px_hsl(var(--ink-dim)/0.4)] h-9 px-4 text-sm rounded-md"
+    disabled=""
+  >
+    Save
+  </button>
+</div>
+`;
+
+exports[`Button > renders ghost icon size 1`] = `
+<div>
+  <button
+    aria-label="settings"
+    class="inline-flex items-center justify-center gap-2 whitespace-nowrap font-medium tracking-tight transition-[color,background,box-shadow,transform] duration-150 ease-[var(--ease-out-soft)] focus-visible:outline-none disabled:pointer-events-none disabled:opacity-40 select-none text-ink-muted hover:text-ink hover:bg-elevated/60 h-8 w-8 rounded-sm"
+  />
+</div>
+`;
+
+exports[`Button > renders primary variant 1`] = `
+<div>
+  <button
+    class="inline-flex items-center justify-center gap-2 whitespace-nowrap font-medium tracking-tight transition-[color,background,box-shadow,transform] duration-150 ease-[var(--ease-out-soft)] focus-visible:outline-none disabled:pointer-events-none disabled:opacity-40 select-none bg-accent text-[hsl(222_20%_8%)] hover:bg-accent/90 active:scale-[0.98] shadow-btn-primary h-9 px-4 text-sm rounded-md"
+  >
+    Save
+  </button>
+</div>
+`;

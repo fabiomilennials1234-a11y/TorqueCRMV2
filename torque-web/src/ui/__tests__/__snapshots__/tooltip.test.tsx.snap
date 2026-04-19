@@ -1,0 +1,23 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`Tooltip > renders trigger inside provider (content only on interaction) 1`] = `
+<div>
+  <button
+    data-state="closed"
+    type="button"
+  >
+    A
+  </button>
+</div>
+`;
+
+exports[`Tooltip > renders trigger with shortcut side=right 1`] = `
+<div>
+  <button
+    data-state="closed"
+    type="button"
+  >
+    +
+  </button>
+</div>
+`;

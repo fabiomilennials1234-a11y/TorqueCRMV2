@@ -1,35 +1,35 @@
-import { useAuth } from "@/providers/AuthProvider";
-import type { SessionBundle } from "@/contracts/manual";
+import { useAuth } from '@/providers/AuthProvider'
+import type { SessionBundle } from '@/contracts/manual'
 
 interface UseSessionReturn {
-  user: SessionBundle["user"];
-  org: SessionBundle["org"];
-  role: SessionBundle["role"];
-  isMaster: boolean;
-  isAuthenticated: boolean;
-  isLoading: boolean;
+  user: SessionBundle['user']
+  org: SessionBundle['org']
+  role: SessionBundle['role']
+  isMaster: boolean
+  isAuthenticated: boolean
+  isLoading: boolean
 }
 
 export function useSession(): UseSessionReturn {
-  const { session, isAuthenticated, isLoading } = useAuth();
+  const { session, isAuthenticated, isLoading } = useAuth()
 
   if (!session) {
     // Safe default while loading or unauthenticated
     return {
-      user: { id: "", email: "", displayName: "" },
+      user: { id: '', email: '', displayName: '' },
       org: {
-        id: "",
-        name: "",
-        slug: "",
+        id: '',
+        name: '',
+        slug: '',
         planId: null,
-        paymentStatus: "active",
+        paymentStatus: 'active',
         logoUrl: null,
       },
-      role: "membro",
+      role: 'membro',
       isMaster: false,
       isAuthenticated,
       isLoading,
-    };
+    }
   }
 
   return {
@@ -39,5 +39,5 @@ export function useSession(): UseSessionReturn {
     isMaster: session.isMaster,
     isAuthenticated,
     isLoading,
-  };
+  }
 }

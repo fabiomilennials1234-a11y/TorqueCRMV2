@@ -1,9 +1,9 @@
-import { IntlProvider as ReactIntlProvider } from "react-intl";
-import type { ReactNode } from "react";
-import messages from "@/i18n/pt-BR";
+import { IntlProvider as ReactIntlProvider } from 'react-intl'
+import type { ReactNode } from 'react'
+import messages from '@/i18n/pt-BR'
 
 interface IntlProviderProps {
-  children: ReactNode;
+  children: ReactNode
 }
 
 export function IntlProvider({ children }: IntlProviderProps) {
@@ -18,5 +18,5 @@ export function IntlProvider({ children }: IntlProviderProps) {
     >
       {children}
     </ReactIntlProvider>
-  );
+  )
 }

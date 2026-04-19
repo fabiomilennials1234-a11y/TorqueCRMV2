@@ -1,0 +1,26 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`Kbd > renders chord 1`] = `
+<div>
+  <kbd
+    class="inline-flex h-[18px] min-w-[18px] items-center justify-center rounded-xs px-1 font-mono text-[0.6875rem] font-medium text-ink-muted bg-elevated/70 shadow-hairline"
+  >
+    ⌘
+  </kbd>
+  <kbd
+    class="inline-flex h-[18px] min-w-[18px] items-center justify-center rounded-xs px-1 font-mono text-[0.6875rem] font-medium text-ink-muted bg-elevated/70 shadow-hairline"
+  >
+    K
+  </kbd>
+</div>
+`;
+
+exports[`Kbd > renders single key 1`] = `
+<div>
+  <kbd
+    class="inline-flex h-[18px] min-w-[18px] items-center justify-center rounded-xs px-1 font-mono text-[0.6875rem] font-medium text-ink-muted bg-elevated/70 shadow-hairline"
+  >
+    N
+  </kbd>
+</div>
+`;

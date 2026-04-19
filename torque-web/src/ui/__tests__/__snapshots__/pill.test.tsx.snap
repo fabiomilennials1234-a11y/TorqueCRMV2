@@ -1,0 +1,23 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`Pill > renders active 1`] = `
+<div>
+  <button
+    class="inline-flex h-6 items-center gap-1.5 rounded-full px-2.5 text-[0.75rem] font-medium whitespace-nowrap shadow-hairline transition-colors bg-accent/15 text-accent shadow-[inset_0_0_0_1px_hsl(var(--accent)/0.4)]"
+    type="button"
+  >
+    Hot
+  </button>
+</div>
+`;
+
+exports[`Pill > renders idle 1`] = `
+<div>
+  <button
+    class="inline-flex h-6 items-center gap-1.5 rounded-full px-2.5 text-[0.75rem] font-medium whitespace-nowrap shadow-hairline transition-colors text-ink-muted hover:bg-elevated/60 hover:text-ink"
+    type="button"
+  >
+    Todos · 24
+  </button>
+</div>
+`;

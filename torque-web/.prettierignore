@@ -1,0 +1,6 @@
+dist
+node_modules
+coverage
+src/contracts/api.gen.ts
+tsconfig.tsbuildinfo
+*.md

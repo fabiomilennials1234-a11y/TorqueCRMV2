@@ -19,13 +19,7 @@ export function TorqueMark({ size = 22 }: { size?: number }) {
         </linearGradient>
       </defs>
       {/* outer rim */}
-      <circle
-        cx="12"
-        cy="12"
-        r="9"
-        stroke="hsl(var(--ink-dim))"
-        strokeWidth="1"
-      />
+      <circle cx="12" cy="12" r="9" stroke="hsl(var(--ink-dim))" strokeWidth="1" />
       {/* tick marks every 45° */}
       {[0, 45, 90, 135, 180, 225, 270, 315].map((deg) => (
         <line
@@ -54,5 +48,5 @@ export function TorqueMark({ size = 22 }: { size?: number }) {
       />
       <circle cx="12" cy="12" r="1.2" fill="url(#torque-mark-grad)" />
     </svg>
-  );
+  )
 }

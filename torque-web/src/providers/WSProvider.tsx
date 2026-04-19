@@ -1,20 +1,15 @@
-import {
-  createContext,
-  useContext,
-  useState,
-  type ReactNode,
-} from "react";
-import type { WSStatus } from "@/lib/ws";
+import { createContext, useContext, useState, type ReactNode } from 'react'
+import type { WSStatus } from '@/lib/ws'
 
 // ---------------------------------------------------------------------------
 // Context
 // ---------------------------------------------------------------------------
 
 interface WSContextValue {
-  status: WSStatus;
+  status: WSStatus
 }
 
-const WSContext = createContext<WSContextValue | null>(null);
+const WSContext = createContext<WSContextValue | null>(null)
 
 // ---------------------------------------------------------------------------
 // Provider
@@ -24,17 +19,13 @@ const WSContext = createContext<WSContextValue | null>(null);
 // ---------------------------------------------------------------------------
 
 interface WSProviderProps {
-  children: ReactNode;
+  children: ReactNode
 }
 
 export function WSProvider({ children }: WSProviderProps) {
-  const [status] = useState<WSStatus>("disconnected");
+  const [status] = useState<WSStatus>('disconnected')
 
-  return (
-    <WSContext.Provider value={{ status }}>
-      {children}
-    </WSContext.Provider>
-  );
+  return <WSContext.Provider value={{ status }}>{children}</WSContext.Provider>
 }
 
 // ---------------------------------------------------------------------------
@@ -42,10 +33,10 @@ export function WSProvider({ children }: WSProviderProps) {
 // ---------------------------------------------------------------------------
 
 export function useWS(): WSContextValue {
-  const ctx = useContext(WSContext);
+  const ctx = useContext(WSContext)
   if (!ctx) {
     // Graceful fallback — safe to use outside provider
-    return { status: "disconnected" };
+    return { status: 'disconnected' }
   }
-  return ctx;
+  return ctx
 }

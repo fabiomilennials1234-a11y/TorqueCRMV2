@@ -1,4 +1,4 @@
-import { useAuth } from "@/providers/AuthProvider";
+import { useAuth } from '@/providers/AuthProvider'
 
 /**
  * Determines if the current user can perform a given action.
@@ -10,11 +10,11 @@ import { useAuth } from "@/providers/AuthProvider";
  * 4. Default: false.
  */
 export function useCanPerformAction(action: string): boolean {
-  const { session } = useAuth();
+  const { session } = useAuth()
 
-  if (!session) return false;
-  if (session.isMaster) return true;
-  if (session.role === "admin") return true;
+  if (!session) return false
+  if (session.isMaster) return true
+  if (session.role === 'admin') return true
 
-  return session.featurePermissions[action] === true;
+  return session.featurePermissions[action] === true
 }

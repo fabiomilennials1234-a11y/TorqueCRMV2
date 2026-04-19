@@ -1,22 +1,31 @@
 import {
-  Phone, Mail, MessageSquare, Send, Calendar, MapPin, Tag as TagIcon,
-  ClipboardCheck, Clock, Sparkles, ArrowRight,
-} from "lucide-react";
-import { Avatar } from "@/ui/avatar";
-import { Badge } from "@/ui/badge";
-import { Button } from "@/ui/button";
-import { Input } from "@/ui/input";
-import { ScoreMeter } from "@/ui/score-meter";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/ui/tabs";
-import { formatRelative } from "@/lib/utils";
-import type { Lead } from "@/lib/seed";
-import { stageMeta } from "@/lib/seed";
+  Phone,
+  Mail,
+  MessageSquare,
+  Send,
+  Calendar,
+  MapPin,
+  Tag as TagIcon,
+  ClipboardCheck,
+  Clock,
+  Sparkles,
+  ArrowRight,
+} from 'lucide-react'
+import { Avatar } from '@/ui/avatar'
+import { Badge } from '@/ui/badge'
+import { Button } from '@/ui/button'
+import { Input } from '@/ui/input'
+import { ScoreMeter } from '@/ui/score-meter'
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/ui/tabs'
+import { formatRelative } from '@/lib/utils'
+import type { Lead } from '@/lib/seed'
+import { stageMeta } from '@/lib/seed'
 
 export function LeadDrawer({ lead }: { lead: Lead }) {
   return (
-    <div className="flex flex-1 min-h-0 flex-col">
+    <div className="flex min-h-0 flex-1 flex-col">
       {/* Header */}
-      <div className="shrink-0 px-6 pt-5 pb-4 shadow-hairline-b">
+      <div className="shrink-0 px-6 pb-4 pt-5 shadow-hairline-b">
         <div className="flex items-start justify-between">
           <div className="min-w-0 flex-1">
             <div className="mb-2 inline-flex items-center gap-2 text-2xs font-medium uppercase tracking-[0.14em] text-ink-dim">
@@ -37,8 +46,8 @@ export function LeadDrawer({ lead }: { lead: Lead }) {
         </div>
 
         {/* Stats row */}
-        <div className="mt-5 grid grid-cols-4 gap-px bg-hairline rounded-md overflow-hidden">
-          <Stat label="Valor" value={`R$ ${lead.value.toLocaleString("pt-BR")}`} />
+        <div className="mt-5 grid grid-cols-4 gap-px overflow-hidden rounded-md bg-hairline">
+          <Stat label="Valor" value={`R$ ${lead.value.toLocaleString('pt-BR')}`} />
           <Stat label="Tempo no stage" value="3d 7h" />
           <Stat label="Último toque" value={formatRelative(lead.lastTouch)} />
           <Stat label="Mensagens" value="28" />
@@ -66,7 +75,7 @@ export function LeadDrawer({ lead }: { lead: Lead }) {
       </div>
 
       {/* Tabs */}
-      <Tabs defaultValue="overview" className="flex flex-1 min-h-0 flex-col">
+      <Tabs defaultValue="overview" className="flex min-h-0 flex-1 flex-col">
         <div className="shrink-0 px-6 pt-3">
           <TabsList>
             <TabsTrigger value="overview">Visão geral</TabsTrigger>
@@ -78,7 +87,7 @@ export function LeadDrawer({ lead }: { lead: Lead }) {
 
         <TabsContent
           value="overview"
-          className="mt-0 flex-1 min-h-0 overflow-y-auto px-6 py-5 space-y-6"
+          className="mt-0 min-h-0 flex-1 space-y-6 overflow-y-auto px-6 py-5"
         >
           {/* Copilot suggestion */}
           <section className="rounded-md bg-accent/5 p-4 shadow-[inset_0_0_0_1px_hsl(var(--accent)/0.2)]">
@@ -87,12 +96,12 @@ export function LeadDrawer({ lead }: { lead: Lead }) {
               <span className="text-2xs font-medium uppercase tracking-[0.14em] text-accent">
                 Sugestão do Copilot · Mila
               </span>
-              <span className="ml-auto font-metric text-2xs text-ink-dim">há 4min</span>
+              <span className="font-metric ml-auto text-2xs text-ink-dim">há 4min</span>
             </div>
             <p className="text-sm leading-relaxed text-ink">
-              Lead respondeu positivamente e pediu prazo. Próxima ação recomendada:{" "}
-              <span className="text-accent">enviar termo de proposta com validade de 48h</span>{" "}
-              e criar task de follow-up para amanhã 9h.
+              Lead respondeu positivamente e pediu prazo. Próxima ação recomendada:{' '}
+              <span className="text-accent">enviar termo de proposta com validade de 48h</span> e
+              criar task de follow-up para amanhã 9h.
             </p>
             <div className="mt-3 flex items-center gap-1.5">
               <Button size="xs" variant="primary">
@@ -135,10 +144,7 @@ export function LeadDrawer({ lead }: { lead: Lead }) {
             <SectionTitle>Tags</SectionTitle>
             <div className="flex flex-wrap gap-1.5">
               {lead.tags.map((t) => (
-                <Badge
-                  key={t}
-                  tone={t === "Hot" ? "accent" : t === "Decisor" ? "info" : "neutral"}
-                >
+                <Badge key={t} tone={t === 'Hot' ? 'accent' : t === 'Decisor' ? 'info' : 'neutral'}>
                   {t}
                 </Badge>
               ))}
@@ -153,53 +159,62 @@ export function LeadDrawer({ lead }: { lead: Lead }) {
           <section>
             <SectionTitle>Progressão no funil</SectionTitle>
             <ol className="space-y-0">
-              {["novo", "abordado", "qualificado", "agendado", "proposta", "vendido"].map(
+              {['novo', 'abordado', 'qualificado', 'agendado', 'proposta', 'vendido'].map(
                 (s, i) => {
                   const currentIdx = [
-                    "novo", "abordado", "qualificado", "agendado", "proposta", "vendido",
-                  ].indexOf(lead.stage);
-                  const done = i < currentIdx;
-                  const current = i === currentIdx;
+                    'novo',
+                    'abordado',
+                    'qualificado',
+                    'agendado',
+                    'proposta',
+                    'vendido',
+                  ].indexOf(lead.stage)
+                  const done = i < currentIdx
+                  const current = i === currentIdx
                   return (
                     <li key={s} className="relative flex items-start gap-3 py-2">
                       <div className="relative mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center">
                         {i < 5 && (
                           <span
-                            className={`absolute top-5 left-1/2 -translate-x-1/2 h-[calc(100%+4px)] w-px ${done ? "bg-accent" : "bg-hairline"}`}
+                            className={`absolute left-1/2 top-5 h-[calc(100%+4px)] w-px -translate-x-1/2 ${done ? 'bg-accent' : 'bg-hairline'}`}
                           />
                         )}
                         <span
                           className={[
-                            "relative z-10 h-2 w-2 rounded-full",
-                            done ? "bg-accent" : current ? "bg-accent ring-4 ring-accent/20" : "bg-hairline",
-                          ].join(" ")}
+                            'relative z-10 h-2 w-2 rounded-full',
+                            done
+                              ? 'bg-accent'
+                              : current
+                                ? 'bg-accent ring-4 ring-accent/20'
+                                : 'bg-hairline',
+                          ].join(' ')}
                         />
                       </div>
                       <div className="flex-1 pb-2">
                         <div
                           className={[
-                            "text-sm capitalize",
-                            current ? "text-ink font-medium" : done ? "text-ink-muted" : "text-ink-dim",
-                          ].join(" ")}
+                            'text-sm capitalize',
+                            current
+                              ? 'font-medium text-ink'
+                              : done
+                                ? 'text-ink-muted'
+                                : 'text-ink-dim',
+                          ].join(' ')}
                         >
                           {s}
                         </div>
-                        {current && (
-                          <div className="text-2xs text-ink-dim">
-                            atual · há 3d 7h
-                          </div>
-                        )}
+                        {current && <div className="text-2xs text-ink-dim">atual · há 3d 7h</div>}
                       </div>
                     </li>
-                  );
-                },
+                  )
+                }
               )}
             </ol>
           </section>
         </TabsContent>
 
-        <TabsContent value="conversation" className="flex-1 flex flex-col min-h-0 mt-0 px-6 py-5">
-          <div className="flex-1 overflow-y-auto space-y-4 pb-4">
+        <TabsContent value="conversation" className="mt-0 flex min-h-0 flex-1 flex-col px-6 py-5">
+          <div className="flex-1 space-y-4 overflow-y-auto pb-4">
             {sampleThread.map((m, i) => (
               <ThreadBubble key={i} {...m} />
             ))}
@@ -208,7 +223,7 @@ export function LeadDrawer({ lead }: { lead: Lead }) {
             <div className="flex items-center gap-2">
               <Input
                 placeholder="Digite uma mensagem…"
-                className="flex-1 bg-transparent shadow-none h-8"
+                className="h-8 flex-1 bg-transparent shadow-none"
               />
               <Button size="sm" variant="primary" className="gap-1.5">
                 <Send className="h-3.5 w-3.5" />
@@ -217,7 +232,10 @@ export function LeadDrawer({ lead }: { lead: Lead }) {
             </div>
             <div className="mt-2 flex items-center gap-2 text-2xs text-ink-dim">
               <Sparkles className="h-3 w-3 text-accent" />
-              Copilot sugere: <span className="text-ink-muted italic">"Consigo liberar 10% com antecipação. Fechamos?"</span>
+              Copilot sugere:{' '}
+              <span className="italic text-ink-muted">
+                "Consigo liberar 10% com antecipação. Fechamos?"
+              </span>
             </div>
           </div>
         </TabsContent>
@@ -232,20 +250,20 @@ export function LeadDrawer({ lead }: { lead: Lead }) {
                   <span>·</span>
                   <span className="font-metric">{n.at}</span>
                 </div>
-                <p className="mt-2 text-sm text-ink leading-relaxed">{n.text}</p>
+                <p className="mt-2 text-sm leading-relaxed text-ink">{n.text}</p>
               </div>
             ))}
           </div>
         </TabsContent>
 
-        <TabsContent value="history" className="mt-0 px-6 py-5 space-y-3">
+        <TabsContent value="history" className="mt-0 space-y-3 px-6 py-5">
           {sampleHistory.map((h, i) => (
             <HistoryItem key={i} {...h} />
           ))}
         </TabsContent>
       </Tabs>
     </div>
-  );
+  )
 }
 
 function SectionTitle({ children }: { children: React.ReactNode }) {
@@ -253,16 +271,16 @@ function SectionTitle({ children }: { children: React.ReactNode }) {
     <h3 className="mb-3 text-2xs font-medium uppercase tracking-[0.14em] text-ink-dim">
       {children}
     </h3>
-  );
+  )
 }
 
 function Stat({ label, value }: { label: string; value: string }) {
   return (
     <div className="bg-surface p-3">
       <div className="text-2xs uppercase tracking-[0.1em] text-ink-dim">{label}</div>
-      <div className="mt-0.5 font-metric text-sm text-ink tabular-nums">{value}</div>
+      <div className="font-metric mt-0.5 text-sm tabular-nums text-ink">{value}</div>
     </div>
-  );
+  )
 }
 
 function InfoRow({
@@ -270,42 +288,42 @@ function InfoRow({
   label,
   value,
 }: {
-  icon: React.ComponentType<{ className?: string }>;
-  label: string;
-  value: string;
+  icon: React.ComponentType<{ className?: string | undefined }>
+  label: string
+  value: string
 }) {
   return (
-    <div className="flex items-center gap-3 rounded-sm px-2 py-1.5 hover:bg-elevated/50 transition-colors group">
+    <div className="group flex items-center gap-3 rounded-sm px-2 py-1.5 transition-colors hover:bg-elevated/50">
       <Icon className="h-3.5 w-3.5 text-ink-dim" />
-      <span className="text-xs text-ink-dim w-20">{label}</span>
-      <span className="flex-1 font-metric text-[0.8125rem] text-ink">{value}</span>
+      <span className="w-20 text-xs text-ink-dim">{label}</span>
+      <span className="font-metric flex-1 text-[0.8125rem] text-ink">{value}</span>
     </div>
-  );
+  )
 }
 
 const sampleThread = [
   {
-    side: "lead",
-    text: "Oi! Queria entender melhor a capacidade que vocês atendem por mês.",
-    at: "há 2h",
+    side: 'lead',
+    text: 'Oi! Queria entender melhor a capacidade que vocês atendem por mês.',
+    at: 'há 2h',
   },
   {
-    side: "agent",
+    side: 'agent',
     ai: true,
-    text: "Claro, Lucas. Conseguimos até 12 mil peças/mês no padrão atual. Qual seu volume estimado?",
-    at: "há 2h",
+    text: 'Claro, Lucas. Conseguimos até 12 mil peças/mês no padrão atual. Qual seu volume estimado?',
+    at: 'há 2h',
   },
   {
-    side: "lead",
-    text: "Estamos falando de 4k/mês inicial, podendo escalar para 8k no Q3.",
-    at: "há 1h",
+    side: 'lead',
+    text: 'Estamos falando de 4k/mês inicial, podendo escalar para 8k no Q3.',
+    at: 'há 1h',
   },
   {
-    side: "agent",
-    text: "Perfeito, dá pra fechar. Posso montar proposta com modulação de volume?",
-    at: "há 45min",
+    side: 'agent',
+    text: 'Perfeito, dá pra fechar. Posso montar proposta com modulação de volume?',
+    at: 'há 45min',
   },
-];
+]
 
 function ThreadBubble({
   side,
@@ -313,23 +331,23 @@ function ThreadBubble({
   at,
   ai,
 }: {
-  side: string;
-  text: string;
-  at: string;
-  ai?: boolean;
+  side: string
+  text: string
+  at: string
+  ai?: boolean
 }) {
-  const isAgent = side === "agent";
+  const isAgent = side === 'agent'
   return (
-    <div className={`flex ${isAgent ? "justify-end" : "justify-start"} gap-2`}>
+    <div className={`flex ${isAgent ? 'justify-end' : 'justify-start'} gap-2`}>
       {!isAgent && <Avatar size="sm" fallback="LA" />}
-      <div className={`max-w-[80%] ${isAgent ? "items-end" : "items-start"} flex flex-col`}>
+      <div className={`max-w-[80%] ${isAgent ? 'items-end' : 'items-start'} flex flex-col`}>
         <div
           className={[
-            "rounded-md px-3 py-2 text-sm leading-relaxed",
+            'rounded-md px-3 py-2 text-sm leading-relaxed',
             isAgent
-              ? "bg-accent/10 text-ink shadow-[inset_0_0_0_1px_hsl(var(--accent)/0.2)]"
-              : "bg-elevated text-ink",
-          ].join(" ")}
+              ? 'bg-accent/10 text-ink shadow-[inset_0_0_0_1px_hsl(var(--accent)/0.2)]'
+              : 'bg-elevated text-ink',
+          ].join(' ')}
         >
           {text}
         </div>
@@ -344,30 +362,45 @@ function ThreadBubble({
         </div>
       </div>
     </div>
-  );
+  )
 }
 
 const sampleNotes = [
   {
-    author: "Rafael Bento",
-    by: "RB",
-    at: "há 2h",
-    text: "Decisor confirmado. Pagamento pode ser em 3x sem reajuste — alinhei com financeiro.",
+    author: 'Rafael Bento',
+    by: 'RB',
+    at: 'há 2h',
+    text: 'Decisor confirmado. Pagamento pode ser em 3x sem reajuste — alinhei com financeiro.',
   },
   {
-    author: "Maíra Duarte",
-    by: "MD",
-    at: "há 1d",
-    text: "Lead veio pelo Outbound Q2 — ICP alto, matriz SP. Empresa faturou R$ 18M em 2025.",
+    author: 'Maíra Duarte',
+    by: 'MD',
+    at: 'há 1d',
+    text: 'Lead veio pelo Outbound Q2 — ICP alto, matriz SP. Empresa faturou R$ 18M em 2025.',
   },
-];
+]
 
 const sampleHistory = [
-  { icon: Sparkles, tone: "accent" as const, text: "Mila qualificou BANT em 3 mensagens", at: "há 2h" },
-  { icon: ArrowRight, tone: "muted" as const, text: "Movido de Abordado → Qualificado", at: "há 3d" },
-  { icon: MessageSquare, tone: "muted" as const, text: "Primeira resposta do lead", at: "há 3d" },
-  { icon: Clock, tone: "muted" as const, text: "Criado via Meta Ads · Campanha 'ICP-Abril'", at: "há 4d" },
-];
+  {
+    icon: Sparkles,
+    tone: 'accent' as const,
+    text: 'Mila qualificou BANT em 3 mensagens',
+    at: 'há 2h',
+  },
+  {
+    icon: ArrowRight,
+    tone: 'muted' as const,
+    text: 'Movido de Abordado → Qualificado',
+    at: 'há 3d',
+  },
+  { icon: MessageSquare, tone: 'muted' as const, text: 'Primeira resposta do lead', at: 'há 3d' },
+  {
+    icon: Clock,
+    tone: 'muted' as const,
+    text: "Criado via Meta Ads · Campanha 'ICP-Abril'",
+    at: 'há 4d',
+  },
+]
 
 function HistoryItem({
   icon: Icon,
@@ -375,25 +408,25 @@ function HistoryItem({
   at,
   tone,
 }: {
-  icon: React.ComponentType<{ className?: string }>;
-  text: string;
-  at: string;
-  tone: "accent" | "muted";
+  icon: React.ComponentType<{ className?: string | undefined }>
+  text: string
+  at: string
+  tone: 'accent' | 'muted'
 }) {
   return (
     <div className="flex items-start gap-3 text-sm">
       <div
         className={[
-          "mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-sm",
-          tone === "accent" ? "bg-accent/10 text-accent" : "bg-elevated text-ink-dim",
-        ].join(" ")}
+          'mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-sm',
+          tone === 'accent' ? 'bg-accent/10 text-accent' : 'bg-elevated text-ink-dim',
+        ].join(' ')}
       >
         <Icon className="h-3 w-3" />
       </div>
       <div className="flex-1">
         <div className="text-ink">{text}</div>
-        <div className="text-2xs text-ink-dim font-metric">{at}</div>
+        <div className="font-metric text-2xs text-ink-dim">{at}</div>
       </div>
     </div>
-  );
+  )
 }

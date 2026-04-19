@@ -9,11 +9,11 @@
     <title>Torque</title>
     <script>
       // Prevent FOUC — apply theme before first paint
-      (function() {
-        var t = localStorage.getItem('torque-theme');
-        if (!t) t = window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
-        if (t === 'dark') document.documentElement.classList.add('dark');
-      })();
+      ;(function () {
+        var t = localStorage.getItem('torque-theme')
+        if (!t) t = window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark'
+        if (t === 'dark') document.documentElement.classList.add('dark')
+      })()
     </script>
   </head>
   <body class="bg-bg text-ink antialiased selection:bg-accent/30 selection:text-ink">

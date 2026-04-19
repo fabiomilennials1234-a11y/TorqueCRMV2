@@ -1,0 +1,17 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`Avatar > renders large size with ring 1`] = `
+<div>
+  <span
+    class="font-metric relative inline-flex shrink-0 select-none overflow-hidden rounded-full uppercase h-10 w-10 text-sm shadow-hairline ring-2 ring-bg"
+  />
+</div>
+`;
+
+exports[`Avatar > renders with fallback initials 1`] = `
+<div>
+  <span
+    class="font-metric relative inline-flex shrink-0 select-none overflow-hidden rounded-full uppercase h-8 w-8 text-xs"
+  />
+</div>
+`;

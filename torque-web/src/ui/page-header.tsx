@@ -1,5 +1,5 @@
-import type { ReactNode } from "react";
-import { cn } from "@/lib/utils";
+import type { ReactNode } from 'react'
+import { cn } from '@/lib/utils'
 
 export function PageHeader({
   eyebrow,
@@ -8,23 +8,23 @@ export function PageHeader({
   actions,
   className,
 }: {
-  eyebrow?: string;
-  title: ReactNode;
-  description?: ReactNode;
-  actions?: ReactNode;
-  className?: string;
+  eyebrow?: string
+  title: ReactNode
+  description?: ReactNode
+  actions?: ReactNode
+  className?: string
 }) {
   return (
     <header
       className={cn(
-        "flex items-start justify-between gap-6 pt-8 pb-6",
-        "shadow-hairline-b",
-        className,
+        'flex items-start justify-between gap-6 pb-6 pt-8',
+        'shadow-hairline-b',
+        className
       )}
     >
       <div className="min-w-0">
         {eyebrow && (
-          <div className="text-2xs font-medium uppercase tracking-[0.14em] text-ink-dim mb-2">
+          <div className="mb-2 text-2xs font-medium uppercase tracking-[0.14em] text-ink-dim">
             {eyebrow}
           </div>
         )}
@@ -37,7 +37,7 @@ export function PageHeader({
           </p>
         )}
       </div>
-      {actions && <div className="flex items-center gap-2 shrink-0">{actions}</div>}
+      {actions && <div className="flex shrink-0 items-center gap-2">{actions}</div>}
     </header>
-  );
+  )
 }

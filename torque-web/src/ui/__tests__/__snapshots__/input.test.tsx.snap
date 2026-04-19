@@ -1,0 +1,30 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`Input > renders default 1`] = `
+<div>
+  <input
+    class="flex h-9 w-full rounded-md bg-transparent px-3 py-2 text-sm shadow-hairline placeholder:text-ink-dim focus-visible:shadow-neu-focus transition-shadow duration-150 focus-visible:outline-none disabled:pointer-events-none disabled:opacity-40"
+    placeholder="email"
+  />
+</div>
+`;
+
+exports[`Input > renders disabled 1`] = `
+<div>
+  <input
+    class="flex h-9 w-full rounded-md bg-transparent px-3 py-2 text-sm shadow-hairline placeholder:text-ink-dim focus-visible:shadow-neu-focus transition-shadow duration-150 focus-visible:outline-none disabled:pointer-events-none disabled:opacity-40"
+    disabled=""
+    placeholder="email"
+  />
+</div>
+`;
+
+exports[`Input > renders email type with value 1`] = `
+<div>
+  <input
+    class="flex h-9 w-full rounded-md bg-transparent px-3 py-2 text-sm shadow-hairline placeholder:text-ink-dim focus-visible:shadow-neu-focus transition-shadow duration-150 focus-visible:outline-none disabled:pointer-events-none disabled:opacity-40"
+    type="email"
+    value="a@b.co"
+  />
+</div>
+`;

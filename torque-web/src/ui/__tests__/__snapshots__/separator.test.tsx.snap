@@ -1,0 +1,22 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`Separator > renders horizontal 1`] = `
+<div>
+  <div
+    class="shrink-0 bg-hairline h-px w-full"
+    data-orientation="horizontal"
+    role="separator"
+  />
+</div>
+`;
+
+exports[`Separator > renders vertical 1`] = `
+<div>
+  <div
+    aria-orientation="vertical"
+    class="shrink-0 bg-hairline h-full w-px"
+    data-orientation="vertical"
+    role="separator"
+  />
+</div>
+`;

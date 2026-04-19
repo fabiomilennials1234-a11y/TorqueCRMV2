@@ -1,22 +1,22 @@
-import * as RT from "@radix-ui/react-tooltip";
-import type { ReactNode } from "react";
-import { Kbd } from "./kbd";
-import { cn } from "@/lib/utils";
+import * as RT from '@radix-ui/react-tooltip'
+import type { ReactNode } from 'react'
+import { Kbd } from './kbd'
+import { cn } from '@/lib/utils'
 
-export const TooltipProvider = RT.Provider;
+export const TooltipProvider = RT.Provider
 
 export function Tooltip({
   children,
   content,
   shortcut,
-  side = "bottom",
+  side = 'bottom',
   delayDuration = 250,
 }: {
-  children: ReactNode;
-  content: ReactNode;
-  shortcut?: string;
-  side?: "top" | "bottom" | "left" | "right";
-  delayDuration?: number;
+  children: ReactNode
+  content: ReactNode
+  shortcut?: string | undefined
+  side?: 'top' | 'bottom' | 'left' | 'right'
+  delayDuration?: number
 }) {
   return (
     <RT.Root delayDuration={delayDuration}>
@@ -26,9 +26,9 @@ export function Tooltip({
           side={side}
           sideOffset={6}
           className={cn(
-            "z-50 select-none rounded-sm bg-elevated px-2 py-1 text-xs text-ink shadow-elev-2",
-            "data-[state=delayed-open]:animate-scale-in",
-            "flex items-center gap-2",
+            'z-50 select-none rounded-sm bg-elevated px-2 py-1 text-xs text-ink shadow-elev-2',
+            'data-[state=delayed-open]:animate-scale-in',
+            'flex items-center gap-2'
           )}
         >
           <span>{content}</span>
@@ -36,5 +36,5 @@ export function Tooltip({
         </RT.Content>
       </RT.Portal>
     </RT.Root>
-  );
+  )
 }

@@ -1,0 +1,226 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`QuotaGauge > renders bar 0% 1`] = `
+<div>
+  <div
+    class="relative"
+  >
+    <div
+      class="flex flex-col gap-1.5"
+    >
+      <div
+        class="flex items-center justify-between"
+      >
+        <span
+          class="text-2xs font-medium text-ink-muted"
+        >
+          Leads
+        </span>
+        <span
+          class="font-metric text-2xs tabular-nums text-ink-muted"
+        >
+          0
+          <span
+            class="text-ink-dim"
+          >
+             / 
+            100
+          </span>
+        </span>
+      </div>
+      <div
+        class="relative h-1.5 w-full overflow-hidden rounded-full bg-hairline/40"
+      >
+        <div
+          class="duration-[280ms] ease-[var(--ease-out-soft)] absolute inset-y-0 left-0 rounded-full transition-[width,background-color]"
+          style="width: 0%; background-color: hsl(var(--success));"
+        />
+      </div>
+    </div>
+  </div>
+</div>
+`;
+
+exports[`QuotaGauge > renders bar 50% 1`] = `
+<div>
+  <div
+    class="relative"
+  >
+    <div
+      class="flex flex-col gap-1.5"
+    >
+      <div
+        class="flex items-center justify-between"
+      >
+        <span
+          class="text-2xs font-medium text-ink-muted"
+        >
+          Leads
+        </span>
+        <span
+          class="font-metric text-2xs tabular-nums text-ink-muted"
+        >
+          50
+          <span
+            class="text-ink-dim"
+          >
+             / 
+            100
+          </span>
+        </span>
+      </div>
+      <div
+        class="relative h-1.5 w-full overflow-hidden rounded-full bg-hairline/40"
+      >
+        <div
+          class="duration-[280ms] ease-[var(--ease-out-soft)] absolute inset-y-0 left-0 rounded-full transition-[width,background-color]"
+          style="width: 50%; background-color: hsl(var(--success));"
+        />
+      </div>
+    </div>
+  </div>
+</div>
+`;
+
+exports[`QuotaGauge > renders bar 100% 1`] = `
+<div>
+  <div
+    class="relative"
+  >
+    <div
+      class="flex flex-col gap-1.5"
+    >
+      <div
+        class="flex items-center justify-between"
+      >
+        <span
+          class="text-2xs font-medium text-ink-muted"
+        >
+          Leads
+        </span>
+        <span
+          class="font-metric text-2xs tabular-nums text-ink-muted"
+        >
+          100
+          <span
+            class="text-ink-dim"
+          >
+             / 
+            100
+          </span>
+        </span>
+      </div>
+      <div
+        class="relative h-1.5 w-full overflow-hidden rounded-full bg-hairline/40"
+      >
+        <div
+          class="duration-[280ms] ease-[var(--ease-out-soft)] absolute inset-y-0 left-0 rounded-full transition-[width,background-color]"
+          style="width: 100%; background-color: hsl(var(--danger));"
+        />
+      </div>
+    </div>
+  </div>
+</div>
+`;
+
+exports[`QuotaGauge > renders inline locked 1`] = `
+<div>
+  <div
+    class="relative"
+  >
+    <span
+      class="inline-flex items-center gap-1.5"
+    >
+      <span
+        class="duration-[280ms] ease-[var(--ease-out-soft)] inline-block h-1.5 w-1.5 rounded-full transition-colors"
+        style="background-color: hsl(var(--warning));"
+      />
+      <span
+        class="font-metric text-sm tabular-nums text-ink"
+      >
+        8
+        <span
+          class="text-ink-dim"
+        >
+           / 
+          10
+        </span>
+      </span>
+      <svg
+        class="lucide lucide-lock h-3 w-3 text-ink-dim"
+        fill="none"
+        height="24"
+        stroke="currentColor"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        stroke-width="1.75"
+        viewBox="0 0 24 24"
+        width="24"
+        xmlns="http://www.w3.org/2000/svg"
+      >
+        <rect
+          height="11"
+          rx="2"
+          ry="2"
+          width="18"
+          x="3"
+          y="11"
+        />
+        <path
+          d="M7 11V7a5 5 0 0 1 10 0v4"
+        />
+      </svg>
+    </span>
+  </div>
+</div>
+`;
+
+exports[`QuotaGauge > renders ring variant at 72% 1`] = `
+<div>
+  <div
+    class="relative"
+  >
+    <div
+      class="relative inline-flex items-center justify-center"
+      style="width: 52px; height: 52px;"
+    >
+      <svg
+        class="-rotate-[135deg]"
+        height="52"
+        width="52"
+      >
+        <circle
+          cx="26"
+          cy="26"
+          fill="none"
+          r="24.25"
+          stroke="hsl(var(--hairline))"
+          stroke-dasharray="114.27543277432872 152.36724369910496"
+          stroke-linecap="round"
+          stroke-width="3.5"
+        />
+        <circle
+          cx="26"
+          cy="26"
+          fill="none"
+          r="24.25"
+          stroke="hsl(var(--warning))"
+          stroke-dasharray="82.27831159751668 152.36724369910496"
+          stroke-linecap="round"
+          stroke-width="3.5"
+          style="transition: stroke-dasharray 280ms var(--ease-out-soft), stroke 280ms var(--ease-out-soft);"
+        />
+      </svg>
+      <div
+        class="absolute inset-0 flex flex-col items-center justify-center"
+      >
+        <span
+          class="font-metric text-[0.8125rem] tabular-nums leading-none text-ink"
+        >
+          72
+        </span>
+      </div>
+    </div>
+  </div>
+</div>
+`;
