@@ -129,11 +129,15 @@ status: vivo
 
 ## Status atual
 
-**Etapa:** Sistema Base Frontend **concluído em 2026-04-18** (S00 ✅). Pronto para [[00 - Mapa de Features|F01]] apos S01 (backend Go) suprir os endpoints marcados `<!-- aguarda S01 -->` no [[Checklist Sistema Base]].
+**Etapa:** Sistema Base Frontend concluido (S00 ✅ 2026-04-18). Backend Go scaffold entregue (S01 ✅ scaffold 2026-04-19). Auth + Tenancy + RBAC entregues (S02 ✅ 2026-04-19). Runtime de S01+S02 (go mod tidy/build/test, migrate up) pendente no host do usuario.
 
-Sprint S00 entregou: ESLint com regras reais (a11y + hooks + ban de `dangerouslySetInnerHTML`), TS strict (`noUncheckedIndexedAccess` + `exactOptionalPropertyTypes`), Prettier + `prettier-plugin-tailwindcss`, Vitest + Testing Library com 51 testes e 36 snapshots cobrindo todos os primitivos, GitHub Actions CI (`.github/workflows/ci.yml`), vocabulario canonico (`src/i18n/vocabulary.ts`), classe utilitaria `.grain`, renomeacao dos tokens legados `--clay-*` para `--card-*`/`.tactile-*` eliminando vazamento, `prefers-reduced-motion` em `.cockpit-theme`, pos-login navigation respeitando `ui_mode`, `useUiMode` exposto pelo `UiModeProvider`, CommandPalette e copy de produto alinhados com o glossario (`Funil` em vez de `Pipeline`).
+**S00** — ESLint flat (a11y + hooks + ban `dangerouslySetInnerHTML`), TS strict (`noUncheckedIndexedAccess` + `exactOptionalPropertyTypes`), Prettier + `prettier-plugin-tailwindcss`, Vitest (51 testes, 36 snapshots), CI, vocabulario canonico, renomeacao `--clay-*` → `--card-*`/`.tactile-*`, pos-login navigation por `ui_mode`, `useUiMode` + fallback localStorage.
 
-Proxima sprint: **S01** (Go backend skeleton + DB schema).
+**S01** — `torque-api/` com chi + pgx v5 + zerolog, probes, middleware stack com `StripOrganizationID`, migrations 0001–0003, Docker multi-stage distroless nonroot, Makefile, teste de concorrencia do unique partial index de Task.
+
+**S02** — Migration 0004 (`refresh_tokens` com hash sha256 + rotation chain + reuse detection). Services `password`/`jwt`/`token`/`permission`. Repositories `user` + `refresh` (tx SERIALIZABLE, RevokeChain via recursive CTE). Middleware `Authenticator`/`RequireAuth`/`TenantScope`/`CSRF`/`RequireFeature`/`RequireRole`/`RequireMaster`. Handlers `/api/v1/auth/{login,refresh,logout,me}`, `/api/v1/me/preferences`, `/api/bootstrap`. Cookies `__torque_session` (httpOnly Strict), `__torque_refresh` (Path=/api/v1/auth), `__torque_csrf` (double-submit). Tests unitarios (password/jwt/token/CSRF/RBAC) + integration gated por `DATABASE_URL`.
+
+Proxima sprint: **S03** — CSP nonce-based completo, HSTS preload, Sentry server-side com scrubbing de PII, audit log de mutations sensiveis, rate limiting, /api/bootstrap enriquecido.
 
 ---
 

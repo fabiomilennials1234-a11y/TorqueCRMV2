@@ -24,8 +24,15 @@ import (
 
 	"github.com/milennials/torque-api/internal/config"
 	"github.com/milennials/torque-api/internal/db"
+	authhandler "github.com/milennials/torque-api/internal/handler/auth"
+	"github.com/milennials/torque-api/internal/handler/bootstrap"
 	"github.com/milennials/torque-api/internal/handler/health"
+	preferenceshandler "github.com/milennials/torque-api/internal/handler/preferences"
 	mw "github.com/milennials/torque-api/internal/httpx/middleware"
+	refreshrepo "github.com/milennials/torque-api/internal/repository/refresh"
+	userrepo "github.com/milennials/torque-api/internal/repository/user"
+	jwtsvc "github.com/milennials/torque-api/internal/service/jwt"
+	"github.com/milennials/torque-api/internal/service/permission"
 )
 
 // version is stamped at build time via -ldflags. Defaults to "dev" in local runs.
@@ -135,7 +142,7 @@ func newRouter(cfg config.Config, logger zerolog.Logger, pool *db.Pool) http.Han
 		r.Use(cors.Handler(cors.Options{
 			AllowedOrigins:   cfg.CORSOrigins,
 			AllowedMethods:   []string{"GET", "POST", "PATCH", "PUT", "DELETE", "OPTIONS"},
-			AllowedHeaders:   []string{"Accept", "Authorization", "Content-Type", "X-CSRF-Token", mw.RequestIDHeader},
+			AllowedHeaders:   []string{"Accept", "Authorization", "Content-Type", mw.CSRFHeaderName, mw.RequestIDHeader},
 			ExposedHeaders:   []string{mw.RequestIDHeader},
 			AllowCredentials: true,
 			MaxAge:           300,
@@ -144,14 +151,63 @@ func newRouter(cfg config.Config, logger zerolog.Logger, pool *db.Pool) http.Han
 
 	r.Use(mw.StripOrganizationID)
 
+	// --- Wiring --------------------------------------------------------
+	jsvc, err := jwtsvc.New(cfg.JWTSecret, cfg.AccessTTL)
+	if err != nil {
+		// Config.Load already guarantees length; this is defensive.
+		panic("jwt service: " + err.Error())
+	}
+	users := userrepo.New(pool)
+	refresh := refreshrepo.New(pool)
+	permResolver := permission.New(users)
+
+	auth := authhandler.New(authhandler.Options{
+		Pool:         pool,
+		Users:        users,
+		Refresh:      refresh,
+		JWT:          jsvc,
+		Permission:   permResolver,
+		RefreshTTL:   cfg.RefreshTTL,
+		CookieSecure: cfg.CookieSecure,
+		CookieDomain: cfg.CookieDomain,
+	})
+
+	// --- Public routes -------------------------------------------------
 	// Probes intentionally unauthenticated — orchestrators must be able to
 	// poll without a token.
 	healthHandler := health.New(pool, version)
 	healthHandler.Routes(r)
 
-	// Placeholder for versioned API mount. Populated in S02 onwards.
-	r.Route("/api/v1", func(_ chi.Router) {
-		// intentionally empty — sprints S02+ attach handlers here.
+	bootstrap.New(bootstrap.Config{
+		AppVersion:   cfg.AppVersion,
+		Env:          cfg.Env,
+		WSURL:        cfg.WSURL,
+		SentryDSN:    cfg.SentryDSN,
+		FeatureFlags: map[string]bool{},
+	}).Routes(r)
+
+	// --- API v1: auth entry points (pre-session) -----------------------
+	r.Route("/api/v1", func(v1 chi.Router) {
+		// Authenticator is transparent — attaches session when cookie is
+		// valid, does not 401 when absent. Login/refresh/logout all need this.
+		v1.Use(mw.Authenticator(jsvc))
+
+		auth.Routes(v1) // /auth/login, /auth/refresh, /auth/logout
+
+		// Authenticated subrouter: gated by RequireAuth + CSRF on mutations.
+		v1.Group(func(priv chi.Router) {
+			priv.Use(mw.RequireAuth)
+			priv.Use(mw.CSRF)
+
+			auth.MeRoute(priv) // GET /auth/me
+
+			// Routes that need tenant scope (org_id in context).
+			priv.Group(func(t chi.Router) {
+				t.Use(mw.TenantScope)
+				preferenceshandler.New(users).Routes(t)
+				// Feature handlers land here in S04+ (leads, pipes, etc).
+			})
+		})
 	})
 
 	return r
