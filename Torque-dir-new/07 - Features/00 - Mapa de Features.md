@@ -4,7 +4,7 @@ tags:
   - mapa
   - roadmap
 created: 2026-04-15
-last_updated: 2026-04-15
+last_updated: 2026-04-17
 status: draft
 ---
 
@@ -19,6 +19,8 @@ status: draft
 ## Pré-requisito global
 
 Todas as features dependem de [[Escopo do Sistema Base]] com [[Checklist Sistema Base]] em 100%. Nada começa antes disso.
+
+> **Nota sobre F17.** [[F17 - Modo Vendedor (Task Cockpit)/Spec|F17]] aparece numericamente aqui, mas por decisão do Architect ([[ADR-007-modo-vendedor-gerente]]) é classificada como **extensão do Sistema Base** — modifica AppShell, introduz roteamento paralelo e preferência transversal de usuário. O documento operacional vive em [[UI Modes - Vendedor e Gerente]] (`05 - Sistema Base/`). Precede F01: toda feature vertical a partir daí já nasce sabendo em qual modo aparece.
 
 ## Legenda
 
@@ -45,6 +47,7 @@ Todas as features dependem de [[Escopo do Sistema Base]] com [[Checklist Sistema
 | F14 | Checkout + PIX + Provisioning                                            | not started | Sistema Base          | L       | Entrada comercial, pode paralelizar |
 | F15 | Configurações completas (8 tabs)                                         | not started | Transversal           | M       | Consolidada ao longo do roadmap |
 | F16 | Master Admin (Orgs/Users/Audit/Operations/Features)                      | not started | Várias                | L       | Última — requer visão completa do produto |
+| F17 | [[F17 - Modo Vendedor (Task Cockpit)/Spec\|Modo Vendedor (Task Cockpit)]] | in progress | Sistema Base          | M       | **Extensão de Sistema Base**, não vertical (ADR-007). Doc operacional: [[UI Modes - Vendedor e Gerente]]. Frontend scaffold pronto; backend/DB pendentes. |
 
 ## Fluxo sugerido (ordem de execução)
 

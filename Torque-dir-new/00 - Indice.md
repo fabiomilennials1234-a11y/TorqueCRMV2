@@ -4,7 +4,7 @@ tags:
   - indice
   - raiz
 created: 2026-04-15
-last_updated: 2026-04-16
+last_updated: 2026-04-17
 status: vivo
 ---
 
@@ -74,6 +74,7 @@ status: vivo
 - [[Revisao Final - Redesign Sistema Base]]
 - [[Pendencias e Lacunas]]
 - [[Log Implementacao Sistema Base]]
+- [[UI Modes - Vendedor e Gerente]] — extensao (ADR-007): toggle Vendedor/Gerente, rota /cockpit, entidade Task, claymorphism escopado
 
 ### 06 - Funcionalidades
 - Vendas/ — [[Funis Hub]], [[Gestao de Leads]], [[Pipeline WhatsApp (Qualificacao)]], [[Pipeline Confirmacao]], [[Pipeline Propostas]], [[Follow-ups]], [[Pipelines Customizados]], [[Produtos]], [[Upsell]]
@@ -88,6 +89,7 @@ status: vivo
 ### 07 - Features
 - [[00 - Mapa de Features]]
 - [[F01 - Funis Hub e Pipe WhatsApp]] (vertical slice)
+- [[F17 - Modo Vendedor (Task Cockpit)/Spec|F17 - Modo Vendedor (Task Cockpit)]] — apontador; documento operacional e [[UI Modes - Vendedor e Gerente]]
 - [[Template - Feature Spec]]
 
 ### 08 - Decisoes
@@ -97,6 +99,7 @@ status: vivo
 - [[ADR-004-paginacao-cursor-based]]
 - [[ADR-005-tipografia-self-hosted]]
 - [[ADR-006-jobs-assincronos-202-poll]]
+- [[ADR-007-modo-vendedor-gerente]] — modos de UI Vendedor/Gerente; Task unifica Follow-up; rota /cockpit; claymorphism escopado
 
 ### 09 - Backlog
 - [[Plano Mestre de Finalizacao do SaaS CRM]]
@@ -126,11 +129,11 @@ status: vivo
 
 ## Status atual
 
-**Etapa:** Sistema Base — Final da Etapa 6 (Paginas-casca), antes da Etapa 7 (Validacao).
+**Etapa:** Sistema Base Frontend **concluído em 2026-04-18** (S00 ✅). Pronto para [[00 - Mapa de Features|F01]] apos S01 (backend Go) suprir os endpoints marcados `<!-- aguarda S01 -->` no [[Checklist Sistema Base]].
 
-O frontend esta ~85% completo como prototipo visual de alta fidelidade. Zero codigo Go existe. Zero testes. A fonte de verdade para execucao e o [[Plano Mestre de Finalizacao do SaaS CRM]] em `09 - Backlog/`.
+Sprint S00 entregou: ESLint com regras reais (a11y + hooks + ban de `dangerouslySetInnerHTML`), TS strict (`noUncheckedIndexedAccess` + `exactOptionalPropertyTypes`), Prettier + `prettier-plugin-tailwindcss`, Vitest + Testing Library com 51 testes e 36 snapshots cobrindo todos os primitivos, GitHub Actions CI (`.github/workflows/ci.yml`), vocabulario canonico (`src/i18n/vocabulary.ts`), classe utilitaria `.grain`, renomeacao dos tokens legados `--clay-*` para `--card-*`/`.tactile-*` eliminando vazamento, `prefers-reduced-motion` em `.cockpit-theme`, pos-login navigation respeitando `ui_mode`, `useUiMode` exposto pelo `UiModeProvider`, CommandPalette e copy de produto alinhados com o glossario (`Funil` em vez de `Pipeline`).
 
-Proximas sprints: **S00** (fechar Sistema Base frontend) + **S01** (Go backend skeleton + DB schema) em paralelo.
+Proxima sprint: **S01** (Go backend skeleton + DB schema).
 
 ---
 

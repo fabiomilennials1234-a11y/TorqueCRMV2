@@ -1,6 +1,7 @@
 # Plano Mestre de Finalização do SaaS CRM Torque
 
 > **Criado:** 2026-04-16
+> **Atualizado:** 2026-04-18 — **S00 concluído**. Checklist Sistema Base fechado; extensão Cockpit (ADR-007) e bloco de qualidade (ESLint, TS strict, Vitest, Prettier, CI) entregues. Itens `<!-- aguarda S01 -->` no Checklist dependem do backend Go.
 > **Autor:** Conductor (coordenação técnica automatizada)
 > **Status:** Ativo — fonte de verdade para sequência de execução
 > **Localização justificada:** `09 - Backlog/` é a seção de planejamento e execução do vault. Este documento consolida e supera o `Backlog Priorizado.md` como roadmap operacional definitivo.
@@ -389,16 +390,16 @@ Trilha Operacional: F16                (última)
 
 ### Fases macro
 
-| Fase | Nome | Objetivo | Sprints | Dependências |
-|------|------|----------|---------|-------------|
-| **F0** | Fechar Sistema Base | Frontend 100% — Checklist completa, testes, lint, docs | S00 | Nenhuma |
-| **F1** | Backend Foundation | Go skeleton + DB + Auth + Tenancy + Security + WS + Jobs + OpenAPI | S01-S05 | F0 |
-| **F2** | Integração Front↔Back | Wiring real, remoção de mocks, smoke test E2E | S06 | F1 |
-| **F3** | Vertical Slice F01 | Funis Hub + Pipe WhatsApp — prova todo o pipeline técnico | S07-S09 | F2 |
-| **F4** | CRM Core (F02-F05) | Pipes de Confirmação/Propostas + Inbox Multi-canal + Follow-ups | S10-S14 | F3 |
-| **F5** | IA + Automação (F06-F08) | Copilot + Workflow Builder + Campanhas | S15-S19 | F4 (parcial) |
+| Fase   | Nome                             | Objetivo                                                                        | Sprints | Dependências |
+| ------ | -------------------------------- | ------------------------------------------------------------------------------- | ------- | ------------ |
+| **F0** | Fechar Sistema Base              | Frontend 100% — Checklist completa, testes, lint, docs                          | S00     | Nenhuma      |
+| **F1** | Backend Foundation               | Go skeleton + DB + Auth + Tenancy + Security + WS + Jobs + OpenAPI              | S01-S05 | F0           |
+| **F2** | Integração Front↔Back            | Wiring real, remoção de mocks, smoke test E2E                                   | S06     | F1           |
+| **F3** | Vertical Slice F01               | Funis Hub + Pipe WhatsApp — prova todo o pipeline técnico                       | S07-S09 | F2           |
+| **F4** | CRM Core (F02-F05)               | Pipes de Confirmação/Propostas + Inbox Multi-canal + Follow-ups                 | S10-S14 | F3           |
+| **F5** | IA + Automação (F06-F08)         | Copilot + Workflow Builder + Campanhas                                          | S15-S19 | F4 (parcial) |
 | **F6** | Analytics + Governança (F09-F16) | Analytics, Equipe, Produtos, Upsell, Onboarding, Checkout, Config, Master Admin | S20-S27 | F5 (parcial) |
-| **F7** | Production Readiness | CI/CD, Docker, deploy, load test, security audit, runbooks | S28-S29 | F6 |
+| **F7** | Production Readiness             | CI/CD, Docker, deploy, load test, security audit, runbooks                      | S28-S29 | F6           |
 
 ### Definição de pronto por fase
 
@@ -413,33 +414,33 @@ Trilha Operacional: F16                (última)
 
 ## 8. Sprints
 
-### Sprint S00 — Fechar Sistema Base Frontend
+### Sprint S00 — Fechar Sistema Base Frontend (+ bloco Cockpit) ✅ CONCLUÍDO (2026-04-18)
 
 | Campo | Valor |
 |-------|-------|
-| **Objetivo** | Completar os ~15% restantes e atingir Checklist 100% |
-| **Resultado esperado** | ESLint com regras reais, 20+ snapshot tests, grain class, vocabulary.ts, TS strict flags, CI foundation, docs atualizados |
+| **Objetivo** | Completar os ~15% restantes e atingir Checklist 100%, incluindo a extensão **Modos de UI + Cockpit** (ADR-007) |
+| **Resultado entregue** | ESLint flat config (v9) com a11y + hooks + ban de `dangerouslySetInnerHTML`; Prettier + `prettier-plugin-tailwindcss`; TS strict flags `noUncheckedIndexedAccess` + `exactOptionalPropertyTypes`; Vitest + Testing Library com 51 testes e 36 snapshots em todos os primitivos; classe utilitária `.grain`; `src/i18n/vocabulary.ts` canonico; CommandPalette alinhado ao glossario ("Funis"); GitHub Actions CI (`.github/workflows/ci.yml`); `UiModeProvider` com fallback localStorage + `useUiMode` exposto; pos-login navigation respeitando `ui_mode`; renomeacao dos tokens legados `--clay-*` para `--card-*` / `.tactile-*` eliminando vazamento fora de `.cockpit-theme`; `prefers-reduced-motion` respeitado dentro do cockpit; `AppError` como classe (throw-Error compliant) |
 | **Dependências** | Nenhuma |
-| **Agentes** | `general-purpose` (config), `code-reviewer` (audit final) |
-| **Áreas afetadas** | Frontend config, testes, documentação vault |
-| **Stack** | TypeScript, Vitest, ESLint, Tailwind |
-| **Riscos** | ESLint rules podem quebrar código existente (mitigação: `--fix` batch antes de error mode) |
-| **Critério de conclusão** | Checklist Sistema Base 100%. Build limpo. Testes passing. Docs vault atualizados. |
+| **Agentes** | `agent-frontend` (UI + cockpit), `agent-qa` (audit final), `agent-architect` (ADR-007 já emitido) |
+| **Áreas afetadas** | Frontend config, testes, documentação vault, `features/cockpit/`, providers, rotas, globals.css |
+| **Stack** | TypeScript, Vitest, ESLint, Tailwind, React Query |
+| **Itens remanescentes** | Marcadores `<!-- aguarda S01 -->` no Checklist para headers de segurança (CSP/HSTS/etc), `/auth/me` real, `MasterRoute`, retry exponencial e scrubbing de PII no Sentry — todos dependem do backend Go que nasce em S01 |
+| **Refs** | [[ADR-007-modo-vendedor-gerente]], [[UI Modes - Vendedor e Gerente]], [[F17 - Modo Vendedor (Task Cockpit)/Spec\|F17]] |
 
 ---
 
-### Sprint S01 — Go Backend Skeleton + Database Schema
+### Sprint S01 — Go Backend Skeleton + Database Schema ⏳ SCAFFOLD ENTREGUE (2026-04-19)
 
 | Campo | Valor |
 |-------|-------|
 | **Objetivo** | Bootstrap do projeto Go e schema PostgreSQL fundacional |
-| **Resultado esperado** | Servidor Go servindo health check, PostgreSQL rodando com schema base, Docker Compose funcional |
+| **Resultado entregue** | Modulo `torque-api/` completo: router chi + pgx v5 + zerolog, config env fail-fast, probes `/healthz` + `/readyz`, middleware stack (RequestID/AccessLog/Recover/SecurityHeaders/CORS/StripOrganizationID). Migrations 0001 (orgs, users, users_master, plans, feature_permissions, `set_updated_at()`), 0002 (team_members, member_feature_permissions, org_quotas, tags, leads com E.164 CHECK, pipes + stages + entries, lead_history, audit_log), 0003 (ADR-007 conforme §1 de [[UI Modes - Vendedor e Gerente]]). Dockerfile multi-stage distroless nonroot, docker-compose com Postgres 15 + migrate + API, Makefile opinionado, OpenAPI 3.1 skeleton, teste de concorrencia `TestTasksConcurrentInProgressSingleton`. |
 | **Dependências** | Nenhuma (pode paralelizar com S00) |
-| **Agentes** | `code-architect` (estrutura), `general-purpose` (implementação) |
+| **Agentes** | `agent-architect` (estrutura), `agent-dba` (schema + migration `0003`), `agent-backend` (implementação) |
 | **Áreas afetadas** | Backend (novo), Database (novo), DevOps |
 | **Stack** | Go 1.22+, PostgreSQL 15+, Docker, golang-migrate |
-| **Riscos** | Decisão de router (chi vs stdlib); schema design upfront pode precisar revisão |
-| **Critério de conclusão** | `go run cmd/api/main.go` serve na porta 8080. `docker compose up` sobe Postgres + API. Health check retorna 200. Migrations rodam sem erro. |
+| **Pendente runtime** | `go mod tidy` + `go build ./cmd/api` + `docker compose up` + `go test -race ./...` + `make test-integration` — nenhum desses foi executavel no workspace do Conductor (Go/Docker/migrate ausentes). Tranferido para o usuario ou CI. |
+| **Proximo passo** | Com o scaffold rodando local, abrir **Sprint S02 (Auth + Tenancy + RBAC)** que implementa `/auth/login`, `/auth/refresh`, `/auth/me`, `/auth/logout`, `/master/impersonate/:org_id`, middleware `Auth → TenantScope → RBAC` conforme [[Autenticacao e Autorizacao]]. |
 
 ---
 
