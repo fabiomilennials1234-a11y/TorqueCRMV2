@@ -34,10 +34,12 @@ import (
 	"github.com/milennials/torque-api/internal/handler/health"
 	inboxhandler "github.com/milennials/torque-api/internal/handler/inbox"
 	leadshandler "github.com/milennials/torque-api/internal/handler/leads"
+	membershandler "github.com/milennials/torque-api/internal/handler/members"
 	"github.com/milennials/torque-api/internal/handler/openapi"
 	operationshandler "github.com/milennials/torque-api/internal/handler/operations"
 	pipeshandler "github.com/milennials/torque-api/internal/handler/pipes"
 	preferenceshandler "github.com/milennials/torque-api/internal/handler/preferences"
+	productshandler "github.com/milennials/torque-api/internal/handler/products"
 	proposalshandler "github.com/milennials/torque-api/internal/handler/proposals"
 	tasksahandler "github.com/milennials/torque-api/internal/handler/tasks"
 	workflowshandler "github.com/milennials/torque-api/internal/handler/workflows"
@@ -50,8 +52,10 @@ import (
 	confirmationrepo "github.com/milennials/torque-api/internal/repository/confirmation"
 	inboxrepo "github.com/milennials/torque-api/internal/repository/inbox"
 	leadrepo "github.com/milennials/torque-api/internal/repository/lead"
+	memberrepo "github.com/milennials/torque-api/internal/repository/member"
 	operationrepo "github.com/milennials/torque-api/internal/repository/operation"
 	piperepo "github.com/milennials/torque-api/internal/repository/pipe"
+	productrepo "github.com/milennials/torque-api/internal/repository/product"
 	proposalrepo "github.com/milennials/torque-api/internal/repository/proposal"
 	refreshrepo "github.com/milennials/torque-api/internal/repository/refresh"
 	taskrepo "github.com/milennials/torque-api/internal/repository/task"
@@ -335,6 +339,13 @@ func newRouter(
 				tasksahandler.New(taskrepo.New(pool), bus).Routes(t)
 				analyticshandler.New(analyticsrepo.New(pool)).Routes(t)
 
+				// F10/F11 read surfaces are member-accessible; mutations sit
+				// in the admin group below.
+				memberRepo := memberrepo.New(pool)
+				productRepo := productrepo.New(pool)
+				membershandler.NewRead(memberRepo).Routes(t)
+				productshandler.NewRead(productRepo).Routes(t)
+
 				// --- Admin-only surfaces (Copilot kill-switch + KB +
 				// proposal money flow). Any authenticated member could
 				// previously derail these; sprint/remediation gates them
@@ -346,6 +357,8 @@ func newRouter(
 					proposalshandler.New(proposalrepo.New(pool), bus).Routes(admin)
 					workflowshandler.New(workflowrepo.New(pool), bus).Routes(admin)
 					campaignshandler.New(campaignrepo.New(pool), bus).Routes(admin)
+					membershandler.NewAdmin(memberRepo, bus).Routes(admin)
+					productshandler.NewAdmin(productRepo, bus).Routes(admin)
 				})
 			})
 
