@@ -129,7 +129,7 @@ status: vivo
 
 ## Status atual
 
-**Etapa:** S00-S06 ✅. S07 ✅ F01 backend leads+pipes (2026-04-19). Runtime backend e frontend pendentes no host.
+**Etapa:** S00-S07 ✅. S08 ✅ F01 frontend hooks + FunisHub (2026-04-19). Runtime backend e frontend pendentes no host.
 
 **S00** — ESLint flat (a11y + hooks + ban `dangerouslySetInnerHTML`), TS strict, Prettier, Vitest (51 testes), CI, vocabulario canonico, `--clay-*` → `--card-*`/`.tactile-*`, pos-login navigation por `ui_mode`.
 

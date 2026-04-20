@@ -642,7 +642,7 @@ O bloco da sprint em §8 muda de "prospectivo" para "entregue":
 
 ---
 
-### Sprint S08 — F01 Frontend: Hub + Kanban + DnD
+### Sprint S08 — F01 Frontend: Hub + Kanban + DnD ✅ ENTREGUE (2026-04-19)
 
 | Campo | Valor |
 |-------|-------|
