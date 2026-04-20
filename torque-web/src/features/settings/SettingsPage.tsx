@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useId, useMemo, useState } from 'react'
 import {
   Building2,
   Users,
@@ -18,6 +18,17 @@ import { Input } from '@/ui/input'
 import { Avatar } from '@/ui/avatar'
 import { Badge } from '@/ui/badge'
 import { Button } from '@/ui/button'
+import { Skeleton } from '@/ui/skeleton'
+import { EmptyState } from '@/ui/empty-state'
+import { friendlyMessage } from '@/api/errors'
+import {
+  useAddMember,
+  useDeactivateMember,
+  useMembers,
+  useUpdateMember,
+  type MemberRole,
+  type TeamMember,
+} from '@/hooks/useMembers'
 import { cn } from '@/lib/utils'
 
 type SectionKey =
@@ -150,123 +161,260 @@ function OrgSection() {
 }
 
 function TeamSection() {
-  const team = [
-    {
-      name: 'Fábio Milennials',
-      email: 'fabio@aurora.ind.br',
-      role: 'Admin',
-      spec: '—',
-      status: 'active',
-      initials: 'FM',
-    },
-    {
-      name: 'Rafael Bento',
-      email: 'rafael@aurora.ind.br',
-      role: 'Membro',
-      spec: 'Closer',
-      status: 'active',
-      initials: 'RB',
-    },
-    {
-      name: 'Maíra Duarte',
-      email: 'maira@aurora.ind.br',
-      role: 'Membro',
-      spec: 'SDR',
-      status: 'active',
-      initials: 'MD',
-    },
-    {
-      name: 'Tatiana Alves',
-      email: 'tatiana@aurora.ind.br',
-      role: 'Membro',
-      spec: 'SDR',
-      status: 'active',
-      initials: 'TA',
-    },
-    {
-      name: 'Pedro Lima',
-      email: 'pedro@aurora.ind.br',
-      role: 'Membro',
-      spec: 'Prospectador',
-      status: 'pending',
-      initials: 'PL',
-    },
-  ]
+  const [query, setQuery] = useState('')
+  const [showInvite, setShowInvite] = useState(false)
+  const [includeInactive, setIncludeInactive] = useState(false)
+  const members = useMembers(includeInactive)
+  const addMember = useAddMember()
+
+  const filtered = useMemo<TeamMember[]>(() => {
+    const rows = members.data ?? []
+    const q = query.trim().toLowerCase()
+    if (!q) return rows
+    return rows.filter((m) =>
+      m.display_name.toLowerCase().includes(q) || m.email.toLowerCase().includes(q)
+    )
+  }, [members.data, query])
+
   return (
     <div className="space-y-4">
       <div className="flex items-center gap-2">
         <div className="relative max-w-sm flex-1">
           <Search className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-ink-dim" />
-          <Input placeholder="Buscar membro…" className="pl-8" />
+          <Input
+            placeholder="Buscar membro…"
+            className="pl-8"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+          />
         </div>
-        <div className="ml-auto flex items-center gap-2">
-          <Button variant="outline" size="sm">
-            Importar CSV
-          </Button>
-          <Button variant="primary" size="sm">
+        <label className="flex items-center gap-2 text-xs text-ink-muted">
+          <input
+            type="checkbox"
+            checked={includeInactive}
+            onChange={(e) => setIncludeInactive(e.target.checked)}
+          />
+          Mostrar inativos
+        </label>
+        <div className="ml-auto">
+          <Button variant="primary" size="sm" onClick={() => setShowInvite((v) => !v)}>
             Convidar membro
           </Button>
         </div>
       </div>
 
-      <div className="overflow-hidden rounded-lg bg-surface shadow-elev-1">
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="text-2xs uppercase tracking-[0.12em] text-ink-dim">
-              <th className="px-5 py-3 text-left font-medium">Membro</th>
-              <th className="px-5 py-3 text-left font-medium">Papel</th>
-              <th className="px-5 py-3 text-left font-medium">Especialização</th>
-              <th className="px-5 py-3 text-left font-medium">Status</th>
-              <th className="px-5 py-3" />
-            </tr>
-          </thead>
-          <tbody>
-            {team.map((m, i) => (
-              <tr
-                key={m.email}
-                className={cn(
-                  'transition-colors hover:bg-elevated/40',
-                  i > 0 && 'shadow-[inset_0_1px_0_0_hsl(var(--hairline))]'
-                )}
-              >
-                <td className="px-5 py-3">
-                  <div className="flex items-center gap-3">
-                    <Avatar size="md" fallback={m.initials} />
-                    <div>
-                      <div className="text-sm text-ink">{m.name}</div>
-                      <div className="font-metric text-2xs text-ink-dim">{m.email}</div>
-                    </div>
-                  </div>
-                </td>
-                <td className="px-5 py-3">
-                  <Badge tone={m.role === 'Admin' ? 'accent' : 'neutral'}>{m.role}</Badge>
-                </td>
-                <td className="px-5 py-3 text-ink-muted">{m.spec}</td>
-                <td className="px-5 py-3">
-                  {m.status === 'active' ? (
-                    <span className="inline-flex items-center gap-1.5 text-xs text-success">
-                      <span className="h-1.5 w-1.5 rounded-full bg-success" />
-                      ativo
-                    </span>
-                  ) : (
-                    <span className="inline-flex items-center gap-1.5 text-xs text-warning">
-                      <span className="h-1.5 w-1.5 rounded-full bg-warning" />
-                      convite pendente
-                    </span>
-                  )}
-                </td>
-                <td className="px-5 py-3 text-right">
-                  <Button variant="ghost" size="xs">
-                    Gerenciar
-                  </Button>
-                </td>
+      {showInvite && (
+        <InviteForm
+          disabled={addMember.isPending}
+          onCancel={() => setShowInvite(false)}
+          onSubmit={async (body) => {
+            await addMember.mutateAsync(body)
+            setShowInvite(false)
+          }}
+        />
+      )}
+
+      {members.isLoading && (
+        <div className="space-y-2">
+          <Skeleton className="h-12 w-full" />
+          <Skeleton className="h-12 w-full" />
+          <Skeleton className="h-12 w-full" />
+        </div>
+      )}
+
+      {members.isError && (
+        <EmptyState
+          title="Não foi possível carregar o time."
+          description={friendlyMessage(members.error)}
+          action={
+            <Button variant="ghost" size="sm" onClick={() => void members.refetch()}>
+              Tentar de novo
+            </Button>
+          }
+        />
+      )}
+
+      {members.isSuccess && filtered.length === 0 && (
+        <EmptyState title="Nenhum membro encontrado" description="Ajuste a busca ou convide alguém." />
+      )}
+
+      {members.isSuccess && filtered.length > 0 && (
+        <div className="overflow-hidden rounded-lg bg-surface shadow-elev-1">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="text-2xs uppercase tracking-[0.12em] text-ink-dim">
+                <th className="px-5 py-3 text-left font-medium">Membro</th>
+                <th className="px-5 py-3 text-left font-medium">Papel</th>
+                <th className="px-5 py-3 text-left font-medium">Status</th>
+                <th className="px-5 py-3" />
               </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+            </thead>
+            <tbody>
+              {filtered.map((m, i) => (
+                <MemberRow key={m.id} member={m} separator={i > 0} />
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
     </div>
   )
+}
+
+function InviteForm({
+  disabled,
+  onSubmit,
+  onCancel,
+}: {
+  disabled: boolean
+  onSubmit: (d: { email: string; display_name: string; role: MemberRole }) => Promise<void>
+  onCancel: () => void
+}) {
+  const [email, setEmail] = useState('')
+  const [displayName, setDisplayName] = useState('')
+  const [role, setRole] = useState<MemberRole>('membro')
+  const emailId = useId()
+  const nameId = useId()
+  const roleId = useId()
+  const valid = email.includes('@') && displayName.trim().length > 0
+
+  return (
+    <form
+      className="flex flex-wrap items-end gap-2 rounded-lg bg-surface p-4 shadow-elev-1"
+      onSubmit={(e) => {
+        e.preventDefault()
+        if (!valid) return
+        void onSubmit({ email: email.trim(), display_name: displayName.trim(), role })
+      }}
+    >
+      <div className="flex-1 min-w-[200px]">
+        <label htmlFor={emailId} className="mb-1 block text-xs text-ink-muted">
+          E-mail do usuário
+        </label>
+        <Input
+          id={emailId}
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          type="email"
+          required
+        />
+      </div>
+      <div className="flex-1 min-w-[200px]">
+        <label htmlFor={nameId} className="mb-1 block text-xs text-ink-muted">
+          Nome de exibição
+        </label>
+        <Input
+          id={nameId}
+          value={displayName}
+          onChange={(e) => setDisplayName(e.target.value)}
+          required
+        />
+      </div>
+      <div className="w-36">
+        <label htmlFor={roleId} className="mb-1 block text-xs text-ink-muted">
+          Papel
+        </label>
+        <select
+          id={roleId}
+          className="h-9 w-full rounded-md bg-elevated/60 px-3 text-sm text-ink shadow-hairline"
+          value={role}
+          onChange={(e) => setRole(e.target.value as MemberRole)}
+        >
+          <option value="membro">Membro</option>
+          <option value="admin">Admin</option>
+        </select>
+      </div>
+      <div className="flex gap-2">
+        <Button variant="ghost" size="sm" type="button" onClick={onCancel}>
+          Cancelar
+        </Button>
+        <Button variant="primary" size="sm" type="submit" disabled={disabled || !valid}>
+          {disabled ? 'Adicionando…' : 'Adicionar'}
+        </Button>
+      </div>
+    </form>
+  )
+}
+
+function MemberRow({ member, separator }: { member: TeamMember; separator: boolean }) {
+  const [editing, setEditing] = useState(false)
+  const update = useUpdateMember(member.id)
+  const deactivate = useDeactivateMember(member.id)
+
+  return (
+    <tr
+      className={cn(
+        'transition-colors hover:bg-elevated/40',
+        separator && 'shadow-[inset_0_1px_0_0_hsl(var(--hairline))]'
+      )}
+    >
+      <td className="px-5 py-3">
+        <div className="flex items-center gap-3">
+          <Avatar size="md" fallback={initials(member.display_name)} />
+          <div>
+            <div className="text-sm text-ink">{member.display_name}</div>
+            <div className="font-metric text-2xs text-ink-dim">{member.email}</div>
+          </div>
+        </div>
+      </td>
+      <td className="px-5 py-3">
+        {editing ? (
+          <select
+            className="h-7 rounded-md bg-elevated/60 px-2 text-xs text-ink shadow-hairline"
+            defaultValue={member.role}
+            onChange={(e) => {
+              const next = e.target.value as MemberRole
+              void update.mutateAsync({ role: next }).finally(() => setEditing(false))
+            }}
+          >
+            <option value="membro">Membro</option>
+            <option value="admin">Admin</option>
+          </select>
+        ) : (
+          <Badge tone={member.role === 'admin' ? 'accent' : 'neutral'}>
+            {member.role === 'admin' ? 'Admin' : 'Membro'}
+          </Badge>
+        )}
+      </td>
+      <td className="px-5 py-3">
+        {member.is_active ? (
+          <span className="inline-flex items-center gap-1.5 text-xs text-success">
+            <span className="h-1.5 w-1.5 rounded-full bg-success" />
+            ativo
+          </span>
+        ) : (
+          <span className="inline-flex items-center gap-1.5 text-xs text-ink-dim">
+            <span className="h-1.5 w-1.5 rounded-full bg-ink-dim" />
+            inativo
+          </span>
+        )}
+      </td>
+      <td className="px-5 py-3 text-right">
+        {member.is_active && (
+          <div className="flex justify-end gap-1">
+            <Button variant="ghost" size="xs" onClick={() => setEditing((v) => !v)}>
+              {editing ? 'Cancelar' : 'Editar'}
+            </Button>
+            <Button
+              variant="ghost"
+              size="xs"
+              disabled={deactivate.isPending}
+              onClick={() => void deactivate.mutateAsync()}
+            >
+              Desativar
+            </Button>
+          </div>
+        )}
+      </td>
+    </tr>
+  )
+}
+
+function initials(name: string): string {
+  const parts = name.trim().split(/\s+/)
+  if (parts.length === 0) return '?'
+  if (parts.length === 1) return (parts[0] ?? '').slice(0, 2).toUpperCase()
+  return ((parts[0]?.[0] ?? '') + (parts[parts.length - 1]?.[0] ?? '')).toUpperCase()
 }
 
 function IntegrationsSection() {

@@ -12,6 +12,7 @@ import { WorkflowBuilderPage } from '@/features/workflows/WorkflowBuilderPage'
 import { CampaignsPage } from '@/features/campaigns/CampaignsPage'
 import { AgentsPage } from '@/features/copilot/AgentsPage'
 import { AnalyticsPage } from '@/features/analytics/AnalyticsPage'
+import { ProductsPage } from '@/features/products/ProductsPage'
 import { SettingsPage } from '@/features/settings/SettingsPage'
 import { NotFoundPage } from '@/features/errors/NotFoundPage'
 import { ForbiddenPage } from '@/features/errors/ForbiddenPage'
@@ -71,7 +72,7 @@ export const router = createBrowserRouter([
               { path: 'help', element: <Navigate to="/settings" replace /> },
               { path: 'follow-ups', element: <ComingSoonPage /> },
               { path: 'team', element: <ComingSoonPage /> },
-              { path: 'products', element: <ComingSoonPage /> },
+              { path: 'products', element: <ProductsPage /> },
               { path: 'forbidden', element: <ForbiddenPage /> },
               { path: '*', element: <NotFoundPage /> },
             ],
