@@ -10,6 +10,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/google/uuid"
@@ -236,7 +237,46 @@ type EnqueueSourceInput struct {
 	Metadata       json.RawMessage
 }
 
+// allowedURISchemes — ingest worker may only fetch HTTPS. http is refused
+// even in dev to prevent an ingest route from becoming an SSRF/MITM primitive.
+// file://, gopher://, dict://, ldap://, localhost/169.254.* are rejected by
+// the worker at fetch time; this is the first line of defense.
+var allowedURISchemes = map[string]bool{"https": true}
+
+// EnqueueSource verifies collection ownership AND validates the URI scheme
+// before writing. A member of org A who probes for a collection_id belonging
+// to org B can no longer enqueue a row under the foreign collection.
 func (r *Repository) EnqueueSource(ctx context.Context, in EnqueueSourceInput) (uuid.UUID, error) {
+	if in.Kind == "" || in.Title == "" {
+		return uuid.Nil, errors.New("kind and title are required")
+	}
+	// Ownership: collection_id must belong to the caller's tenant.
+	var ownedBy uuid.UUID
+	if err := r.pool.QueryRow(ctx,
+		`SELECT organization_id FROM knowledge_collections WHERE id = $1 LIMIT 1`,
+		in.CollectionID,
+	).Scan(&ownedBy); err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return uuid.Nil, ErrNotFound
+		}
+		return uuid.Nil, fmt.Errorf("collection ownership: %w", err)
+	}
+	if ownedBy != in.OrganizationID {
+		return uuid.Nil, ErrNotFound
+	}
+
+	// URI scheme allowlist (when the source is remote).
+	if in.URI != nil && *in.URI != "" {
+		idx := strings.Index(*in.URI, "://")
+		if idx <= 0 {
+			return uuid.Nil, errors.New("uri must include an https:// scheme")
+		}
+		scheme := strings.ToLower((*in.URI)[:idx])
+		if !allowedURISchemes[scheme] {
+			return uuid.Nil, fmt.Errorf("uri scheme %q not allowed (https only)", scheme)
+		}
+	}
+
 	meta := in.Metadata
 	if len(meta) == 0 {
 		meta = []byte(`{}`)

@@ -4,6 +4,7 @@ package httpx
 
 import (
 	"encoding/json"
+	"errors"
 	"net/http"
 )
 
@@ -27,10 +28,26 @@ func WriteError(w http.ResponseWriter, status int, code, message string) {
 	WriteJSON(w, status, Error{Code: code, Message: message})
 }
 
+// MaxBodyBytes bounds any JSON body we decode. 1 MiB covers every known
+// payload today (longest is `agents.system_prompt` capped at 16k).
+// Endpoints that need to receive larger payloads (future file uploads) must
+// wrap their own handler in a fresh `http.MaxBytesReader` with a higher cap.
+const MaxBodyBytes int64 = 1 << 20
+
 // DecodeJSON strictly parses a request body into v. Rejects unknown fields
 // so a misspelled key surfaces at the boundary rather than silently drops.
+// The body is capped at MaxBodyBytes to prevent memory-amplification DoS;
+// oversized bodies yield an explicit error that handlers map to 413.
 func DecodeJSON(r *http.Request, v any) error {
+	r.Body = http.MaxBytesReader(nil, r.Body, MaxBodyBytes)
 	dec := json.NewDecoder(r.Body)
 	dec.DisallowUnknownFields()
 	return dec.Decode(v)
+}
+
+// IsBodyTooLarge reports whether err came from MaxBytesReader.
+// Handlers use it to map to 413 Payload Too Large with a stable code.
+func IsBodyTooLarge(err error) bool {
+	var max *http.MaxBytesError
+	return err != nil && errors.As(err, &max)
 }

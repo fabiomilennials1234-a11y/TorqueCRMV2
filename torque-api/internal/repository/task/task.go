@@ -77,6 +77,25 @@ type CreateInput struct {
 	Context        json.RawMessage
 }
 
+// assigneeInTenant verifies the assigned_to member belongs to the caller's
+// tenant. Prevents a cross-tenant member-id probe from creating rows whose
+// organization_id points at org A while assigned_to points into org B's team.
+func (r *Repository) assigneeInTenant(ctx context.Context, orgID, memberID uuid.UUID) error {
+	var exists bool
+	err := r.pool.QueryRow(ctx,
+		`SELECT EXISTS (SELECT 1 FROM team_members
+		                 WHERE id = $1 AND organization_id = $2 AND is_active)`,
+		memberID, orgID,
+	).Scan(&exists)
+	if err != nil {
+		return fmt.Errorf("verify assignee tenant: %w", err)
+	}
+	if !exists {
+		return ErrNotFound
+	}
+	return nil
+}
+
 // Create inserts a pending task.
 func (r *Repository) Create(ctx context.Context, in CreateInput) (Task, error) {
 	if in.Title == "" {
@@ -84,6 +103,9 @@ func (r *Repository) Create(ctx context.Context, in CreateInput) (Task, error) {
 	}
 	if in.AssignedTo == uuid.Nil {
 		return Task{}, errors.New("assigned_to is required")
+	}
+	if err := r.assigneeInTenant(ctx, in.OrganizationID, in.AssignedTo); err != nil {
+		return Task{}, err
 	}
 	if in.Kind == "" {
 		in.Kind = "generic"
@@ -234,8 +256,13 @@ func (r *Repository) List(ctx context.Context, orgID uuid.UUID, opts ListOptions
 
 // Start transitions pending → in_progress. Atomic — Postgres's partial unique
 // index guarantees AT MOST ONE in_progress per (org, assigned_to).
+//
+// Distinguishes three failure modes:
+//   ErrAssigneeBusy   → assignee already has an in_progress task (23505).
+//   ErrNotFound       → task does not exist in this tenant.
+//   ErrInvalidState   → task exists but is past pending.
 func (r *Repository) Start(ctx context.Context, orgID, id uuid.UUID) error {
-	_, err := r.pool.Exec(ctx,
+	ct, err := r.pool.Exec(ctx,
 		`UPDATE tasks
 		    SET status = 'in_progress', started_at = now()
 		  WHERE id = $1 AND organization_id = $2 AND status = 'pending'`,
@@ -246,6 +273,12 @@ func (r *Repository) Start(ctx context.Context, orgID, id uuid.UUID) error {
 			return ErrAssigneeBusy
 		}
 		return fmt.Errorf("start task: %w", err)
+	}
+	if ct.RowsAffected() == 0 {
+		if _, gerr := r.Get(ctx, orgID, id); gerr != nil {
+			return gerr
+		}
+		return ErrInvalidState
 	}
 	return nil
 }
