@@ -26,6 +26,7 @@ import (
 	"github.com/milennials/torque-api/internal/db"
 	"github.com/milennials/torque-api/internal/event"
 	agentshandler "github.com/milennials/torque-api/internal/handler/agents"
+	analyticshandler "github.com/milennials/torque-api/internal/handler/analytics"
 	authhandler "github.com/milennials/torque-api/internal/handler/auth"
 	"github.com/milennials/torque-api/internal/handler/bootstrap"
 	campaignshandler "github.com/milennials/torque-api/internal/handler/campaigns"
@@ -44,6 +45,7 @@ import (
 	"github.com/milennials/torque-api/internal/domain"
 	"github.com/milennials/torque-api/internal/observability/sentry"
 	agentrepo "github.com/milennials/torque-api/internal/repository/agent"
+	analyticsrepo "github.com/milennials/torque-api/internal/repository/analytics"
 	campaignrepo "github.com/milennials/torque-api/internal/repository/campaign"
 	confirmationrepo "github.com/milennials/torque-api/internal/repository/confirmation"
 	inboxrepo "github.com/milennials/torque-api/internal/repository/inbox"
@@ -331,6 +333,7 @@ func newRouter(
 				confirmationshandler.New(confirmationrepo.New(pool), bus).Routes(t)
 				inboxhandler.New(inboxrepo.New(pool), bus).Routes(t)
 				tasksahandler.New(taskrepo.New(pool), bus).Routes(t)
+				analyticshandler.New(analyticsrepo.New(pool)).Routes(t)
 
 				// --- Admin-only surfaces (Copilot kill-switch + KB +
 				// proposal money flow). Any authenticated member could
