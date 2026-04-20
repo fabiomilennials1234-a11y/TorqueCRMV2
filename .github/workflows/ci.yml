@@ -43,3 +43,80 @@ jobs:
 
       - name: Build
         run: npm run build
+
+      - name: Upload build artifact
+        if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop'
+        uses: actions/upload-artifact@v4
+        with:
+          name: torque-web-dist-${{ github.sha }}
+          path: torque-web/dist
+          retention-days: 7
+
+  backend:
+    name: Backend CI
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: torque-api
+
+    # Postgres service so integration tests can hit a real DB. The DATABASE_URL
+    # env is exposed to every step; tests gated by its presence will run.
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_USER: torque
+          POSTGRES_PASSWORD: torque
+          POSTGRES_DB: torque
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 10
+
+    env:
+      DATABASE_URL: postgres://torque:torque@localhost:5432/torque?sslmode=disable
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.22'
+          cache-dependency-path: torque-api/go.sum
+
+      - name: go mod download
+        run: go mod download
+
+      - name: Install golang-migrate
+        run: |
+          curl -L https://github.com/golang-migrate/migrate/releases/download/v4.17.0/migrate.linux-amd64.tar.gz | tar xz
+          sudo mv migrate /usr/local/bin/
+
+      - name: Run migrations
+        run: migrate -path ./migrations -database "${DATABASE_URL}" up
+
+      - name: go vet
+        run: go vet ./...
+
+      - name: Build
+        run: go build ./...
+
+      - name: Test with race detector
+        run: go test -race -timeout 5m ./...
+
+  lint-go:
+    name: golangci-lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.22'
+          cache-dependency-path: torque-api/go.sum
+      - uses: golangci/golangci-lint-action@v6
+        with:
+          version: v1.60
+          working-directory: torque-api
+          args: --timeout=5m
