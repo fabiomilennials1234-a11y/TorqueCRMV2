@@ -732,7 +732,7 @@ O bloco da sprint em §8 muda de "prospectivo" para "entregue":
 
 ---
 
-### Sprint S14 — F05: Follow-ups
+### Sprint S14 — F05: Follow-ups (ADR-007 unified Task) ✅ ENTREGUE (2026-04-19)
 
 | Campo | Valor |
 |-------|-------|
