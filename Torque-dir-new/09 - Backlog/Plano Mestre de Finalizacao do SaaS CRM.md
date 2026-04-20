@@ -687,7 +687,7 @@ O bloco da sprint em §8 muda de "prospectivo" para "entregue":
 
 ---
 
-### Sprint S11 — F03: Pipe Propostas
+### Sprint S11 — F03: Pipe Propostas ✅ ENTREGUE (2026-04-19)
 
 | Campo | Valor |
 |-------|-------|
