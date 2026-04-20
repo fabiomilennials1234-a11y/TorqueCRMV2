@@ -16,6 +16,7 @@ import { useSearchParams } from 'react-router-dom'
 
 import { ConversationHeader } from '@/features/inbox/ConversationHeader'
 import { ConversationList } from '@/features/inbox/ConversationList'
+import { MessageComposer } from '@/features/inbox/MessageComposer'
 import { MessageList } from '@/features/inbox/MessageList'
 import { useConversations, type ConversationState } from '@/hooks/useInbox'
 import { EmptyState } from '@/ui/empty-state'
@@ -66,13 +67,23 @@ export function InboxPage() {
         {activeConversation ? (
           <>
             {/*
-              TODO(S35): currentMemberId needs the caller's team_member_id
+              TODO(S36): currentMemberId needs the caller's team_member_id
               exposed in SessionBundle (today we only have user.id). For
               now, `Assumir` renders only when the header receives an id;
               Resolver / Reabrir are always available.
             */}
             <ConversationHeader conversation={activeConversation} />
             <MessageList conversationId={activeConversation.id} />
+            <MessageComposer
+              conversationId={activeConversation.id}
+              {...(activeConversation.contact_name !== undefined
+                ? { contactName: activeConversation.contact_name }
+                : {})}
+              disabled={
+                activeConversation.state === 'resolved' ||
+                activeConversation.state === 'archived'
+              }
+            />
           </>
         ) : (
           <div className="flex flex-1 items-center justify-center">
