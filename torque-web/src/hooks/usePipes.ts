@@ -7,7 +7,7 @@
 
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 
-import { get, post } from '@/api/client'
+import { del, get, patch, post } from '@/api/client'
 import { queryKeys } from '@/api/queryKeys'
 import { useAppMutation } from '@/hooks/useAppMutation'
 import { useWSSubscribe } from '@/hooks/useWSSubscribe'
@@ -108,6 +108,73 @@ export interface MovePayload {
  * snaps into the target column instantly; the WS event confirms and/or
  * rolls back.
  */
+/**
+ * F12 — admin-only pipe/stage lifecycle. Non-admin callers hit 403 which
+ * flows through notifyAppError as a toast.
+ */
+export function useCreatePipe() {
+  return useAppMutation<
+    Pipe,
+    { kind: 'whatsapp' | 'confirmation' | 'proposal' | 'custom'; name: string; is_default?: boolean; position?: number }
+  >((body) => post<Pipe>('/api/v1/pipes', body), {
+    invalidate: [queryKeys.pipes.list()],
+    errorContext: 'pipe.create',
+  })
+}
+
+export function useUpdatePipe(id: string) {
+  return useAppMutation<Pipe, { name?: string; is_default?: boolean; position?: number }>(
+    (body) => patch<Pipe>(`/api/v1/pipes/${id}`, body),
+    { invalidate: [queryKeys.pipes.list()], errorContext: 'pipe.update' }
+  )
+}
+
+export function useArchivePipe(id: string) {
+  return useAppMutation<void, void>(
+    () => del<void>(`/api/v1/pipes/${id}`),
+    { invalidate: [queryKeys.pipes.list()], errorContext: 'pipe.archive' }
+  )
+}
+
+export function useCreateStage(pipeId: string) {
+  return useAppMutation<
+    PipeStage,
+    {
+      name: string
+      color_token?: string
+      position: number
+      is_final_positive?: boolean
+      is_final_negative?: boolean
+    }
+  >((body) => post<PipeStage>(`/api/v1/pipes/${pipeId}/stages`, body), {
+    invalidate: [queryKeys.pipes.stages(pipeId)],
+    errorContext: 'pipe.stage.create',
+  })
+}
+
+export function useUpdateStage(pipeId: string, stageId: string) {
+  return useAppMutation<
+    PipeStage,
+    {
+      name?: string
+      color_token?: string
+      position?: number
+      is_final_positive?: boolean
+      is_final_negative?: boolean
+    }
+  >((body) => patch<PipeStage>(`/api/v1/pipes/${pipeId}/stages/${stageId}`, body), {
+    invalidate: [queryKeys.pipes.stages(pipeId)],
+    errorContext: 'pipe.stage.update',
+  })
+}
+
+export function useDeleteStage(pipeId: string, stageId: string) {
+  return useAppMutation<void, void>(
+    () => del<void>(`/api/v1/pipes/${pipeId}/stages/${stageId}`),
+    { invalidate: [queryKeys.pipes.stages(pipeId)], errorContext: 'pipe.stage.delete' }
+  )
+}
+
 export function useMovePipeEntry(pipeId: string) {
   // The optimistic-snap on this hook targets a list cache (PipeEntry[]) while
   // the mutation returns a single PipeEntry — useAppMutation ties

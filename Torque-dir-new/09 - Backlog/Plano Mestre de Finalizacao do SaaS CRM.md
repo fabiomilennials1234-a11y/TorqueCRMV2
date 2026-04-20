@@ -856,18 +856,21 @@ O bloco da sprint em §8 muda de "prospectivo" para "entregue":
 
 ---
 
-### Sprint S22 — F12: Upsell + Pipelines Customizados
+### Sprint S22 — F12: Upsell + Pipelines Customizados ✅ ENTREGUE (2026-04-20)
 
 | Campo | Valor |
 |-------|-------|
 | **Objetivo** | Generalizar modelo de pipes para custom + upsell |
-| **Resultado esperado** | Org pode criar pipes customizados além dos 3 estruturais |
+| **Resultado esperado** | Admin cria pipes customizados + stages via API; Kanban existente funciona transparente sobre kind='custom' |
 | **Dependências** | S09 (F01 pipe model) |
-| **Agentes** | `general-purpose`, `code-architect` |
-| **Áreas afetadas** | Backend pipe model, Frontend pipe creation |
+| **Agentes** | Backend → QA → Frontend → Docs |
+| **Áreas afetadas** | Backend pipe admin repo+handler, Frontend hooks |
 | **Stack** | Go, React |
-| **Riscos** | Médio — generalização do modelo sem quebrar pipes estruturais |
-| **Critério de conclusão** | Pipe customizado criado. Stages configuráveis. Kanban funciona para pipes custom. |
+| **Entregas** | CreatePipe/UpdatePipe/ArchivePipe + CreateStage/UpdateStage/DeleteStage (refuse se entries ativas); AdminHandler sob RequireRole(admin); hooks useCreatePipe/Stage e afins; tests integration cobrindo XOR guard + DeleteStage-blocked + cross-tenant |
+| **Escopo parcial** | UI builder (dialog com drag-reorder de stages) fica para S25/S26 junto com Configurações |
+| **Artefatos** | `torque-api/internal/{repository/pipe/admin.go,handler/pipes/admin.go,repository/pipe/admin_test.go}`, `torque-web/src/hooks/usePipes.ts` |
+| **Branch** | `sprint/S22` → PR para `develop` |
+| **STATE** | D037 |
 
 ---
 

@@ -359,6 +359,7 @@ func newRouter(
 					campaignshandler.New(campaignrepo.New(pool), bus).Routes(admin)
 					membershandler.NewAdmin(memberRepo, bus).Routes(admin)
 					productshandler.NewAdmin(productRepo, bus).Routes(admin)
+					pipeshandler.NewAdmin(piperepo.New(pool), bus).Routes(admin)
 				})
 			})
 

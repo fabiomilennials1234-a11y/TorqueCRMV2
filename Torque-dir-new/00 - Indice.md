@@ -129,7 +129,7 @@ status: vivo
 
 ## Status atual
 
-**Etapa:** S00-S21 ✅. S21 ✅ F10 Equipe + F11 Produtos (2026-04-20). Runtime backend pendente no host.
+**Etapa:** S00-S22 ✅. S22 ✅ F12 Pipelines Customizados (admin lifecycle, 2026-04-20). Runtime backend pendente no host.
 
 **S00** — ESLint flat (a11y + hooks + ban `dangerouslySetInnerHTML`), TS strict, Prettier, Vitest (51 testes), CI, vocabulario canonico, `--clay-*` → `--card-*`/`.tactile-*`, pos-login navigation por `ui_mode`.
 
