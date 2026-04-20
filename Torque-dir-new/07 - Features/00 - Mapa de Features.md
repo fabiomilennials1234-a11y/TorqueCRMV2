@@ -40,8 +40,8 @@ Todas as features dependem de [[Escopo do Sistema Base]] com [[Checklist Sistema
 | F07 | Workflow Builder (@xyflow/react, 12 node types)                          | not started | F01                   | L       | Canvas visual de automações |
 | F08 | Campanhas (wizard + kanban + dispatch rules)                             | not started | F07                   | L       | Consome Workflow Builder |
 | F09 | Analytics (Dashboard, FunnelChart, UTMs, Ranking, Performance, TV, Outbound) | not started | F01..F03          | L       | Introduz stack Visx oficialmente |
-| F10 | Equipe (comissões, metas, premiações + confetti)                         | not started | F09                   | M       | Depende de métricas de performance |
-| F11 | Produtos (catálogo, import XLSX, materiais)                              | not started | F03                   | S       | Alimenta Propostas |
+| F10 | Equipe (comissões, metas, premiações + confetti)                         | in progress | F09                   | M       | S21 entregou base (CRUD membros + role + permission overrides). Comissões/metas/premiações/confetti ficam para sprint futura. |
+| F11 | Produtos (catálogo, import XLSX, materiais)                              | in progress | F03                   | S       | S21 entregou catálogo completo (CRUD, cursor pagination, archive). Import XLSX + materiais ficam para sprint futura. |
 | F12 | Upsell + Pipelines Customizados                                          | not started | F01                   | M       | Generaliza modelo de pipe |
 | F13 | Onboarding Wizard + Gate                                                 | not started | Sistema Base          | M       | Pode rodar em paralelo cedo |
 | F14 | Checkout + PIX + Provisioning                                            | not started | Sistema Base          | L       | Entrada comercial, pode paralelizar |
