@@ -83,6 +83,9 @@ func (h *Handler) Routes(r chi.Router) {
 	r.Post("/agents/{id}/sessions", h.openSession)
 	r.Post("/sessions/{id}/end", h.endSession)
 	r.Get("/sessions/{id}/messages", h.listMessages)
+
+	// S42 — agent metrics aggregation.
+	r.Get("/agents/{id}/metrics", h.agentMetrics)
 }
 
 // -------- agents DTOs ------------------------------------------------
@@ -638,6 +641,75 @@ func (h *Handler) listMessages(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	httpx.WriteJSON(w, http.StatusOK, map[string]any{"data": ms})
+}
+
+// -------- metrics ----------------------------------------------------
+
+type metricsView struct {
+	Since           time.Time      `json:"since"`
+	Until           time.Time      `json:"until"`
+	TotalSessions   int            `json:"total_sessions"`
+	TotalMessages   int            `json:"total_messages"`
+	TokensInput     int64          `json:"tokens_input"`
+	TokensOutput    int64          `json:"tokens_output"`
+	AvgLatencyMs    *float64       `json:"avg_latency_ms,omitempty"`
+	SessionsByState map[string]int `json:"sessions_by_state"`
+}
+
+func (h *Handler) agentMetrics(w http.ResponseWriter, r *http.Request) {
+	orgID, _ := mw.OrgIDFrom(r.Context())
+	id, ok := parseID(w, r, "id")
+	if !ok {
+		return
+	}
+	// Window: default last 30 days, capped at 365 days to avoid runaway
+	// aggregation scans. `since` + `until` must be RFC3339; since must
+	// be < until. Bad shapes surface as 400 — the frontend defaults to
+	// the last-30-days window on its side, so a missing param is the
+	// happy path.
+	now := time.Now().UTC()
+	until := now
+	since := now.AddDate(0, 0, -30)
+	if raw := r.URL.Query().Get("since"); raw != "" {
+		parsed, err := time.Parse(time.RFC3339, raw)
+		if err != nil {
+			httpx.WriteError(w, http.StatusBadRequest, "INVALID_SINCE", "since must be RFC3339")
+			return
+		}
+		since = parsed.UTC()
+	}
+	if raw := r.URL.Query().Get("until"); raw != "" {
+		parsed, err := time.Parse(time.RFC3339, raw)
+		if err != nil {
+			httpx.WriteError(w, http.StatusBadRequest, "INVALID_UNTIL", "until must be RFC3339")
+			return
+		}
+		until = parsed.UTC()
+	}
+	if !since.Before(until) {
+		httpx.WriteError(w, http.StatusBadRequest, "INVALID_WINDOW", "since must be before until")
+		return
+	}
+	if until.Sub(since) > 365*24*time.Hour {
+		httpx.WriteError(w, http.StatusBadRequest, "WINDOW_TOO_LARGE", "window cannot exceed 365 days")
+		return
+	}
+
+	m, err := h.repo.GetAgentMetrics(r.Context(), orgID, id, since, until)
+	if err != nil {
+		httpx.WriteError(w, http.StatusInternalServerError, "INTERNAL", "could not compute metrics")
+		return
+	}
+	httpx.WriteJSON(w, http.StatusOK, metricsView{
+		Since:           m.Since,
+		Until:           m.Until,
+		TotalSessions:   m.TotalSessions,
+		TotalMessages:   m.TotalMessages,
+		TokensInput:     m.TokensInput,
+		TokensOutput:    m.TokensOutput,
+		AvgLatencyMs:    m.AvgLatencyMs,
+		SessionsByState: m.SessionsByState,
+	})
 }
 
 // -------- helpers ----------------------------------------------------
