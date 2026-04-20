@@ -122,3 +122,11 @@ jobs:
           version: v1.60
           working-directory: torque-api
           args: --timeout=5m
+
+      # gosec now runs on every CI pass, not just the nightly scan. The
+      # high-severity gate keeps the main branch free of known-bad
+      # patterns; lower-severity findings are tracked in security-scan.yml.
+      - name: gosec (high severity gate)
+        uses: securego/gosec@master
+        with:
+          args: '-severity=high -confidence=medium ./torque-api/...'

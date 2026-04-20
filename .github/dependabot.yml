@@ -1,0 +1,62 @@
+# Dependabot configuration — weekly updates for every package manager
+# Torque touches. Security advisories always open a PR regardless of
+# schedule. Labels + reviewers + milestone triage are handled via the
+# project's GitHub Automations.
+
+version: 2
+updates:
+  # Go backend
+  - package-ecosystem: gomod
+    directory: /torque-api
+    schedule:
+      interval: weekly
+      day: monday
+      time: '07:00'
+      timezone: America/Sao_Paulo
+    open-pull-requests-limit: 5
+    labels:
+      - dependencies
+      - backend
+    commit-message:
+      prefix: 'chore(deps/go)'
+
+  # Frontend — npm
+  - package-ecosystem: npm
+    directory: /torque-web
+    schedule:
+      interval: weekly
+      day: monday
+      time: '07:30'
+      timezone: America/Sao_Paulo
+    open-pull-requests-limit: 5
+    labels:
+      - dependencies
+      - frontend
+    commit-message:
+      prefix: 'chore(deps/npm)'
+    # Grouping keeps Radix + TanStack + @dnd-kit from opening one PR
+    # per minor bump.
+    groups:
+      radix:
+        patterns: ['@radix-ui/*']
+      tanstack:
+        patterns: ['@tanstack/*']
+      dnd:
+        patterns: ['@dnd-kit/*']
+      fontsource:
+        patterns: ['@fontsource/*', '@fontsource-variable/*']
+
+  # Workflow action versions
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      time: '08:00'
+      timezone: America/Sao_Paulo
+    open-pull-requests-limit: 3
+    labels:
+      - dependencies
+      - ci
+    commit-message:
+      prefix: 'chore(deps/gha)'
