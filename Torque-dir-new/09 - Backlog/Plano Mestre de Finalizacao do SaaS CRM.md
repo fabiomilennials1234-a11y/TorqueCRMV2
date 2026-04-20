@@ -874,18 +874,21 @@ O bloco da sprint em §8 muda de "prospectivo" para "entregue":
 
 ---
 
-### Sprint S23 — F13: Onboarding Wizard + Gate
+### Sprint S23 — F13: Onboarding Wizard + Gate ✅ ENTREGUE (2026-04-20)
 
 | Campo | Valor |
 |-------|-------|
 | **Objetivo** | Primeiro contato do usuário: wizard 6 steps + activation gate |
 | **Resultado esperado** | Novo usuário passa por onboarding antes de acessar o produto |
-| **Dependências** | S06 (integração front↔back) |
-| **Agentes** | `frontend-design` (UX de first-run), `general-purpose` |
-| **Áreas afetadas** | Backend + Frontend |
-| **Stack** | Go, React, StepProgress |
-| **Riscos** | Alto impacto em retenção — UX precisa ser impecável |
-| **Critério de conclusão** | Wizard 6 steps funcional. Gate bloqueia acesso até conclusão. Estado persistido. |
+| **Dependências** | S06 (integração front↔back), S21 (team_members base) |
+| **Agentes** | DBA → Backend → QA → Frontend → Docs |
+| **Áreas afetadas** | DB (0015), Backend repo/handler onboarding, Frontend page + gate |
+| **Stack** | Go, React, StepProgress primitive |
+| **Entregas** | Migration 0015, EnsureForMember/CompleteStep (advance + stamp completed_at)/Dismiss/Reset, handler /api/v1/onboarding + /steps /dismiss /reset, OnboardingPage (PT-BR copy), OnboardingGate component redirecionando para /onboarding quando completed_at IS NULL AND !dismissed |
+| **Critério de conclusão** | ✅ Wizard 6 steps funcional. ✅ Gate bloqueia acesso até conclusão (ou dismissal). ✅ Estado persistido por member. |
+| **Artefatos** | `torque-api/{migrations/0015_*,internal/repository/onboarding/*,internal/handler/onboarding/*}`, `torque-web/src/{hooks/useOnboarding.ts,features/onboarding/OnboardingPage.tsx,components/OnboardingGate.tsx,routes.tsx}` |
+| **Branch** | `sprint/S23` → PR para `develop` |
+| **STATE** | D038 |
 
 ---
 
