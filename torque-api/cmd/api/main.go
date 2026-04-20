@@ -77,6 +77,7 @@ import (
 	jwtsvc "github.com/milennials/torque-api/internal/service/jwt"
 	knowledgesvc "github.com/milennials/torque-api/internal/service/knowledge"
 	"github.com/milennials/torque-api/internal/service/permission"
+	workflowsvc "github.com/milennials/torque-api/internal/service/workflow"
 	"github.com/milennials/torque-api/internal/worker"
 	"github.com/milennials/torque-api/internal/ws"
 )
@@ -164,6 +165,32 @@ func run() error {
 		defer cancel()
 		if err := workerPool.Shutdown(shutdownCtx); err != nil {
 			logger.Warn().Err(err).Msg("worker shutdown timed out")
+		}
+	}()
+
+	// S44 — workflow executor runner + event-bus subscriber.
+	// Runner claims pending workflow_runs via SKIP LOCKED and walks the
+	// DAG; subscriber listens for `lead.created` and fans out one
+	// enqueue per active workflow whose trigger matches.
+	wfRepo := workflowrepo.New(pool)
+	dispatcher := workflowsvc.NewDispatcher(logger)
+	executor := workflowsvc.NewExecutor(wfRepo, dispatcher, logger)
+	wfRunner := workflowsvc.NewRunner(workflowsvc.DefaultRunnerConfig(), wfRepo, executor, logger)
+	wfRunner.Start(ctx)
+	defer func() {
+		shutdownCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+		if err := wfRunner.Shutdown(shutdownCtx); err != nil {
+			logger.Warn().Err(err).Msg("workflow runner shutdown timed out")
+		}
+	}()
+	busSub := workflowsvc.NewBusSubscriber(bus, wfRepo, logger)
+	busSub.Start(ctx)
+	defer func() {
+		shutdownCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+		if err := busSub.Shutdown(shutdownCtx); err != nil {
+			logger.Warn().Err(err).Msg("workflow bus subscriber shutdown timed out")
 		}
 	}()
 
