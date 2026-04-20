@@ -131,7 +131,7 @@ status: vivo
 
 ## Status atual
 
-**Etapa:** **Fase B em andamento** — S35 ✅ F04 ComposerBar + Evolution adapter + message_templates (148/148 tests em 50 files). InboxPage completa (sidebar + header + lista + composer). Migration 0018 + Evolution provider real com circuit breaker. Próxima: S36 (takeover humano + SLA watcher + pipeline async message.outbound). Fase A concluída. S00-S29 ✅ — Roadmap original de 30 sprints COMPLETO. S29 entregou security audit OWASP Top 10, k6 load test, runbooks operacionais (incident-response + oncall-basics) e security-scan.yml (gosec + govulncheck + npm audit + Trivy). Próximos passos: runtime backend no host, follow-ups não-bloqueantes, pentest + load test contra staging, lançamento.
+**Etapa:** **Fase B concluída (2026-04-20)** — F04 Inbox completo (sidebar + header + histórico WS-live + composer + takeover audit + teamMemberId em /me). 148/148 tests em 50 files. Próxima: **Fase C** (S37-S42, F06 Copilot — Agent entity + Playground OpenRouter + RAG pgvector + TTS). Fase A concluída. S00-S29 ✅ — Roadmap original de 30 sprints COMPLETO. S29 entregou security audit OWASP Top 10, k6 load test, runbooks operacionais (incident-response + oncall-basics) e security-scan.yml (gosec + govulncheck + npm audit + Trivy). Próximos passos: runtime backend no host, follow-ups não-bloqueantes, pentest + load test contra staging, lançamento.
 
 **S00** — ESLint flat (a11y + hooks + ban `dangerouslySetInnerHTML`), TS strict, Prettier, Vitest (51 testes), CI, vocabulario canonico, `--clay-*` → `--card-*`/`.tactile-*`, pos-login navigation por `ui_mode`.
 
