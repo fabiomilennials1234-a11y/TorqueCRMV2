@@ -34,16 +34,16 @@ referencia: "[[Analise Comparativa v8 vs Torque-v2]]"
 
 ## Sumário do plano (23 sprints, ~28 semanas)
 
-| Fase | Sprints | Objetivo | Semanas |
-|------|---------|----------|---------|
-| **Fase A — Foundation repair (P0)** | S30–S32 | Lazy loading, vitest thresholds, tenant isolation tests, Dependabot | 2 |
-| **Fase B — UX gap crítico** | S33–S36 | F04 Inbox chat real-time completo (lista já existe; falta chat UI + Evolution adapter) | 4 |
-| **Fase C — IA/Copilot (maior diferencial)** | S37–S42 | F06 Copilot backend + playground + RAG + embeddings + TTS + triggers | 7 |
-| **Fase D — Automação comercial** | S43–S45 | F07 Workflow canvas (@xyflow) + executor worker + action types + execuções UI | 5 |
-| **Fase E — Produto completo** | S46–S48 | F08 Campanhas UI + F09 Performance consolidado + F12 Pipes custom + Upsell | 5 |
-| **Fase F — Integrações externas** | S49–S50 | Google Calendar + TinyERP + Meta Ads (adapters → implementations reais) | 3 |
-| **Fase G — Hardening produção** | S51–S52 | Asaas real + dual-review + quota enforcement + OpenAPI refresh + cosign + gosec | 2 |
-| **Total** | **23 sprints** | | **~28 semanas** |
+| Fase                                        | Sprints        | Objetivo                                                                               | Semanas         |
+| ------------------------------------------- | -------------- | -------------------------------------------------------------------------------------- | --------------- |
+| **Fase A — Foundation repair (P0)**         | S30–S32        | Lazy loading, vitest thresholds, tenant isolation tests, Dependabot                    | 2               |
+| **Fase B — UX gap crítico**                 | S33–S36        | F04 Inbox chat real-time completo (lista já existe; falta chat UI + Evolution adapter) | 4               |
+| **Fase C — IA/Copilot (maior diferencial)** | S37–S42        | F06 Copilot backend + playground + RAG + embeddings + TTS + triggers                   | 7               |
+| **Fase D — Automação comercial**            | S43–S45        | F07 Workflow canvas (@xyflow) + executor worker + action types + execuções UI          | 5               |
+| **Fase E — Produto completo**               | S46–S48        | F08 Campanhas UI + F09 Performance consolidado + F12 Pipes custom + Upsell             | 5               |
+| **Fase F — Integrações externas**           | S49–S50        | Google Calendar + TinyERP + Meta Ads (adapters → implementations reais)                | 3               |
+| **Fase G — Hardening produção**             | S51–S52        | Asaas real + dual-review + quota enforcement + OpenAPI refresh + cosign + gosec        | 2               |
+| **Total**                                   | **23 sprints** |                                                                                        | **~28 semanas** |
 
 ---
 
@@ -232,11 +232,13 @@ referencia: "[[Analise Comparativa v8 vs Torque-v2]]"
 >
 > **Decisão**: vamos direto ao playground-like pattern (wizard deprecated no v8 por razão). Mais simples, mais mantenível, UX superior.
 
-## S37 — Agent entity + Playground backend + OpenRouter adapter
+## S37 — Agent entity + Playground backend + OpenRouter adapter ✅ ENTREGUE (2026-04-20)
 
 **Tamanho**: L
 **Dono lógico**: Backend + AI
 **Objetivo**: Criar agent, definir system prompt + model + temperature + max tokens. Executar chat de teste (playground) via OpenRouter.
+
+**Resultado**: Schema (agents + agent_sessions + agent_messages) já vinha em migration 0009 — nenhuma nova migration necessária. Repo ganha UpdateAgent partial patch; service `ai/openrouter.go` com Provider interface agnóstica + OpenRouter concreto (SSE streaming, 6 error codes, scanner 1 MiB, terminal Done defensive quando [DONE] ausente); handler `/agents/:id/playground/message` SSE com kill-switch gate ANTES do dial + 5 event codes estáveis (delta/done/error com AUTH_FAILED/RATE_LIMITED/PROVIDER_UNAVAILABLE/PROVIDER_REJECTED/TIMEOUT/UNKNOWN); PATCH `/agents/:id`. 7 cenários httptest cobrem adapter + agent_test.go integration com cross-tenant refuse. Frontend 168/168 sem regressão. Degradação graciosa: OPENROUTER_API_KEY vazio = endpoint retorna 503. STATE D056. Branch `sprint/S37` → merge no-ff. **Escopo parcial**: session persistence + kill-switch mid-stream re-check ficam para S38 quando UI consumir.
 
 **Entregas**:
 1. Migration 0019: expandir `agents` (S15 já criou esqueleto) com `system_prompt text`, `model text`, `temperature numeric(2,1)`, `max_tokens int`, `tools_allowlist text[]`, `kill_switch bool`, `status enum(draft,active,disabled)`.
