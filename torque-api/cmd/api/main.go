@@ -38,6 +38,7 @@ import (
 	preferenceshandler "github.com/milennials/torque-api/internal/handler/preferences"
 	proposalshandler "github.com/milennials/torque-api/internal/handler/proposals"
 	tasksahandler "github.com/milennials/torque-api/internal/handler/tasks"
+	workflowshandler "github.com/milennials/torque-api/internal/handler/workflows"
 	mw "github.com/milennials/torque-api/internal/httpx/middleware"
 	"github.com/milennials/torque-api/internal/domain"
 	"github.com/milennials/torque-api/internal/observability/sentry"
@@ -51,6 +52,7 @@ import (
 	refreshrepo "github.com/milennials/torque-api/internal/repository/refresh"
 	taskrepo "github.com/milennials/torque-api/internal/repository/task"
 	userrepo "github.com/milennials/torque-api/internal/repository/user"
+	workflowrepo "github.com/milennials/torque-api/internal/repository/workflow"
 	jwtsvc "github.com/milennials/torque-api/internal/service/jwt"
 	"github.com/milennials/torque-api/internal/service/permission"
 	"github.com/milennials/torque-api/internal/worker"
@@ -337,6 +339,7 @@ func newRouter(
 					admin.Use(mw.RequireRole(domain.RoleAdmin))
 					agentshandler.New(agentrepo.New(pool), bus).Routes(admin)
 					proposalshandler.New(proposalrepo.New(pool), bus).Routes(admin)
+					workflowshandler.New(workflowrepo.New(pool), bus).Routes(admin)
 				})
 			})
 
