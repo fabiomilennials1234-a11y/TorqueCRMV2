@@ -88,7 +88,7 @@ func TestProposal_Lifecycle(t *testing.T) {
 	}
 
 	// draft → sent.
-	if err := repo.MarkSent(ctx, orgID, entryID); err != nil {
+	if err := repo.MarkSent(ctx, orgID, entryID, memberID); err != nil {
 		t.Fatalf("send: %v", err)
 	}
 
@@ -109,12 +109,12 @@ func TestProposal_Lifecycle(t *testing.T) {
 	}
 
 	// viewed → accepted.
-	if err := repo.MarkAccepted(ctx, orgID, entryID); err != nil {
+	if err := repo.MarkAccepted(ctx, orgID, entryID, memberID); err != nil {
 		t.Fatalf("accept: %v", err)
 	}
 
 	// Accepted is terminal — cannot reject.
-	if err := repo.MarkRejected(ctx, orgID, entryID, nil); !errors.Is(err, proposalrepo.ErrInvalidState) {
+	if err := repo.MarkRejected(ctx, orgID, entryID, memberID, nil); !errors.Is(err, proposalrepo.ErrInvalidState) {
 		t.Fatalf("reject after accept must be ErrInvalidState, got %v", err)
 	}
 
