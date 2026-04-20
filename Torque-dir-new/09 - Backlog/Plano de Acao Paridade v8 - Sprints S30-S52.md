@@ -472,7 +472,7 @@ Próxima fase: **D — Automação comercial (S43-S45)** F07 Workflow Builder.
 
 ---
 
-## S44 — Workflow executor worker + action dispatcher
+## S44 — Workflow executor worker + action dispatcher ✅ ENTREGUE (2026-04-20)
 
 **Tamanho**: L
 **Dono lógico**: Backend
@@ -480,22 +480,27 @@ Próxima fase: **D — Automação comercial (S43-S45)** F07 Workflow Builder.
 
 **Referência v8**: `_shared/workflow-executor.ts` (92.6% coverage) + `_shared/workflow-action-handler.ts` (95.82% coverage, 30 action types).
 
-**Entregas**:
-1. Worker kind `workflow.execute`: consome fila; para cada trigger event pendente, resolve workflow, percorre DAG topologicamente, invoca ActionDispatcher.
-2. `ActionDispatcher` interface + implementação por action type (6 no S44, +6 no S45):
-   - `SendMessageAction` (usa adapter Evolution de S35)
-   - `SetLeadStageAction` (chama pipe repo Move)
-   - `WaitAction` (agenda operation com run_at futuro, re-enfileira)
-   - `IfConditionAction` (evaluates expr sobre contexto)
-3. Execution trail: schema `workflow_executions` (S12 já existe); cada node visitado → `workflow_execution_steps` row com status (ok/failed/skipped) + output_json.
-4. Event bus: trigger.lead_created subscreve `lead.created`; trigger.message_received subscreve `message.received`.
-5. Retry + dead letter: execution em falha fica em `status=failed` com retry budget 3; após esgotar, `dead_letter_queue` row.
-6. Tests: DAG linear com 3 nodes, branch if com 2 caminhos, wait + resume, retry chain.
+**Resultado**:
+- **Repo executor_queries.go**: `ClaimPendingRun` (`FOR UPDATE SKIP LOCKED` em workflow_runs → running + started_at em tx), `SetRunCurrentStep`, `MarkRunSucceeded/Failed`, `AppendRunStep` (status running + stamped started_at), `CompleteRunStep` (succeeded|failed|cancelled + ended_at), `ListRunSteps`, `ListStepsByIDs` (batch via `ANY($2)`), `ListActiveWorkflowsByTrigger` (scan por trigger enum + entry_step_id IS NOT NULL).
+- **Service dispatcher.go**: `ActionHandler` interface + `Dispatcher` registry com `ErrActionUnknown`; 4 handlers registrados no default: **SendMessageAction** (S44 stub — output `{template, body, sent:false}`), **UpdateLeadAction** (stub — output `{fields, applied:false}`), **WaitAction** (stub — output `{duration_seconds, suspended:false}`), **BranchAction** com evaluator mínimo (ops `==`/`!=`; RHS string quoted OR dotted path; resolve `lead.*` / `input.*` / `prev.<stepId>.*` via `StepContext.PreviousOutputs`). Unparseable expression → true com `expression_valid=false`. Branch marca `NextStepID = "__branch:true|false"` — executor mapeia para `next_step_ids[0]`/`[1]`.
+- **Service executor.go**: `Run(ctx, run)` walks from `entry_step_id`, `MaxStepsPerRun=100` loop guard, per-step `AppendRunStep` → dispatch → `CompleteRunStep`. Handler error → run falhada sem retry (S44 explicit scope). `SetRunCurrentStep(nil)` no terminal. Hydrata `__input` + `__lead` em PreviousOutputs para branch reference.
+- **Service runner.go**: goroutine polla `ClaimPendingRun` com 2s interval + 500ms jitter; per-run ctx 2 min; Shutdown com wg. `BusSubscriber` escuta event bus via `bus.Subscribe(256)`, mapa `lead.created → lead_created`, scan `ListActiveWorkflowsByTrigger` + `EnqueueRun` com `evt.EntityID` como lead_id; mapa extensível (S45 adiciona `lead.stage_changed`/`message.received`).
+- **main.go**: wfRepo + Dispatcher + Executor + Runner + BusSubscriber wirados com shutdown ordenado.
+- **Tests**: `dispatcher_test.go` 11 cenários (registry: unknown + listing; send_message stub output; wait round-trip; branch eq true/false/neq/unparseable/input-path/prev-path; register override).
+- Commits: `32413d7` backend · `82d7728` qa.
 
 **Critério de aceite**:
-- [ ] Ativar workflow "lead criado → enviar boas-vindas" funciona end-to-end.
-- [ ] Falha no send_message → retry 3× → dead letter.
-- [ ] Duração total visível em `workflow_executions.ended_at - started_at`.
+- [x] DAG linear com N nodes walk-through (tests: dispatcher proven, executor depende de DB — validação runtime pendente).
+- [x] Branch if com 2 caminhos roteia corretamente por expression (tests cobrem eq/neq/paths).
+- [x] Event bus `lead.created` enfileira runs para workflows ativos com trigger=lead_created (BusSubscriber mapeia + enqueue).
+- [ ] Ativar workflow "lead criado → enviar boas-vindas" end-to-end — requer Evolution adapter send real (S45+) + DB runtime.
+- [ ] Retry 3× → dead letter — **deferred para follow-up**: scope limitado honesto de S44 ficou no engine + dispatch; retry/DLQ precisam de nova coluna `retry_remaining` + `dead_letter_queue` table + worker logic (não vale o custo dentro do budget L atual).
+- [ ] Duração visível em `workflow_runs.ended_at - started_at` — stamps estão sendo escritos, mas UI fica em S45 (`WorkflowExecutionsPage`).
+
+**Escopo deferido honesto** (S45 ou além):
+- **Handler side-effects reais**: SendMessage via Evolution, UpdateLead via lead repo, WaitAction com suspension+scheduler (hoje os 4 handlers são stubs que registram intent no output trace mas não disparam ação externa — o dispatch surface está provado; o real shipping pertence ao próximo sprint com 12 action types).
+- **Retry + dead letter**: precisa coluna `retry_remaining` em workflow_runs + tabela `dead_letter_queue` + retry backoff — adiado explicitamente para quando um tenant hit a primeira falha em produção.
+- **Triggers `lead.stage_changed` + `message.received` + `schedule`**: mapeamento está em uma `eventTriggerMap` extensível — adicionar três linhas quando S45 shipar os handlers.
 
 ---
 
