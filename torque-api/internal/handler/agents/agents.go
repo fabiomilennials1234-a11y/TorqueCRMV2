@@ -32,6 +32,7 @@ import (
 	"github.com/milennials/torque-api/internal/httpx"
 	mw "github.com/milennials/torque-api/internal/httpx/middleware"
 	agentrepo "github.com/milennials/torque-api/internal/repository/agent"
+	"github.com/milennials/torque-api/internal/service/ai"
 	"github.com/milennials/torque-api/internal/service/knowledge"
 	"github.com/milennials/torque-api/internal/ws"
 )
@@ -72,6 +73,12 @@ func (h *Handler) Routes(r chi.Router) {
 	r.Post("/knowledge/collections", h.createCollection)
 	r.Get("/knowledge/collections/{cid}/sources", h.listSources)
 	r.Post("/knowledge/collections/{cid}/sources", h.enqueueSource)
+
+	// S40 — agent triggers (auto-assignment rules).
+	r.Get("/agents/{id}/triggers", h.listTriggers)
+	r.Post("/agents/{id}/triggers", h.createTrigger)
+	r.Patch("/triggers/{tid}", h.updateTrigger)
+	r.Delete("/triggers/{tid}", h.deleteTrigger)
 
 	r.Post("/agents/{id}/sessions", h.openSession)
 	r.Post("/sessions/{id}/end", h.endSession)
@@ -124,6 +131,33 @@ type sourceView struct {
 
 type bindCollectionReq struct {
 	CollectionID *uuid.UUID `json:"collection_id"`
+}
+
+type triggerView struct {
+	ID          uuid.UUID     `json:"id"`
+	AgentID     uuid.UUID     `json:"agent_id"`
+	Name        string        `json:"name"`
+	Description *string       `json:"description,omitempty"`
+	Priority    int           `json:"priority"`
+	Filter      ai.FilterSpec `json:"filter"`
+	IsActive    bool          `json:"is_active"`
+	CreatedAt   time.Time     `json:"created_at"`
+	UpdatedAt   time.Time     `json:"updated_at"`
+}
+
+type createTriggerReq struct {
+	Name        string        `json:"name"`
+	Description *string       `json:"description,omitempty"`
+	Priority    int           `json:"priority,omitempty"`
+	Filter      ai.FilterSpec `json:"filter"`
+}
+
+type updateTriggerReq struct {
+	Name        *string        `json:"name,omitempty"`
+	Description *string        `json:"description,omitempty"`
+	Priority    *int           `json:"priority,omitempty"`
+	Filter      *ai.FilterSpec `json:"filter,omitempty"`
+	IsActive    *bool          `json:"is_active,omitempty"`
 }
 
 type createAgentReq struct {
@@ -411,6 +445,120 @@ func (h *Handler) enqueueSource(w http.ResponseWriter, r *http.Request) {
 	// 202: the ingest runs in the background. The UI polls source
 	// status + subscribes to WS for real-time transitions.
 	httpx.WriteJSON(w, http.StatusAccepted, map[string]any{"id": id, "status": "queued"})
+}
+
+// -------- trigger handlers -------------------------------------------
+
+func toTriggerView(t agentrepo.AgentTrigger) triggerView {
+	return triggerView{
+		ID: t.ID, AgentID: t.AgentID, Name: t.Name, Description: t.Description,
+		Priority: t.Priority, Filter: t.Filter, IsActive: t.IsActive,
+		CreatedAt: t.CreatedAt, UpdatedAt: t.UpdatedAt,
+	}
+}
+
+func (h *Handler) listTriggers(w http.ResponseWriter, r *http.Request) {
+	orgID, _ := mw.OrgIDFrom(r.Context())
+	agentID, ok := parseID(w, r, "id")
+	if !ok {
+		return
+	}
+	list, err := h.repo.ListTriggersByAgent(r.Context(), orgID, agentID)
+	if err != nil {
+		httpx.WriteError(w, http.StatusInternalServerError, "INTERNAL", "could not list triggers")
+		return
+	}
+	out := make([]triggerView, len(list))
+	for i, t := range list {
+		out[i] = toTriggerView(t)
+	}
+	httpx.WriteJSON(w, http.StatusOK, map[string]any{"data": out})
+}
+
+func (h *Handler) createTrigger(w http.ResponseWriter, r *http.Request) {
+	orgID, _ := mw.OrgIDFrom(r.Context())
+	agentID, ok := parseID(w, r, "id")
+	if !ok {
+		return
+	}
+	var body createTriggerReq
+	if err := httpx.DecodeJSON(r, &body); err != nil {
+		httpx.WriteError(w, http.StatusBadRequest, "INVALID_BODY", "could not parse")
+		return
+	}
+	in := agentrepo.CreateTriggerInput{
+		OrganizationID: orgID, AgentID: agentID,
+		Name: body.Name, Description: body.Description, Priority: body.Priority, Filter: body.Filter,
+	}
+	if sess, ok := mw.SessionFrom(r.Context()); ok && sess.TeamMemberID != uuid.Nil {
+		tm := sess.TeamMemberID
+		in.CreatedBy = &tm
+	}
+	t, err := h.repo.CreateTrigger(r.Context(), in)
+	if errors.Is(err, agentrepo.ErrNotFound) {
+		httpx.WriteError(w, http.StatusNotFound, "NOT_FOUND", "agent not found")
+		return
+	}
+	if err != nil {
+		httpx.WriteError(w, http.StatusBadRequest, "INVALID_TRIGGER", err.Error())
+		return
+	}
+	h.bus.Publish(ws.Event{
+		Type: "agent_trigger.created", TenantID: orgID, EntityType: "agent_trigger",
+		EntityID: &t.ID, Patch: toTriggerView(t), OccurredAt: time.Now().UTC(),
+	})
+	httpx.WriteJSON(w, http.StatusCreated, toTriggerView(t))
+}
+
+func (h *Handler) updateTrigger(w http.ResponseWriter, r *http.Request) {
+	orgID, _ := mw.OrgIDFrom(r.Context())
+	tid, ok := parseID(w, r, "tid")
+	if !ok {
+		return
+	}
+	var body updateTriggerReq
+	if err := httpx.DecodeJSON(r, &body); err != nil {
+		httpx.WriteError(w, http.StatusBadRequest, "INVALID_BODY", "could not parse")
+		return
+	}
+	t, err := h.repo.UpdateTrigger(r.Context(), orgID, tid, agentrepo.UpdateTriggerInput{
+		Name: body.Name, Description: body.Description, Priority: body.Priority,
+		Filter: body.Filter, IsActive: body.IsActive,
+	})
+	if errors.Is(err, agentrepo.ErrNotFound) {
+		httpx.WriteError(w, http.StatusNotFound, "NOT_FOUND", "trigger not found")
+		return
+	}
+	if err != nil {
+		httpx.WriteError(w, http.StatusBadRequest, "INVALID_TRIGGER", err.Error())
+		return
+	}
+	h.bus.Publish(ws.Event{
+		Type: "agent_trigger.updated", TenantID: orgID, EntityType: "agent_trigger",
+		EntityID: &t.ID, Patch: toTriggerView(t), OccurredAt: time.Now().UTC(),
+	})
+	httpx.WriteJSON(w, http.StatusOK, toTriggerView(t))
+}
+
+func (h *Handler) deleteTrigger(w http.ResponseWriter, r *http.Request) {
+	orgID, _ := mw.OrgIDFrom(r.Context())
+	tid, ok := parseID(w, r, "tid")
+	if !ok {
+		return
+	}
+	if err := h.repo.DeleteTrigger(r.Context(), orgID, tid); err != nil {
+		if errors.Is(err, agentrepo.ErrNotFound) {
+			httpx.WriteError(w, http.StatusNotFound, "NOT_FOUND", "trigger not found")
+			return
+		}
+		httpx.WriteError(w, http.StatusInternalServerError, "INTERNAL", "could not delete trigger")
+		return
+	}
+	h.bus.Publish(ws.Event{
+		Type: "agent_trigger.deleted", TenantID: orgID, EntityType: "agent_trigger",
+		EntityID: &tid, OccurredAt: time.Now().UTC(),
+	})
+	w.WriteHeader(http.StatusNoContent)
 }
 
 // -------- session handlers -------------------------------------------
