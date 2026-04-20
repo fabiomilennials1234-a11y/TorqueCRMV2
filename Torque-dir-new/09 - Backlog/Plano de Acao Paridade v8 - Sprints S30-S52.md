@@ -256,7 +256,7 @@ referencia: "[[Analise Comparativa v8 vs Torque-v2]]"
 
 ---
 
-## S38 — Agent Playground UI + Editor lateral
+## S38 — Agent Playground UI + Editor lateral ✅ ENTREGUE (2026-04-20)
 
 **Tamanho**: M
 **Dono lógico**: Frontend
@@ -272,9 +272,21 @@ referencia: "[[Analise Comparativa v8 vs Torque-v2]]"
 5. Tests: render + mutation targeting + stream reducer.
 
 **Critério de aceite**:
-- [ ] Editar system prompt + enviar mensagem usa o prompt novo (sem reload).
-- [ ] Stream cancela ao trocar de agent.
-- [ ] Deploy to production muda status para active no WS.
+- [x] Editar system prompt + enviar mensagem usa o prompt novo (sem reload).
+- [x] Stream cancela ao trocar de agent.
+- [ ] Deploy to production muda status para active no WS. *(adiado — ainda sem wizard status toggle; S39 fecha.)*
+
+**Resultado**:
+- Backend: `agentView` agora expõe `system_prompt`; construção literal duplicada em `playground.go` substituída por `toAgentView(a)` para propagar o campo novo.
+- Frontend: `AgentListPage` (novo, substitui `AgentsPage` seed-based) lista via `useAgents` com WS-invalidation, badges de estado (active/disabled/draft/kill-switch), Ativar/Desativar + toggle kill-switch inline.
+- `AgentPlaygroundPage` (novo, `/copilot/:id`): grid 2 colunas — editor esquerda (name + system_prompt 10 rows + model select + temperature + max_tokens) com draft local + dirty detection (Salvar disabled quando not-dirty); chat direita com bubbles por `speaker` (user/assistant), cursor piscante em streaming, Parar (abort), Regenerar (remove último assistant + re-envia). Banner vermelho on error com code+message.
+- **`useAgentStream(agentId)`**: consome SSE via `fetch` + `ReadableStream.getReader()` — EventSource descartado porque é GET-only sem headers custom (CSRF bloquearia). Parser próprio split por `\n\n`, trata frames `event: delta|done|error|[DONE]`. Estados `idle|streaming|done|error|cancelled`. AbortController cancela sincronicamente; unmount limpa sem leaks.
+- Prop `role` em `TranscriptBubble` renomeado para `speaker` (ARIA conflict com roles válidas).
+- Rota `/copilot/:id` adicionada em `routes.tsx`; `AgentsPage.tsx` + teste antigos removidos.
+- Tests novos: `useAgentStream.test.tsx` 4 cenários (happy 3 deltas + tokens, server error frame, HTTP 503, heartbeats ignorados); `AgentListPage.test.tsx` 2 cenários (render + empty).
+- **173/173 tests em 60 files** (+5 cases, +2 files vs S37); coverage lines 59.17 → **61.56%** (+2.39pp), stmts 56.70 → **59.19%** (+2.49pp), branches 49.58 → **51.35%** (+1.77pp) — todos acima do piso 55/55/50/48.
+- Commits: `ecb3dbd` backend · `ef6015d` frontend · `babf49a` tests.
+- **Escopo parcial honesto**: conversa do playground é local (não persiste em `agent_sessions`); session persistence + kill-switch mid-stream re-check ficam para S39.
 
 ---
 
