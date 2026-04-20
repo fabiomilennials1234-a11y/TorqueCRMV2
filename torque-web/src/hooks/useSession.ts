@@ -16,7 +16,7 @@ export function useSession(): UseSessionReturn {
   if (!session) {
     // Safe default while loading or unauthenticated
     return {
-      user: { id: '', email: '', displayName: '' },
+      user: { id: '', email: '', displayName: '', teamMemberId: '' },
       org: {
         id: '',
         name: '',
