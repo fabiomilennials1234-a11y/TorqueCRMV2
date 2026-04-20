@@ -18,6 +18,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query'
 
 import { AppError, get, post } from '@/api/client'
 import { queryKeys } from '@/api/queryKeys'
+import { DEV_SESSION, isDevAuthEnabled } from '@/providers/devSession'
 import { queryClient } from '@/providers/QueryProvider'
 import { router } from '@/routes'
 import type { SessionBundle } from '@/contracts/manual'
@@ -96,10 +97,15 @@ interface AuthProviderProps {
 
 export function AuthProvider({ children }: AuthProviderProps) {
   const client = useQueryClient()
+  const devBypass = isDevAuthEnabled()
 
   const query = useQuery<SessionBundle, AppError>({
     queryKey: queryKeys.session.me(),
     queryFn: async () => {
+      // Dev-only: skip the network entirely. The `if` is constant-folded
+      // in prod builds because `isDevAuthEnabled` returns false when
+      // `import.meta.env.DEV` is false.
+      if (devBypass) return DEV_SESSION
       const me = await get<MeResponse>('/api/v1/auth/me')
       return toSessionBundle(me)
     },
