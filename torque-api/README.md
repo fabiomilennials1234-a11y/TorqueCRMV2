@@ -109,6 +109,25 @@ make test                 # unit (fast, no DB)
 make test-integration     # requires DATABASE_URL; runs the concurrency test
 ```
 
+## Dev seeds
+
+A committed seed creates a deterministic admin so the frontend can log in
+immediately after migrations:
+
+```bash
+make seed-dev             # idempotent; refuses when ENV != dev
+```
+
+Credentials:
+
+| email                 | password | role  | organization |
+|-----------------------|----------|-------|--------------|
+| `marcelo@gmail.com`   | `admin`  | admin | Torque Dev   |
+
+Source: `seeds/dev_admin.sql`. The bcrypt hash in that file is regenerable at
+any time and is committed deliberately because it is a development credential,
+not a production secret.
+
 The concurrency test races 32 goroutines transitioning tasks to `in_progress`
 and asserts that exactly one succeeds — the database enforces it via
 `uq_tasks_one_in_progress_per_assignee`.
