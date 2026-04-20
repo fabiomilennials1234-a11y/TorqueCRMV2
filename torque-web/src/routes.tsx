@@ -30,7 +30,8 @@ const LoginPage = lazy(() => lazyRetry(() => import('@/features/auth/LoginPage')
 const DashboardPage = lazy(() => lazyRetry(() => import('@/features/dashboard/DashboardPage').then((m) => ({ default: m.DashboardPage }))))
 const KanbanPage = lazy(() => lazyRetry(() => import('@/features/pipeline/KanbanPage').then((m) => ({ default: m.KanbanPage }))))
 const InboxPage = lazy(() => lazyRetry(() => import('@/features/inbox/InboxPage').then((m) => ({ default: m.InboxPage }))))
-const WorkflowBuilderPage = lazy(() => lazyRetry(() => import('@/features/workflows/WorkflowBuilderPage').then((m) => ({ default: m.WorkflowBuilderPage }))))
+const WorkflowListPage = lazy(() => lazyRetry(() => import('@/features/workflows/WorkflowListPage').then((m) => ({ default: m.WorkflowListPage }))))
+const WorkflowCanvasPage = lazy(() => lazyRetry(() => import('@/features/workflows/WorkflowCanvasPage').then((m) => ({ default: m.WorkflowCanvasPage }))))
 const CampaignsPage = lazy(() => lazyRetry(() => import('@/features/campaigns/CampaignsPage').then((m) => ({ default: m.CampaignsPage }))))
 const AgentListPage = lazy(() => lazyRetry(() => import('@/features/copilot/AgentListPage').then((m) => ({ default: m.AgentListPage }))))
 const AgentPlaygroundPage = lazy(() => lazyRetry(() => import('@/features/copilot/AgentPlaygroundPage').then((m) => ({ default: m.AgentPlaygroundPage }))))
@@ -109,7 +110,8 @@ export const router = createBrowserRouter([
                   { index: true, element: withSuspense(<DashboardPage />) },
                   { path: 'pipeline', element: withSuspense(<KanbanPage />) },
                   { path: 'inbox', element: withSuspense(<InboxPage />) },
-                  { path: 'workflows', element: withSuspense(<WorkflowBuilderPage />) },
+                  { path: 'workflows', element: withSuspense(<WorkflowListPage />) },
+                  { path: 'workflows/:id', element: withSuspense(<WorkflowCanvasPage />) },
                   { path: 'campaigns', element: withSuspense(<CampaignsPage />) },
                   { path: 'copilot', element: withSuspense(<AgentListPage />) },
                   { path: 'copilot/:id', element: withSuspense(<AgentPlaygroundPage />) },

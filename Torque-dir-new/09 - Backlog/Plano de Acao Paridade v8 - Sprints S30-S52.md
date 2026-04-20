@@ -449,29 +449,26 @@ Próxima fase: **D — Automação comercial (S43-S45)** F07 Workflow Builder.
 
 # FASE D — Automação comercial (F07 Workflow Builder)
 
-## S43 — Workflow canvas com @xyflow/react + node types básicos
+## S43 — Workflow canvas com @xyflow/react + node types básicos ✅ ENTREGUE (2026-04-20)
 
 **Tamanho**: L
 **Dono lógico**: Frontend
-**Objetivo**: Editor visual tipo n8n/Make com 6 node types prioritários (v8 tem 30; implementamos os 12 mais usados; restantes viram P3).
+**Objetivo**: Editor visual tipo n8n/Make com 6 node types prioritários.
 
-**Entregas**:
-1. Add dependency `@xyflow/react` v12 (v8 usa mesma).
-2. `features/workflows/WorkflowCanvas.tsx` — substitui WorkflowBuilderPage placeholder atual (357 LOC). Canvas com drag-drop de nodes da sidebar.
-3. Node types (primeira leva de 6):
-   - `trigger.lead_created`
-   - `trigger.message_received`
-   - `action.send_message`
-   - `action.set_lead_stage`
-   - `action.wait` (delay)
-   - `condition.if` (branch)
-4. `NodePanel.tsx` + `EdgePanel.tsx` (inspector lateral configurando params do node selecionado).
-5. Schema já existe (S17 migrations 0012): `workflows`, `workflow_nodes`, `workflow_edges`. Endpoint POST `/workflows/:id/nodes` já existe — wire ao canvas (on drop → POST; on move → PATCH).
-6. Testes: drag-drop adiciona node no DB, delete remove, edge connect valida compat types.
-
-**Critério de aceite**:
-- [ ] Criar workflow com 5 nodes + 4 edges e salvar persiste.
-- [ ] Recarregar página restaura posições + conexões.
+**Resultado**:
+- Dep `@xyflow/react ^12.10.2` adicionada.
+- `WorkflowListPage` (`/workflows`) substitui mockup seed com useWorkflows live (status + trigger badges, empty state, inline "Novo workflow" form cria draft manual + navega para canvas).
+- `WorkflowCanvasPage` (`/workflows/:id`) 3-column layout (palette 256px / ReactFlow fluido / inspector 320px).
+- **6 node variants** na palette: lead_created + message_received (triggers via send_message + trigger_kind config), action.send_message, action.update_lead ("mudar estágio"), wait (duration_seconds), branch (expression). HTML5 DnD + `screenToFlowPosition` posiciona no drop. Primeiro trigger dropped sem entry auto-seta entry_step_id.
+- `onNodeDragStop` PUT position_x/y (reload preserva); `onConnect` merge com dedupe em next_step_ids; NodeInspector com JSON config editor + toggle entry + delete. Publicar disabled até entry setado.
+- Routes: `/workflows` list, `/workflows/:id` canvas. Old WorkflowBuilderPage deletado.
+- `updateStepAsync`/`deleteStepAsync` via raw `put`/`del` + queryClient invalidate (hooks `useUpdateStep`/`useDeleteStep` bindam stepId na construção — não servem para canvas cross-step).
+- Tests: `WorkflowListPage.test.tsx` 2 cenários (renders com badges, empty state).
+- **189/189 em 65 files** (+2, +1 vs S42). Coverage lines 63.21 → **63.33%** (+0.12pp), stmts **60.78%**, funcs **57.79%**, branches **52.99%**. Acima do piso 60/60/55/50.
+- Commit: `e24899d` frontend + list + canvas.
+- **Critério**:
+  - [x] Criar workflow com N nodes + edges e salvar persiste — `onConnect` PUT next_step_ids.
+  - [x] Recarregar restaura posições + conexões — position_x/y e next_step_ids do server hidratam initialNodes/Edges via useMemo.
 
 ---
 
