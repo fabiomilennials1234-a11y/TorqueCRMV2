@@ -43,6 +43,7 @@ import (
 	preferenceshandler "github.com/milennials/torque-api/internal/handler/preferences"
 	productshandler "github.com/milennials/torque-api/internal/handler/products"
 	proposalshandler "github.com/milennials/torque-api/internal/handler/proposals"
+	settingshandler "github.com/milennials/torque-api/internal/handler/settings"
 	tasksahandler "github.com/milennials/torque-api/internal/handler/tasks"
 	workflowshandler "github.com/milennials/torque-api/internal/handler/workflows"
 	mw "github.com/milennials/torque-api/internal/httpx/middleware"
@@ -61,6 +62,7 @@ import (
 	productrepo "github.com/milennials/torque-api/internal/repository/product"
 	proposalrepo "github.com/milennials/torque-api/internal/repository/proposal"
 	refreshrepo "github.com/milennials/torque-api/internal/repository/refresh"
+	settingsrepo "github.com/milennials/torque-api/internal/repository/settings"
 	subscriptionrepo "github.com/milennials/torque-api/internal/repository/subscription"
 	taskrepo "github.com/milennials/torque-api/internal/repository/task"
 	userrepo "github.com/milennials/torque-api/internal/repository/user"
@@ -360,6 +362,9 @@ func newRouter(
 				productshandler.NewRead(productRepo).Routes(t)
 				onboardinghandler.New(onboardingrepo.New(pool)).Routes(t)
 				billinghandler.NewRead(subRepo).Routes(t)
+				settingsRepo := settingsrepo.New(pool)
+				settingshandler.NewRead(settingsRepo).Routes(t)
+				settingshandler.NewMe(settingsRepo).Routes(t)
 
 				// --- Admin-only surfaces (Copilot kill-switch + KB +
 				// proposal money flow). Any authenticated member could
@@ -390,6 +395,7 @@ func newRouter(
 						provider = billing.NewMock()
 					}
 					billinghandler.NewAdmin(subRepo, provider, bus).Routes(admin)
+					settingshandler.NewAdmin(settingsRepo).Routes(admin)
 				})
 			})
 
