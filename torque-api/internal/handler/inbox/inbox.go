@@ -3,7 +3,7 @@
 //   GET    /api/v1/conversations                    — list (filters)
 //   GET    /api/v1/conversations/:id                — detail
 //   POST   /api/v1/conversations/:id/read           — zero unread_count
-//   POST   /api/v1/conversations/:id/assign         — set assignee
+//   POST   /api/v1/conversations/:id/assign         — set assignee (audit on takeover)
 //   PATCH  /api/v1/conversations/:id                — change state
 //   GET    /api/v1/conversations/:id/messages       — message list
 //   POST   /api/v1/conversations/:id/messages       — outbound send (queued)
@@ -21,17 +21,28 @@ import (
 	"github.com/milennials/torque-api/internal/event"
 	"github.com/milennials/torque-api/internal/httpx"
 	mw "github.com/milennials/torque-api/internal/httpx/middleware"
+	auditrepo "github.com/milennials/torque-api/internal/repository/audit"
 	inboxrepo "github.com/milennials/torque-api/internal/repository/inbox"
 	"github.com/milennials/torque-api/internal/ws"
 )
 
 type Handler struct {
-	repo *inboxrepo.Repository
-	bus  *event.Bus
+	repo  *inboxrepo.Repository
+	bus   *event.Bus
+	// audit is optional — nil means the handler skips the audit row on
+	// takeover. Callers that care about forensics inject a real repo.
+	audit *auditrepo.Repository
 }
 
 func New(repo *inboxrepo.Repository, bus *event.Bus) *Handler {
 	return &Handler{repo: repo, bus: bus}
+}
+
+// WithAudit wires an audit repo so takeover + state changes generate
+// traceable rows. Chain call: `inbox.New(...).WithAudit(auditRepo)`.
+func (h *Handler) WithAudit(a *auditrepo.Repository) *Handler {
+	h.audit = a
+	return h
 }
 
 func (h *Handler) Routes(r chi.Router) {
@@ -151,6 +162,7 @@ func (h *Handler) markRead(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) assign(w http.ResponseWriter, r *http.Request) {
+	sess := mw.MustSession(r.Context())
 	orgID, _ := mw.OrgIDFrom(r.Context())
 	id, ok := parseID(w, r)
 	if !ok {
@@ -161,6 +173,25 @@ func (h *Handler) assign(w http.ResponseWriter, r *http.Request) {
 		httpx.WriteError(w, http.StatusBadRequest, "INVALID_BODY", "could not parse")
 		return
 	}
+
+	// Detect takeover shape BEFORE mutating so we can fetch the previous
+	// owner for the audit row. A 200+1 extra select-on-takeover is a
+	// cheap price for traceability.
+	var previousOwner *uuid.UUID
+	isTakeover := false
+	if h.audit != nil {
+		if prior, err := h.repo.GetConversation(r.Context(), orgID, id); err == nil {
+			previousOwner = prior.AssignedTo
+			// Takeover = mutating to a non-self owner when the conv already
+			// had a different owner.
+			if body.AssignedTo != nil && prior.AssignedTo != nil &&
+				*prior.AssignedTo != *body.AssignedTo &&
+				*body.AssignedTo != sess.TeamMemberID {
+				isTakeover = true
+			}
+		}
+	}
+
 	if err := h.repo.AssignConversation(r.Context(), orgID, id, body.AssignedTo); err != nil {
 		if errors.Is(err, inboxrepo.ErrNotFound) {
 			httpx.WriteError(w, http.StatusNotFound, "NOT_FOUND", "conversation not found")
@@ -169,9 +200,33 @@ func (h *Handler) assign(w http.ResponseWriter, r *http.Request) {
 		httpx.WriteError(w, http.StatusInternalServerError, "INTERNAL", "could not assign")
 		return
 	}
-	h.publish(orgID, id, "conversation.assigned", map[string]any{"assigned_to": body.AssignedTo})
+
+	// Audit row for forensic trail on takeover scenarios. Self-assign or
+	// first-assign skip the audit write to avoid log spam.
+	if isTakeover && h.audit != nil {
+		_ = h.audit.Append(r.Context(), auditrepo.Entry{
+			ActorType:      string(sess.Role),
+			ActorUserID:    &sess.UserID,
+			OrganizationID: &orgID,
+			Action:         "conversation.takeover",
+			EntityType:     ptrStr("conversation"),
+			EntityID:       &id,
+			Payload: map[string]any{
+				"previous_owner": previousOwner,
+				"new_owner":      body.AssignedTo,
+				"by_member":      sess.TeamMemberID,
+			},
+		})
+	}
+
+	h.publish(orgID, id, "conversation.assigned", map[string]any{
+		"assigned_to": body.AssignedTo,
+		"takeover":    isTakeover,
+	})
 	w.WriteHeader(http.StatusNoContent)
 }
+
+func ptrStr(s string) *string { return &s }
 
 func (h *Handler) patchState(w http.ResponseWriter, r *http.Request) {
 	orgID, _ := mw.OrgIDFrom(r.Context())
