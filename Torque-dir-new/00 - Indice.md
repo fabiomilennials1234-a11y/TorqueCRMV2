@@ -131,7 +131,7 @@ status: vivo
 
 ## Status atual
 
-**Etapa:** **Fase B em andamento** — S33 ✅ F04 InboxPage shell real (ConversationList + ConversationHeader, 135/135 tests em 47 files). Próxima: S34 (MessageList + WS live updates). Fase A concluída (S30+S31+S32). S00-S29 ✅ — Roadmap original de 30 sprints COMPLETO. S29 entregou security audit OWASP Top 10, k6 load test, runbooks operacionais (incident-response + oncall-basics) e security-scan.yml (gosec + govulncheck + npm audit + Trivy). Próximos passos: runtime backend no host, follow-ups não-bloqueantes, pentest + load test contra staging, lançamento.
+**Etapa:** **Fase B em andamento** — S34 ✅ F04 MessageList + MessageBubble com WS live (138/138 tests em 48 files). InboxPage completa: sidebar + header + histórico de mensagens com auto-scroll inteligente. Próxima: S35 (ComposerBar + envio Evolution API + cursor bidirecional backend). Fase A concluída. S00-S29 ✅ — Roadmap original de 30 sprints COMPLETO. S29 entregou security audit OWASP Top 10, k6 load test, runbooks operacionais (incident-response + oncall-basics) e security-scan.yml (gosec + govulncheck + npm audit + Trivy). Próximos passos: runtime backend no host, follow-ups não-bloqueantes, pentest + load test contra staging, lançamento.
 
 **S00** — ESLint flat (a11y + hooks + ban `dangerouslySetInnerHTML`), TS strict, Prettier, Vitest (51 testes), CI, vocabulario canonico, `--clay-*` → `--card-*`/`.tactile-*`, pos-login navigation por `ui_mode`.
 
