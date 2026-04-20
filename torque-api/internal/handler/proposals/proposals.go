@@ -120,7 +120,10 @@ func (h *Handler) get(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) send(w http.ResponseWriter, r *http.Request) {
-	h.transition(w, r, "proposal.sent", h.repo.MarkSent)
+	sess := mw.MustSession(r.Context())
+	h.transition(w, r, "proposal.sent", func(ctx context.Context, orgID, entryID uuid.UUID) error {
+		return h.repo.MarkSent(ctx, orgID, entryID, sess.TeamMemberID)
+	})
 }
 
 func (h *Handler) viewed(w http.ResponseWriter, r *http.Request) {
@@ -138,10 +141,14 @@ func (h *Handler) viewed(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) accept(w http.ResponseWriter, r *http.Request) {
-	h.transition(w, r, "proposal.accepted", h.repo.MarkAccepted)
+	sess := mw.MustSession(r.Context())
+	h.transition(w, r, "proposal.accepted", func(ctx context.Context, orgID, entryID uuid.UUID) error {
+		return h.repo.MarkAccepted(ctx, orgID, entryID, sess.TeamMemberID)
+	})
 }
 
 func (h *Handler) reject(w http.ResponseWriter, r *http.Request) {
+	sess := mw.MustSession(r.Context())
 	orgID, _ := mw.OrgIDFrom(r.Context())
 	entryID, ok := parseEntryID(w, r)
 	if !ok {
@@ -149,10 +156,14 @@ func (h *Handler) reject(w http.ResponseWriter, r *http.Request) {
 	}
 	var body rejectReq
 	if err := httpx.DecodeJSON(r, &body); err != nil {
+		if httpx.IsBodyTooLarge(err) {
+			httpx.WriteError(w, http.StatusRequestEntityTooLarge, "BODY_TOO_LARGE", "request body exceeds 1 MiB")
+			return
+		}
 		httpx.WriteError(w, http.StatusBadRequest, "INVALID_BODY", "could not parse request")
 		return
 	}
-	err := h.repo.MarkRejected(r.Context(), orgID, entryID, body.Reason)
+	err := h.repo.MarkRejected(r.Context(), orgID, entryID, sess.TeamMemberID, body.Reason)
 	if errors.Is(err, proposalrepo.ErrNotFound) {
 		httpx.WriteError(w, http.StatusNotFound, "NOT_FOUND", "proposal not found")
 		return
@@ -213,24 +224,28 @@ func (h *Handler) publish(orgID, entryID uuid.UUID, evtType string, patch any) {
 	})
 }
 
+// formatRFC3339 is a tiny helper so the body of toView does not need a local
+// variable named `fmt` (which would shadow the stdlib package — a latent trap
+// for anyone adding fmt.Errorf to this file later).
+func formatRFC3339(t *time.Time) *string {
+	if t == nil {
+		return nil
+	}
+	s := t.UTC().Format(time.RFC3339)
+	return &s
+}
+
 func toView(p proposalrepo.Proposal) view {
 	v := view{
 		PipeEntryID: p.PipeEntryID, LeadID: p.LeadID, Title: p.Title,
 		AmountCents: p.AmountCents, Currency: p.Currency, Status: string(p.Status),
 		AttachmentKey: p.AttachmentKey,
 	}
-	fmt := func(t *time.Time) *string {
-		if t == nil {
-			return nil
-		}
-		s := t.UTC().Format(time.RFC3339)
-		return &s
-	}
-	v.SentAt = fmt(p.SentAt)
-	v.FirstViewedAt = fmt(p.FirstViewedAt)
-	v.AcceptedAt = fmt(p.AcceptedAt)
-	v.RejectedAt = fmt(p.RejectedAt)
-	v.ExpiresAt = fmt(p.ExpiresAt)
+	v.SentAt = formatRFC3339(p.SentAt)
+	v.FirstViewedAt = formatRFC3339(p.FirstViewedAt)
+	v.AcceptedAt = formatRFC3339(p.AcceptedAt)
+	v.RejectedAt = formatRFC3339(p.RejectedAt)
+	v.ExpiresAt = formatRFC3339(p.ExpiresAt)
 	return v
 }
 

@@ -78,6 +78,11 @@ type UpsertInput struct {
 	ExpiresAt      *time.Time
 }
 
+// MaxAmountCents is the upper cap accepted for amount_cents. 1e14 cents =
+// one trillion currency units — high enough for enterprise deals, low enough
+// to prevent silent int64 overflow when SUM()ing thousands of proposals.
+const MaxAmountCents int64 = 1e14
+
 // Upsert creates or updates a draft proposal. It refuses to touch a proposal
 // already past draft — those transitions go through MarkSent/MarkViewed/etc.
 func (r *Repository) Upsert(ctx context.Context, in UpsertInput) (Proposal, error) {
@@ -86,6 +91,9 @@ func (r *Repository) Upsert(ctx context.Context, in UpsertInput) (Proposal, erro
 	}
 	if in.AmountCents < 0 {
 		return Proposal{}, errors.New("amount_cents must be >= 0")
+	}
+	if in.AmountCents > MaxAmountCents {
+		return Proposal{}, fmt.Errorf("amount_cents exceeds max (%d)", MaxAmountCents)
 	}
 	if in.Currency == "" {
 		in.Currency = "BRL"
@@ -163,13 +171,16 @@ func (r *Repository) Get(ctx context.Context, orgID, entryID uuid.UUID) (Proposa
 	return p, nil
 }
 
-// MarkSent moves draft → sent and stamps sent_at. Legal only from draft.
-func (r *Repository) MarkSent(ctx context.Context, orgID, entryID uuid.UUID) error {
+// MarkSent moves draft → sent, stamps sent_at, and records the actor.
+// Legal only from draft.
+func (r *Repository) MarkSent(ctx context.Context, orgID, entryID, actorMember uuid.UUID) error {
 	ct, err := r.pool.Exec(ctx,
 		`UPDATE pipe_proposals
-		    SET status = 'sent', sent_at = COALESCE(sent_at, now())
+		    SET status = 'sent',
+		        sent_at = COALESCE(sent_at, now()),
+		        sent_by_member_id = $3
 		  WHERE pipe_entry_id = $1 AND organization_id = $2 AND status = 'draft'`,
-		entryID, orgID,
+		entryID, orgID, actorMember,
 	)
 	if err != nil {
 		return fmt.Errorf("mark sent: %w", err)
@@ -200,13 +211,13 @@ func (r *Repository) MarkViewed(ctx context.Context, orgID, entryID uuid.UUID) e
 	return nil
 }
 
-// MarkAccepted moves sent|viewed → accepted.
-func (r *Repository) MarkAccepted(ctx context.Context, orgID, entryID uuid.UUID) error {
+// MarkAccepted moves sent|viewed → accepted and records the actor.
+func (r *Repository) MarkAccepted(ctx context.Context, orgID, entryID, actorMember uuid.UUID) error {
 	ct, err := r.pool.Exec(ctx,
 		`UPDATE pipe_proposals
-		    SET status = 'accepted', accepted_at = now()
+		    SET status = 'accepted', accepted_at = now(), accepted_by_member_id = $3
 		  WHERE pipe_entry_id = $1 AND organization_id = $2 AND status IN ('sent','viewed')`,
-		entryID, orgID,
+		entryID, orgID, actorMember,
 	)
 	if err != nil {
 		return fmt.Errorf("mark accepted: %w", err)
@@ -220,13 +231,14 @@ func (r *Repository) MarkAccepted(ctx context.Context, orgID, entryID uuid.UUID)
 	return nil
 }
 
-// MarkRejected moves sent|viewed → rejected with optional reason.
-func (r *Repository) MarkRejected(ctx context.Context, orgID, entryID uuid.UUID, reason *string) error {
+// MarkRejected moves sent|viewed → rejected with optional reason + actor.
+func (r *Repository) MarkRejected(ctx context.Context, orgID, entryID, actorMember uuid.UUID, reason *string) error {
 	ct, err := r.pool.Exec(ctx,
 		`UPDATE pipe_proposals
-		    SET status = 'rejected', rejected_at = now(), rejection_reason = $3
+		    SET status = 'rejected', rejected_at = now(),
+		        rejection_reason = $3, rejected_by_member_id = $4
 		  WHERE pipe_entry_id = $1 AND organization_id = $2 AND status IN ('sent','viewed')`,
-		entryID, orgID, reason,
+		entryID, orgID, reason, actorMember,
 	)
 	if err != nil {
 		return fmt.Errorf("mark rejected: %w", err)

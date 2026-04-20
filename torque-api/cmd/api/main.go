@@ -39,6 +39,7 @@ import (
 	proposalshandler "github.com/milennials/torque-api/internal/handler/proposals"
 	tasksahandler "github.com/milennials/torque-api/internal/handler/tasks"
 	mw "github.com/milennials/torque-api/internal/httpx/middleware"
+	"github.com/milennials/torque-api/internal/domain"
 	"github.com/milennials/torque-api/internal/observability/sentry"
 	agentrepo "github.com/milennials/torque-api/internal/repository/agent"
 	confirmationrepo "github.com/milennials/torque-api/internal/repository/confirmation"
@@ -315,15 +316,28 @@ func newRouter(
 			// Routes that need tenant scope (org_id in context).
 			priv.Group(func(t chi.Router) {
 				t.Use(mw.TenantScope)
+
+				// Member-accessible surfaces. Tenant isolation + per-field
+				// guards inside each repo are enough; RBAC can tighten per
+				// endpoint in future sprints once member view keys settle.
 				preferenceshandler.New(users).Routes(t)
 				operationshandler.New(operations).Routes(t)
 				leadshandler.New(leadrepo.New(pool), bus).Routes(t)
 				pipeshandler.New(piperepo.New(pool), bus).Routes(t)
 				confirmationshandler.New(confirmationrepo.New(pool), bus).Routes(t)
-				proposalshandler.New(proposalrepo.New(pool), bus).Routes(t)
 				inboxhandler.New(inboxrepo.New(pool), bus).Routes(t)
 				tasksahandler.New(taskrepo.New(pool), bus).Routes(t)
-				agentshandler.New(agentrepo.New(pool), bus).Routes(t)
+
+				// --- Admin-only surfaces (Copilot kill-switch + KB +
+				// proposal money flow). Any authenticated member could
+				// previously derail these; sprint/remediation gates them
+				// to admin+master, matching the catalog rows seeded in
+				// migration 0010. RequireRole also lets master through.
+				t.Group(func(admin chi.Router) {
+					admin.Use(mw.RequireRole(domain.RoleAdmin))
+					agentshandler.New(agentrepo.New(pool), bus).Routes(admin)
+					proposalshandler.New(proposalrepo.New(pool), bus).Routes(admin)
+				})
 			})
 
 			// WebSocket upgrade — authenticated + session carries org_id.

@@ -65,10 +65,14 @@ func New(pool *pgxpool.Pool) *Repository { return &Repository{pool: pool} }
 
 // -------- channels ----------------------------------------------------
 
-// UpsertChannel creates a channel or updates its status/last_seen_at by
-// (org, kind, external_id). Used both by admin "connect channel" flows and
-// by provider health-checks that keep `last_seen_at` fresh.
+// UpsertChannel creates a channel or updates its name by (org, kind, external_id).
+// external_id is REQUIRED — SQL's NULL != NULL means the UNIQUE index would
+// silently accept duplicates when externalID is nil. Callers that truly have
+// no provider id should pass a stable synthetic token.
 func (r *Repository) UpsertChannel(ctx context.Context, orgID uuid.UUID, kind, name string, externalID *string) (uuid.UUID, error) {
+	if externalID == nil || *externalID == "" {
+		return uuid.Nil, errors.New("external_id is required to prevent duplicate channels")
+	}
 	const q = `
 		INSERT INTO channels (organization_id, kind, name, external_id)
 		VALUES ($1, $2::channel_kind, $3, $4)
@@ -178,6 +182,10 @@ func (r *Repository) GetConversation(ctx context.Context, orgID, id uuid.UUID) (
 
 // UpsertConversation creates or updates a conversation by (channel, external_thread_id).
 // Used by webhook intake — the provider supplies the thread id.
+//
+// Tenant safety: channel_id is validated to belong to organization_id BEFORE
+// the insert. A misrouted or spoofed webhook that supplies another tenant's
+// channel id cannot create a cross-tenant conversation row.
 type UpsertConversationInput struct {
 	OrganizationID   uuid.UUID
 	ChannelID        uuid.UUID
@@ -188,10 +196,28 @@ type UpsertConversationInput struct {
 }
 
 func (r *Repository) UpsertConversation(ctx context.Context, in UpsertConversationInput) (uuid.UUID, error) {
+	if in.ExternalThreadID == "" {
+		return uuid.Nil, errors.New("external_thread_id is required")
+	}
 	meta := in.Metadata
 	if len(meta) == 0 {
 		meta = []byte(`{}`)
 	}
+	// Ownership pre-flight: channel must belong to the caller's tenant.
+	var ownedBy uuid.UUID
+	if err := r.pool.QueryRow(ctx,
+		`SELECT organization_id FROM channels WHERE id = $1 LIMIT 1`,
+		in.ChannelID,
+	).Scan(&ownedBy); err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return uuid.Nil, ErrNotFound
+		}
+		return uuid.Nil, fmt.Errorf("channel ownership: %w", err)
+	}
+	if ownedBy != in.OrganizationID {
+		return uuid.Nil, ErrNotFound // never leak cross-tenant existence
+	}
+
 	const q = `
 		INSERT INTO conversations (
 		  organization_id, channel_id, external_thread_id,
@@ -270,6 +296,12 @@ type AppendMessageInput struct {
 // AppendMessage inserts a message and keeps the parent conversation's
 // last_message_* fields in sync + bumps unread_count for inbound. Runs in
 // one transaction so WS broadcasts always see consistent state.
+//
+// Tenant safety: the conversation_id is validated to belong to
+// organization_id before the insert. Without this guard a member of org A
+// could post a conversation_id belonging to org B and create an orphaned
+// row that org A's queries never see but that poisons org B's
+// (conversation_id, external_id) dedup index.
 func (r *Repository) AppendMessage(ctx context.Context, in AppendMessageInput) (Message, error) {
 	if in.Direction != "inbound" && in.Direction != "outbound" {
 		return Message{}, fmt.Errorf("invalid direction: %s", in.Direction)
@@ -283,6 +315,21 @@ func (r *Repository) AppendMessage(ctx context.Context, in AppendMessageInput) (
 		return Message{}, fmt.Errorf("begin: %w", err)
 	}
 	defer func() { _ = tx.Rollback(ctx) }()
+
+	// Ownership guard — refuse if conversation is not in the caller's tenant.
+	var ownedBy uuid.UUID
+	if err := tx.QueryRow(ctx,
+		`SELECT organization_id FROM conversations WHERE id = $1 LIMIT 1`,
+		in.ConversationID,
+	).Scan(&ownedBy); err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return Message{}, ErrNotFound
+		}
+		return Message{}, fmt.Errorf("conversation ownership: %w", err)
+	}
+	if ownedBy != in.OrganizationID {
+		return Message{}, ErrNotFound
+	}
 
 	var m Message
 	err = tx.QueryRow(ctx,
@@ -362,13 +409,18 @@ func (r *Repository) ListMessages(ctx context.Context, orgID, convID uuid.UUID, 
 	return out, rows.Err()
 }
 
+// messagePreview returns at most 200 runes of the body, or a localized
+// placeholder for non-text kinds. Rune-safe: WhatsApp/Instagram bodies rich
+// in emoji or CJK would otherwise corrupt mid-codepoint if sliced at the
+// byte offset, producing invalid UTF-8 that encoding/json replaces with
+// U+FFFD downstream.
 func messagePreview(m Message) string {
 	if m.Body != nil {
-		b := *m.Body
-		if len(b) > 200 {
-			b = b[:200]
+		rs := []rune(*m.Body)
+		if len(rs) > 200 {
+			rs = rs[:200]
 		}
-		return b
+		return string(rs)
 	}
 	switch m.Kind {
 	case "image":
