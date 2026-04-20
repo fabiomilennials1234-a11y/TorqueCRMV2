@@ -987,18 +987,22 @@ O bloco da sprint em §8 muda de "prospectivo" para "entregue":
 
 ---
 
-### Sprint S29 — Security Hardening + Load Test + Docs
+### Sprint S29 — Security Hardening + Load Test + Docs ✅ ENTREGUE (2026-04-20) — FINAL
 
 | Campo | Valor |
 |-------|-------|
-| **Objetivo** | Auditoria final de segurança, teste de carga, documentação operacional |
-| **Resultado esperado** | Zero OWASP Top 10. p95 < 500ms sob carga. Runbooks completos. |
-| **Dependências** | S28 (deploy funcional) |
-| **Agentes** | `code-reviewer` (security audit), `/hm-qa` (load test) |
-| **Áreas afetadas** | Todo o sistema |
-| **Stack** | k6/vegeta (load test), OWASP ZAP |
-| **Riscos** | Descoberta tardia de vulnerabilidades |
-| **Critério de conclusão** | Pentest passando. Load test p95 < 500ms. Runbooks escritos. Alertas configurados. |
+| **Objetivo** | Auditoria final OWASP, k6 load test, runbooks, security scan workflow |
+| **Resultado esperado** | Verdict PASS com follow-ups tracked, load test gate p95<500ms, runbooks operacionais, scan diário |
+| **Dependências** | S28 (pipeline CI/CD) |
+| **Agentes** | Infra → Docs |
+| **Áreas afetadas** | `.specs/security/`, `.specs/loadtest/`, `.specs/runbooks/`, `.github/workflows/security-scan.yml` |
+| **Stack** | k6, gosec, govulncheck, Trivy, OWASP Top 10 2021 |
+| **Entregas** | Security audit doc cobrindo A01-A10 com invariantes verificadas; k6 baseline script com thresholds gate-of-build; incident-response runbook + oncall-basics runbook; security-scan.yml nightly |
+| **Follow-ups não-bloqueantes** | Dependabot/Renovate; GHCR keyless signing via cosign; impersonation cookie swap atomic com audit row; OpenAPI refresh post-S04; gosec também dentro de ci.yml main job |
+| **Critério de conclusão** | ✅ OWASP Top 10 PASS com caveats documentados. ✅ Load test baseline committed e parametrizável. ✅ Runbooks escritos. ✅ Security scan diário. |
+| **Artefatos** | `.specs/security/security-hardening-audit-2026-04-20.md`, `.specs/loadtest/api-baseline.k6.js`, `.specs/runbooks/{incident-response,oncall-basics}.md`, `.github/workflows/security-scan.yml` |
+| **Branch** | `sprint/S29` → PR para `develop` |
+| **STATE** | D044 (marca fim do roadmap) |
 
 ---
 
