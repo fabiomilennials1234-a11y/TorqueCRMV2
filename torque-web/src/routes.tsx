@@ -13,6 +13,7 @@ import { CampaignsPage } from '@/features/campaigns/CampaignsPage'
 import { AgentsPage } from '@/features/copilot/AgentsPage'
 import { AnalyticsPage } from '@/features/analytics/AnalyticsPage'
 import { CheckoutPage } from '@/features/billing/CheckoutPage'
+import { MasterPage } from '@/features/master/MasterPage'
 import { OnboardingPage } from '@/features/onboarding/OnboardingPage'
 import { OnboardingGate } from '@/components/OnboardingGate'
 import { ProductsPage } from '@/features/products/ProductsPage'
@@ -85,6 +86,7 @@ export const router = createBrowserRouter([
               { path: 'analytics', element: <AnalyticsPage /> },
               { path: 'settings', element: <SettingsPage /> },
               { path: 'billing', element: <CheckoutPage /> },
+              { path: 'master', element: <MasterPage /> },
               { path: 'help', element: <Navigate to="/settings" replace /> },
               { path: 'follow-ups', element: <ComingSoonPage /> },
               { path: 'team', element: <ComingSoonPage /> },

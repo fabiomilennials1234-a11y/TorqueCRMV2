@@ -931,18 +931,22 @@ O bloco da sprint em §8 muda de "prospectivo" para "entregue":
 
 ---
 
-### Sprint S26 — F16: Master Admin
+### Sprint S26 — F16: Master Admin ✅ ENTREGUE (2026-04-20)
 
 | Campo | Valor |
 |-------|-------|
-| **Objetivo** | Painel de operações: 5 views + center de operações |
-| **Resultado esperado** | Visão cross-org para master admin, impersonation, system health |
-| **Dependências** | Todas as features anteriores |
-| **Agentes** | `general-purpose`, `code-reviewer` (security — cross-org access) |
-| **Áreas afetadas** | Backend + Frontend |
+| **Objetivo** | Cross-org views para master + impersonation com audit trail inviolável |
+| **Resultado esperado** | master lista orgs, vê system health, inicia impersonation (audit-first) |
+| **Dependências** | S02 (RequireMaster), S03 (audit_log), S24 (subscriptions) |
+| **Agentes** | Backend → QA → Frontend → Docs |
+| **Áreas afetadas** | Backend repo/handler master, Frontend hooks + MasterPage |
 | **Stack** | Go, React |
-| **Riscos** | Alto — cross-org access é superfície de ataque; impersonation requer audit trail |
-| **Critério de conclusão** | 5 views funcionais. Impersonation com audit. Operations Center mostra health. |
+| **Entregas** | ListOrganizations + GetOrganization + SystemHealthSnapshot + ImpersonationTarget; Handler em /master/* sob RequireMaster; audit-first invariant (audit.Append falha → impersonation refused); MasterPage com health cards + orgs table; hooks useMaster.ts |
+| **Escopo parcial** | Cookie-swap efetivo da impersonation fica para follow-up — S26 entrega data plane + audit trail. Token curto e não-renovável quando implementar. |
+| **Critério de conclusão** | ✅ Cross-org views funcionais. ✅ Impersonation audit-first. ✅ Health snapshot. ⏳ Cookie swap pendente. |
+| **Artefatos** | `torque-api/internal/{repository/master/*,handler/master/*}`, `torque-web/src/{hooks/useMaster.ts,features/master/MasterPage.tsx}` |
+| **Branch** | `sprint/S26` → PR para `develop` |
+| **STATE** | D041 |
 
 ---
 
