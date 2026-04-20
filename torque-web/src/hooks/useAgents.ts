@@ -346,6 +346,45 @@ export function useBindAgentCollection(agentId: string) {
   )
 }
 
+// -------- S42 agent metrics -----------------------------------------
+
+/**
+ * S42 — aggregation shape returned by GET /agents/:id/metrics.
+ * Window is closed-open [since, until). avg_latency_ms is null when
+ * no assistant turns exist in the window.
+ */
+export interface AgentMetrics {
+  since: string
+  until: string
+  total_sessions: number
+  total_messages: number
+  tokens_input: number
+  tokens_output: number
+  avg_latency_ms?: number | null
+  sessions_by_state: Record<string, number>
+}
+
+export function useAgentMetrics(
+  agentId: string | undefined,
+  window: { since: string; until: string } | undefined
+) {
+  return useQuery<AgentMetrics>({
+    queryKey:
+      agentId && window
+        ? ['copilot', 'agents', agentId, 'metrics', window.since, window.until]
+        : ['copilot', 'metrics', 'disabled'],
+    enabled: Boolean(agentId && window),
+    queryFn: () => {
+      const qs = new URLSearchParams({
+        since: window!.since,
+        until: window!.until,
+      }).toString()
+      return get<AgentMetrics>(`/api/v1/agents/${agentId}/metrics?${qs}`)
+    },
+    staleTime: 60 * 1000,
+  })
+}
+
 // -------- S41 TTS preview -------------------------------------------
 
 /**

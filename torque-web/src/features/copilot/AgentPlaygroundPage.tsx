@@ -170,6 +170,12 @@ function PlaygroundInner({ agent, agentId }: { agent: ReturnType<typeof useAgent
         <div className="mt-6 flex items-center gap-2">
           <Badge tone={agent.status === 'active' ? 'success' : 'neutral'}>{agent.status}</Badge>
           {agent.kill_switch && <Badge tone="danger">Kill-switch</Badge>}
+          <Link
+            to={`/copilot/${agentId}/metrics`}
+            className="ml-auto text-xs text-accent underline"
+          >
+            Métricas
+          </Link>
         </div>
 
         <form
