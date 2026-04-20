@@ -16,10 +16,13 @@ yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 
-# Env
+# Env — ignore by default, but ship the committed dev/example files.
+# .env.development is safe to ship (VITE_DEV_AUTH=1 is the whole point of
+# dev mode). Secrets live in .env / .env.local which stay ignored.
 .env
 .env.*
 !.env.example
+!.env.development
 
 # Test
 coverage
