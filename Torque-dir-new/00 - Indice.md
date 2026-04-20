@@ -129,7 +129,7 @@ status: vivo
 
 ## Status atual
 
-**Etapa:** S00-S23 ✅. S23 ✅ F13 Onboarding Wizard + Gate (2026-04-20). Runtime backend pendente no host.
+**Etapa:** S00-S24 ✅. S24 ✅ F14 Billing Foundation (mock provider + webhook, 2026-04-20). Runtime backend pendente no host.
 
 **S00** — ESLint flat (a11y + hooks + ban `dangerouslySetInnerHTML`), TS strict, Prettier, Vitest (51 testes), CI, vocabulario canonico, `--clay-*` → `--card-*`/`.tactile-*`, pos-login navigation por `ui_mode`.
 
