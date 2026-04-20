@@ -10,7 +10,7 @@
 
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 
-import { del, get, patch, post } from '@/api/client'
+import { del, get, patch, post, put } from '@/api/client'
 import { useAppMutation } from '@/hooks/useAppMutation'
 import { useWSSubscribe } from '@/hooks/useWSSubscribe'
 
@@ -32,6 +32,12 @@ export interface Agent {
   tools_allowlist: string[]
   kill_switch: boolean
   status: AgentStatus
+  /**
+   * S39 — optional RAG binding. When non-null, the playground SSE
+   * handler runs topK retrieval against this collection before the
+   * LLM call. Null / undefined = no retrieval (base system prompt only).
+   */
+  knowledge_collection_id?: string | null
 }
 
 export interface UpdateAgentPayload {
@@ -172,24 +178,159 @@ export interface KnowledgeCollectionRef {
   name: string
 }
 
+/**
+ * S39 — knowledge collection as returned by GET /knowledge/collections.
+ * `source_count` comes from a LEFT JOIN aggregate in the repo, so it
+ * stays in sync without a second request.
+ */
+export interface KnowledgeCollection {
+  id: string
+  name: string
+  description?: string | null
+  source_count: number
+  created_at: string
+  updated_at: string
+}
+
+export type KnowledgeSourceStatus = 'queued' | 'ingesting' | 'ready' | 'failed'
+
+/**
+ * S39 — one knowledge source inside a collection. `status` transitions
+ * queued → ingesting → ready (or failed with `error` populated). The
+ * ingest pipeline runs detached from the HTTP request, so the UI must
+ * poll or subscribe via WS for updates.
+ */
+export interface KnowledgeSource {
+  id: string
+  collection_id: string
+  kind: string
+  title: string
+  uri?: string | null
+  status: KnowledgeSourceStatus
+  error?: string | null
+  ingested_at?: string | null
+  created_at: string
+  updated_at: string
+}
+
+function knowledgeKeys() {
+  return {
+    collections: () => ['copilot', 'knowledge', 'collections'] as const,
+    sources: (cid: string) => ['copilot', 'knowledge', 'collections', cid, 'sources'] as const,
+  }
+}
+
+/**
+ * useKnowledgeCollections lists every collection in the tenant and
+ * keeps the cache fresh via the knowledge.collection_created WS event.
+ * source_count is a live aggregate — no secondary round-trip needed
+ * to render the list with per-collection counts.
+ */
+export function useKnowledgeCollections() {
+  const client = useQueryClient()
+
+  useWSSubscribe<KnowledgeCollection>(
+    ['knowledge.collection_created'],
+    () => void client.invalidateQueries({ queryKey: knowledgeKeys().collections() })
+  )
+
+  return useQuery<KnowledgeCollection[]>({
+    queryKey: knowledgeKeys().collections(),
+    queryFn: async () =>
+      (await get<{ data: KnowledgeCollection[] }>('/api/v1/knowledge/collections')).data,
+    staleTime: 30 * 1000,
+  })
+}
+
+/**
+ * useKnowledgeSources lists every source inside a collection. The WS
+ * event `knowledge.source_enqueued` triggers an invalidation so the
+ * row appears immediately after POST, then transitions as the ingest
+ * service updates status. A poll interval of 3s covers status flips
+ * since the backend currently does not publish ingesting/ready events
+ * (follow-up sprint will).
+ */
+export function useKnowledgeSources(collectionId: string | undefined) {
+  const client = useQueryClient()
+
+  useWSSubscribe<KnowledgeSource>(
+    ['knowledge.source_enqueued'],
+    () => {
+      if (collectionId) void client.invalidateQueries({ queryKey: knowledgeKeys().sources(collectionId) })
+    },
+    [collectionId]
+  )
+
+  return useQuery<KnowledgeSource[]>({
+    queryKey: collectionId ? knowledgeKeys().sources(collectionId) : ['copilot', 'knowledge', 'sources', 'disabled'],
+    enabled: Boolean(collectionId),
+    queryFn: async () =>
+      (
+        await get<{ data: KnowledgeSource[] }>(
+          `/api/v1/knowledge/collections/${collectionId}/sources`
+        )
+      ).data,
+    refetchInterval: (query) => {
+      // Stop polling once every source is terminal (ready|failed).
+      const data = query.state.data
+      if (!data || data.some((s) => s.status === 'queued' || s.status === 'ingesting')) {
+        return 3_000
+      }
+      return false
+    },
+  })
+}
+
 export function useCreateCollection() {
   return useAppMutation<KnowledgeCollectionRef, { name: string; description?: string }>(
     (body) => post<KnowledgeCollectionRef>('/api/v1/knowledge/collections', body),
-    { errorContext: 'knowledge.collection.create' }
+    {
+      invalidate: [['copilot', 'knowledge', 'collections']],
+      errorContext: 'knowledge.collection.create',
+    }
   )
 }
 
+/**
+ * S39 — inline-text source ingest. The handler gates kind=text|markdown
+ * on non-empty `content`; URL kinds require `uri`. The service runs
+ * chunk → embed → insert detached from this mutation; the UI should
+ * refetch sources (useKnowledgeSources) to see status transitions.
+ */
 export function useEnqueueSource(collectionId: string) {
   return useAppMutation<
     { id: string; status: string },
-    { kind: string; title: string; uri?: string; metadata?: unknown }
+    {
+      kind: 'text' | 'markdown' | 'url'
+      title: string
+      content?: string
+      uri?: string
+      metadata?: unknown
+    }
   >(
     (body) =>
       post<{ id: string; status: string }>(
         `/api/v1/knowledge/collections/${collectionId}/sources`,
         body
       ),
-    { errorContext: 'knowledge.source.enqueue' }
+    {
+      invalidate: [['copilot', 'knowledge', 'collections', collectionId, 'sources']],
+      errorContext: 'knowledge.source.enqueue',
+    }
+  )
+}
+
+/**
+ * S39 — bind/unbind a RAG collection to an agent. Pass `null` to
+ * detach. Cross-tenant binds are refused at the repo layer (404).
+ */
+export function useBindAgentCollection(agentId: string) {
+  return useAppMutation<Agent, { collection_id: string | null }>(
+    (body) => put<Agent>(`/api/v1/agents/${agentId}/knowledge-collection`, body),
+    {
+      invalidate: [['copilot', 'agents']],
+      errorContext: 'copilot.agent.knowledge_bind',
+    }
   )
 }
 
