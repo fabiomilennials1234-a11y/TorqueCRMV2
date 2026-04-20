@@ -132,7 +132,7 @@ status: vivo
 
 ## Status atual
 
-**Etapa:** **Fase B concluída (2026-04-20)** — F04 Inbox completo (sidebar + header + histórico WS-live + composer + takeover audit + teamMemberId em /me). 148/148 tests em 50 files. Próxima: **Fase C** (S37-S42, F06 Copilot — Agent entity + Playground OpenRouter + RAG pgvector + TTS). Fase A concluída. S00-S29 ✅ — Roadmap original de 30 sprints COMPLETO. S29 entregou security audit OWASP Top 10, k6 load test, runbooks operacionais (incident-response + oncall-basics) e security-scan.yml (gosec + govulncheck + npm audit + Trivy). Próximos passos: runtime backend no host, follow-ups não-bloqueantes, pentest + load test contra staging, lançamento.
+**Etapa:** **Remediation-B ✅ (2026-04-20)** — lift testes + observabilidade pré-Fase C. **168/168 em 59 files**, coverage lines **59.17** (+8.95pp vs D054), thresholds ratcheted 55/55/50/48, SENTRY_TRACES default 0.1, audit payload scrub recursivo. **Score composto 84 → 87/100**. Fase B concluída (S33-S36 F04 Inbox). Próxima: **Fase C** (S37-S42, F06 Copilot). Fase A concluída. S00-S29 ✅ — Roadmap original de 30 sprints COMPLETO. S29 entregou security audit OWASP Top 10, k6 load test, runbooks operacionais (incident-response + oncall-basics) e security-scan.yml (gosec + govulncheck + npm audit + Trivy). Próximos passos: runtime backend no host, follow-ups não-bloqueantes, pentest + load test contra staging, lançamento.
 
 **S00** — ESLint flat (a11y + hooks + ban `dangerouslySetInnerHTML`), TS strict, Prettier, Vitest (51 testes), CI, vocabulario canonico, `--clay-*` → `--card-*`/`.tactile-*`, pos-login navigation por `ui_mode`.
 
