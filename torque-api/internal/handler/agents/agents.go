@@ -66,6 +66,10 @@ type agentView struct {
 	ID              uuid.UUID `json:"id"`
 	Name            string    `json:"name"`
 	Description     *string   `json:"description,omitempty"`
+	// SystemPrompt exposed as of S38 so the Playground editor can render
+	// + edit the persisted prompt without a separate roundtrip. Admin-only
+	// endpoint already guards access; no secret leakage by contract.
+	SystemPrompt    string    `json:"system_prompt"`
 	Model           string    `json:"model"`
 	Temperature     float64   `json:"temperature"`
 	MaxOutputTokens int       `json:"max_output_tokens"`
@@ -350,8 +354,9 @@ func (h *Handler) publish(orgID, id uuid.UUID, evtType string, patch any) {
 
 func toAgentView(a agentrepo.Agent) agentView {
 	return agentView{
-		ID: a.ID, Name: a.Name, Description: a.Description, Model: a.Model,
-		Temperature: a.Temperature, MaxOutputTokens: a.MaxOutputTokens,
+		ID: a.ID, Name: a.Name, Description: a.Description,
+		SystemPrompt: a.SystemPrompt,
+		Model: a.Model, Temperature: a.Temperature, MaxOutputTokens: a.MaxOutputTokens,
 		ToolsAllowlist: a.ToolsAllowlist, KillSwitch: a.KillSwitch, Status: a.Status,
 	}
 }

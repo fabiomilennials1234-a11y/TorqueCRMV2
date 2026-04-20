@@ -80,11 +80,7 @@ func (h *PlaygroundHandler) updateAgent(w http.ResponseWriter, r *http.Request) 
 		httpx.WriteError(w, http.StatusBadRequest, "INVALID_AGENT", err.Error())
 		return
 	}
-	view := agentView{
-		ID: a.ID, Name: a.Name, Description: a.Description, Model: a.Model,
-		Temperature: a.Temperature, MaxOutputTokens: a.MaxOutputTokens,
-		ToolsAllowlist: a.ToolsAllowlist, KillSwitch: a.KillSwitch, Status: a.Status,
-	}
+	view := toAgentView(a)
 	h.publish(orgID, a.ID, "agent.updated", view)
 	httpx.WriteJSON(w, http.StatusOK, view)
 }
