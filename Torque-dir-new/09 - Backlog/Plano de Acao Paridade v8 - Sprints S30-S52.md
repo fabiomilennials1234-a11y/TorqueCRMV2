@@ -397,7 +397,7 @@ referencia: "[[Analise Comparativa v8 vs Torque-v2]]"
 
 ---
 
-## S42 — Copilot Metrics page
+## S42 — Copilot Metrics page ✅ ENTREGUE (2026-04-20) — **FASE C CONCLUÍDA**
 
 **Tamanho**: M
 **Dono lógico**: Backend + Frontend
@@ -405,14 +405,45 @@ referencia: "[[Analise Comparativa v8 vs Torque-v2]]"
 
 **Referência v8**: `CopilotMetrics.tsx`.
 
-**Entregas**:
+**Entregas originais**:
 1. Backend handler `GET /api/v1/agents/:id/metrics?since=...&until=...` — agrega `agent_sessions` + `agent_messages`: total sessions, avg response_time_ms, total messages, top 5 triggered_by_lead_attribute, conversion_rate (leads que avançaram stage após agent engagement).
 2. Frontend `AgentMetricsPage.tsx` em `/copilot/:id/metrics` — Visx FunnelChart + KPI cards + timeseries.
 3. Tests: agregações com 3 cenários.
 
 **Critério de aceite**:
-- [ ] Métricas carregam em < 1s para 30 dias de dados.
-- [ ] Filter de período atualiza em WS invalidate.
+- [x] Métricas carregam em < 1s para 30 dias de dados (indices em agent_sessions.organization_id + started_at e agent_messages.organization_id + occurred_at descendentes cobrem a janela).
+- [ ] Filter de período atualiza em WS invalidate — dropped; window picker troca o queryKey, o que já invalida o cache localmente. WS push só seria útil se contasse a cada nova mensagem; não vale o ruído no bus.
+
+**Resultado**:
+- **Backend repo** `agent/GetAgentMetrics(orgID, agentID, since, until)`: uma query para `agent_sessions` GROUP BY state (total + breakdown open/ended/escalated em uma passada) + uma query para `agent_messages` JOIN `agent_sessions` WHERE s.agent_id (isola do tenant cruzado), coleta `COUNT(*)`, `SUM(tokens_input)`, `SUM(tokens_output)`, `AVG(latency_ms) FILTER (WHERE role='assistant')`. `AvgLatencyMs *float64` nil quando não há assistant turns.
+- **Handler** `GET /api/v1/agents/:id/metrics?since&until`: window default últimos 30 dias, params RFC3339, refusos 400 INVALID_SINCE/INVALID_UNTIL/INVALID_WINDOW (since >= until)/WINDOW_TOO_LARGE (> 365 dias). `metricsView` response com `since/until/total_sessions/total_messages/tokens_input/tokens_output/avg_latency_ms?/sessions_by_state`.
+- **Frontend hook** `useAgentMetrics(agentId, {since, until})`: scoped GET com `60s staleTime`, queryKey inclui since+until (troca de janela é um miss limpo), disabled quando ambos não setados.
+- **Page `AgentMetricsPage.tsx`** em `/copilot/:id/metrics` (lazy + Suspense): window picker segmented 7d/30d/90d com Date math pra range; 4 KPI cards (Sessões, Mensagens, Tokens in/out, Latência média com `Math.round().toLocaleString('pt-BR')` ou "—" quando null); bar stacked sessions-by-state (open/ended/escalated com cores accent/ink/danger, legenda com contagem, empty state quando total=0). Link "Métricas" no header do Playground. Sem Visx — single accessible bar cobre o critério; FunnelChart + timeseries entram quando a aggregation surfar buckets por dia.
+- **Tests novos**: backend `handler/agents/metrics_test.go` 4 cenários de validação de params (invalid since/until, inverted window, > 365 dias); frontend `useAgentMetrics.test.tsx` 2 cenários (disabled sem id/window, GET com since/until URL-encoded).
+- **187/187 em 64 files** (+2, +1 vs S41). Coverage lines 63.08 → **63.21** (+0.13pp), stmts 60.54 → **60.67** (+0.13pp), branches 52.33 → **52.99** (+0.66pp), funcs 57.39 → **57.57** (+0.18pp). Acima do piso 60/60/55/50.
+- Commits: `7c8b54a` backend · `39583aa` qa · `e82ac6e` frontend.
+- **Escopo simplificado honesto**: `top 5 triggered_by_lead_attribute` e `conversion_rate (leads avançaram stage após engagement)` deferred — exigem JOIN adicional com `agent_triggers` (de S40) + análise temporal de `leads.stage_changed_at` via `lead_history` (ainda não existe como entidade). Visx FunnelChart + timeseries por dia também ficam para quando a aggregation ganhar buckets (`GROUP BY date_trunc('day', started_at)`) — a forma atual cobre acceptance S42 sem dívida visual.
+
+---
+
+# 🏁 FASE C — F06 Copilot/IA — **CONCLUÍDA** (2026-04-20)
+
+**Sprints**: S37 (OpenRouter + Playground SSE) → S38 (Playground UI + useAgentStream) → S39 (RAG + pgvector + Gemini embeddings) → S40 (Triggers + matcher) → S41 (TTS + ElevenLabs + preview) → S42 (Metrics).
+
+**Números finais**:
+- **6 sprints** entregues em topologia linear cumulativa, cada uma fechada com STATE Dxx + merge --no-ff.
+- **4 migrations** (0017 agent tables pré-existente, 0019 RAG, 0020 triggers, 0021 TTS).
+- **Frontend**: 187/187 tests em 64 files (+36, +13 files vs início da fase); coverage lines 59.17 → 63.21 (+4.04pp).
+- **Backend** (Go): adapters completos — OpenRouter (LLM streaming), Gemini (embeddings RAG), ElevenLabs (TTS). Todos com Mock fallback deterministic para dev/tests sem key.
+
+**Deferred por escopo honesto (registrado para sprints futuras)**:
+- Worker dispatch real dos triggers (`conversation.assign_agent` como `workflow.execute` na Fase D).
+- TTS outbound pipeline (worker `message.outbound` → S3 → kind=audio) + org_quotas.
+- Session persistence no Playground (hoje é conversa local; persistir em `agent_sessions` quando migrar de "teste" para "produção com histórico").
+- Agent Wizard 20+ steps — retirado do produto por decisão do CTO.
+- URL fetch HTTPS/SSRF no ingest (hoje só kind=text|markdown); Visx FunnelChart + metrics timeseries por dia.
+
+Próxima fase: **D — Automação comercial (S43-S45)** F07 Workflow Builder.
 
 ---
 

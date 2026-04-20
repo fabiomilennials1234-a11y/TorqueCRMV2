@@ -34,6 +34,7 @@ const WorkflowBuilderPage = lazy(() => lazyRetry(() => import('@/features/workfl
 const CampaignsPage = lazy(() => lazyRetry(() => import('@/features/campaigns/CampaignsPage').then((m) => ({ default: m.CampaignsPage }))))
 const AgentListPage = lazy(() => lazyRetry(() => import('@/features/copilot/AgentListPage').then((m) => ({ default: m.AgentListPage }))))
 const AgentPlaygroundPage = lazy(() => lazyRetry(() => import('@/features/copilot/AgentPlaygroundPage').then((m) => ({ default: m.AgentPlaygroundPage }))))
+const AgentMetricsPage = lazy(() => lazyRetry(() => import('@/features/copilot/AgentMetricsPage').then((m) => ({ default: m.AgentMetricsPage }))))
 const AnalyticsPage = lazy(() => lazyRetry(() => import('@/features/analytics/AnalyticsPage').then((m) => ({ default: m.AnalyticsPage }))))
 const SettingsPage = lazy(() => lazyRetry(() => import('@/features/settings/SettingsPage').then((m) => ({ default: m.SettingsPage }))))
 const CheckoutPage = lazy(() => lazyRetry(() => import('@/features/billing/CheckoutPage').then((m) => ({ default: m.CheckoutPage }))))
@@ -112,6 +113,7 @@ export const router = createBrowserRouter([
                   { path: 'campaigns', element: withSuspense(<CampaignsPage />) },
                   { path: 'copilot', element: withSuspense(<AgentListPage />) },
                   { path: 'copilot/:id', element: withSuspense(<AgentPlaygroundPage />) },
+                  { path: 'copilot/:id/metrics', element: withSuspense(<AgentMetricsPage />) },
                   { path: 'analytics', element: withSuspense(<AnalyticsPage />) },
                   { path: 'settings', element: withSuspense(<SettingsPage />) },
                   { path: 'billing', element: withSuspense(<CheckoutPage />) },

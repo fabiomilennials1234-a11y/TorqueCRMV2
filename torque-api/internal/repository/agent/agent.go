@@ -516,6 +516,80 @@ func (r *Repository) AppendMessage(ctx context.Context, in AppendMessageInput) (
 	return m, nil
 }
 
+// AgentMetrics is the aggregation shape surfaced by GET /agents/:id/metrics.
+// Window is closed-open [Since, Until).
+type AgentMetrics struct {
+	Since           time.Time
+	Until           time.Time
+	TotalSessions   int
+	TotalMessages   int
+	TokensInput     int64
+	TokensOutput    int64
+	AvgLatencyMs    *float64 // nil when no assistant turns in window
+	// SessionsByState bundles open / ended / escalated counts so the UI
+	// can render a tiny stacked bar without a second round-trip.
+	SessionsByState map[string]int
+}
+
+// GetAgentMetrics aggregates sessions + messages for an agent over
+// a time window. Tenant-scoped. Both tables are indexed on
+// (organization_id, created_at|occurred_at DESC) so the window scan
+// stays selective.
+func (r *Repository) GetAgentMetrics(ctx context.Context, orgID, agentID uuid.UUID, since, until time.Time) (AgentMetrics, error) {
+	var m AgentMetrics
+	m.Since = since
+	m.Until = until
+	m.SessionsByState = map[string]int{}
+
+	// Sessions + state breakdown in one pass.
+	sessRows, err := r.pool.Query(ctx,
+		`SELECT state::text, COUNT(*)
+		   FROM agent_sessions
+		  WHERE organization_id = $1
+		    AND agent_id = $2
+		    AND started_at >= $3 AND started_at < $4
+		  GROUP BY state`,
+		orgID, agentID, since, until,
+	)
+	if err != nil {
+		return AgentMetrics{}, fmt.Errorf("agent metrics sessions: %w", err)
+	}
+	defer sessRows.Close()
+	for sessRows.Next() {
+		var state string
+		var n int
+		if err := sessRows.Scan(&state, &n); err != nil {
+			return AgentMetrics{}, err
+		}
+		m.SessionsByState[state] = n
+		m.TotalSessions += n
+	}
+	if err := sessRows.Err(); err != nil {
+		return AgentMetrics{}, err
+	}
+
+	// Message-level aggregates. Constrain by session → agent_id to
+	// avoid counting messages from other agents in the same tenant.
+	var avgLat *float64
+	err = r.pool.QueryRow(ctx,
+		`SELECT COUNT(*),
+		        COALESCE(SUM(COALESCE(m.tokens_input, 0)), 0),
+		        COALESCE(SUM(COALESCE(m.tokens_output, 0)), 0),
+		        AVG(m.latency_ms) FILTER (WHERE m.role = 'assistant')
+		   FROM agent_messages m
+		   JOIN agent_sessions s ON s.id = m.session_id
+		  WHERE m.organization_id = $1
+		    AND s.agent_id = $2
+		    AND m.occurred_at >= $3 AND m.occurred_at < $4`,
+		orgID, agentID, since, until,
+	).Scan(&m.TotalMessages, &m.TokensInput, &m.TokensOutput, &avgLat)
+	if err != nil {
+		return AgentMetrics{}, fmt.Errorf("agent metrics messages: %w", err)
+	}
+	m.AvgLatencyMs = avgLat
+	return m, nil
+}
+
 // ListMessages returns the session history (oldest first).
 func (r *Repository) ListMessages(ctx context.Context, orgID, sessionID uuid.UUID) ([]AgentMessage, error) {
 	const q = `
