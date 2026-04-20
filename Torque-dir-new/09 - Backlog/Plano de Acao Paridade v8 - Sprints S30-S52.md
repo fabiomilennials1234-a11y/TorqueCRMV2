@@ -51,11 +51,13 @@ referencia: "[[Analise Comparativa v8 vs Torque-v2]]"
 
 > Antes de qualquer feature nova, fechar a dívida técnica que o D045 flagou. Sprints curtas (S).
 
-## S30 — Lazy loading + bundle strategy
+## S30 — Lazy loading + bundle strategy ✅ ENTREGUE (2026-04-20)
 
 **Tamanho**: S (1 semana)
 **Dono lógico**: Frontend
 **Objetivo**: Reduzir bundle inicial 3-5× com `React.lazy()` + retry exponential (porta o padrão do v8 `lazyRetry`).
+
+**Resultado**: 67 chunks (antes monolítico); entry `index.js` 109.7 KB / **35.4 KB gzip**; vendors isolados (react 208 KB, radix 118 KB, query 38 KB, sentry 16 KB, motion 1 KB). Páginas em 5-36 KB cada. vitest 102/102 verde, typecheck+lint zero warnings. STATE D047. Branch `sprint/S30` → merge no-ff.
 
 **Dependência v8 (referência)**: `src/App.tsx` linhas 21-33 (`lazyRetry<T>(importFn, retries = 2)` com exponential backoff).
 

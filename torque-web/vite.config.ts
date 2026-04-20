@@ -13,6 +13,9 @@ export default defineConfig({
     sourcemap: true,
     rollupOptions: {
       output: {
+        // Manual chunks isolate large, rarely-changing third-party code so
+        // the user only redownloads app code on redeploy. v8 ships 6 chunks;
+        // we target 6+ after S30 (react/radix/motion/query/dnd/sentry).
         manualChunks: {
           'react-vendor': ['react', 'react-dom', 'react-router-dom'],
           'radix-vendor': [
@@ -23,6 +26,11 @@ export default defineConfig({
             '@radix-ui/react-tabs',
           ],
           'motion-vendor': ['motion'],
+          'query-vendor': ['@tanstack/react-query'],
+          // dnd-vendor reserved for when F07 WorkflowCanvas wires @xyflow
+          // (S43) — leave commented until the dep lands to avoid Rollup
+          // warnings.
+          'sentry-vendor': ['@sentry/react'],
         },
       },
     },
