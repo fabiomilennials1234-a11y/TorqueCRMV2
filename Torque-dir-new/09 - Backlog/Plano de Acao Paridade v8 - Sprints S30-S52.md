@@ -179,11 +179,13 @@ referencia: "[[Analise Comparativa v8 vs Torque-v2]]"
 
 ---
 
-## S35 — ComposerBar + envio de mensagem + Evolution API adapter
+## S35 — ComposerBar + envio de mensagem + Evolution API adapter ✅ ENTREGUE PARCIAL (2026-04-20)
 
 **Tamanho**: L
 **Dono lógico**: Backend (adapter) + Frontend (composer)
 **Objetivo**: Envio real via Evolution API (porta a Provider interface de S27 para implementação concreta).
+
+**Resultado**: Migration 0018 message_templates + 2 permission keys; Evolution adapter real (internal/service/integration/evolution/) com CircuitBreaker + auth/ratelimit/unreachable error taxonomy + Health endpoint + unit tests httptest-backed; template repo/handler CRUD com ErrInvalid/ErrNameTaken/cross-tenant guard + integration test gated DATABASE_URL; useMessageTemplates hook + renderTemplate util client-side; MessageComposer com textarea auto-grow, Enter-to-send, template picker popover, WYSIWYG variable substitution; 148/148 vitest em 50 files. **Escopo parcial**: worker kind `message.outbound` consumindo operations async (transformando POST em 202+poll) fica para S36 junto com takeover+SLA; hoje handler insere direto (padrão S12) mas provider está pronto para plugar. Anexos/emoji/áudio nativo = polish futuro. STATE D052. Branch `sprint/S35` → merge no-ff.
 
 **Entregas**:
 1. **Backend**: `torque-api/internal/service/integration/evolution/evolution.go` — implementa `MessagingProvider` (S27). Endpoints: POST `/instance/send/text/:id`, `/send/media/:id`. Autenticação via API key `EVOLUTION_API_KEY` (env). Circuit breaker + retry já providos por S27.
