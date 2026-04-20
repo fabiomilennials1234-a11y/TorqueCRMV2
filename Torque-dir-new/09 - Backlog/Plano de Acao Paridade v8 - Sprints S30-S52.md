@@ -101,11 +101,13 @@ referencia: "[[Analise Comparativa v8 vs Torque-v2]]"
 
 ---
 
-## S32 — Tenant isolation tests + Dependabot + OpenAPI refresh
+## S32 — Tenant isolation tests + Dependabot + OpenAPI refresh ✅ ENTREGUE PARCIAL (2026-04-20)
 
 **Tamanho**: S (1 semana)
 **Dono lógico**: QA + Infra
 **Objetivo**: Fechar os 3 últimos P0 do D045 §Recomendações.
+
+**Resultado**: 3 cross-tenant isolation test files (lead canonical + task + proposal money-flow); Dependabot weekly (gomod/npm/gha com grouping radix/tanstack/dnd/fontsource); gosec `-severity=high` gate no ci.yml main lint-go job. **OpenAPI refresh adiado** como follow-up explícito — requer Go toolchain no host (kin-openapi walker). Workflow/campaign/inbox/subscription/agent tenant tests ficam como non-blocking. 132/132 vitest verde. STATE D049. Branch `sprint/S32` → merge no-ff. **Fase A concluída; próxima = Fase B (S33)**.
 
 **Entregas**:
 1. **Integration test cross-tenant** (backend): arquivo `torque-api/internal/handler/leads/tenant_isolation_test.go` gated por DATABASE_URL. Cria org A e org B, loga como admin de A, tenta GET `/api/v1/leads/<uuid de lead de B>` → assert 404 (não 403, para não vazar existência). Replica para pipes, tasks, conversations, proposals, campaigns, products, workflows, members, agents, subscriptions, settings. **12 assertions total.**
