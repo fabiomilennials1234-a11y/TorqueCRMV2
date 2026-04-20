@@ -227,3 +227,42 @@ export function useCancelRun(runId: string) {
     { errorContext: 'workflow.run.cancel' }
   )
 }
+
+// -------- S45 run-step trace ----------------------------------------
+
+/**
+ * S45 — one row in workflow_run_steps, surfaced by GET /runs/:id/steps.
+ * The executions UI renders these as a timeline (status badges + JSON
+ * output preview) after the user clicks a run.
+ */
+export interface WorkflowRunStep {
+  id: string
+  run_id: string
+  step_id: string
+  status: WorkflowRunStatus
+  input?: unknown
+  output?: unknown
+  error_payload?: unknown
+  started_at?: string | null
+  ended_at?: string | null
+  created_at: string
+}
+
+export function useWorkflowRunSteps(runId: string | undefined) {
+  return useQuery<WorkflowRunStep[]>({
+    queryKey: runId ? ['runs', runId, 'steps'] : ['runs', 'steps', 'disabled'],
+    enabled: Boolean(runId),
+    queryFn: async () =>
+      (await get<{ data: WorkflowRunStep[] }>(`/api/v1/runs/${runId}/steps`)).data,
+    // Poll while any step is non-terminal so the timeline animates
+    // without depending on WS for the run-step lifecycle (those
+    // events are not on the bus yet — follow-up).
+    refetchInterval: (query) => {
+      const data = query.state.data
+      if (!data || data.some((s) => s.status === 'pending' || s.status === 'running')) {
+        return 2_000
+      }
+      return false
+    },
+  })
+}
