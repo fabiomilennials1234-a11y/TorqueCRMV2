@@ -10,6 +10,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"strings"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -59,8 +60,12 @@ func (r *Repository) Append(ctx context.Context, e Entry) error {
 	if e.Payload == nil {
 		payload = []byte(`{}`)
 	} else {
+		// Scrub sensitive keys out of the payload BEFORE it hits the DB.
+		// Callers that pass raw request bodies get password/token/email
+		// redacted automatically instead of leaking into audit_log.
+		scrubbed := scrubPayload(e.Payload)
 		var err error
-		payload, err = json.Marshal(e.Payload)
+		payload, err = json.Marshal(scrubbed)
 		if err != nil {
 			return fmt.Errorf("audit: marshal payload: %w", err)
 		}
@@ -88,4 +93,52 @@ func nullableString(s string) any {
 		return nil
 	}
 	return s
+}
+
+// sensitiveAuditKeys is the case-insensitive allowlist of payload fields
+// to redact before the row hits audit_log. Mirrors the Sentry scrub list
+// in `observability/sentry`, keeping a single mental model for
+// "what never leaves the server".
+var sensitiveAuditKeys = map[string]struct{}{
+	"password":       {},
+	"token":          {},
+	"access_token":   {},
+	"refresh_token":  {},
+	"authorization":  {},
+	"cookie":         {},
+	"csrf":           {},
+	"x-csrf-token":   {},
+	"api_key":        {},
+	"apikey":         {},
+	"secret":         {},
+	"email":          {},
+	"password_hash":  {},
+}
+
+const redacted = "[Scrubbed]"
+
+// scrubPayload walks the payload recursively and replaces the value of
+// any key that matches sensitiveAuditKeys (case-insensitive). Non-map
+// values pass through unchanged. Slices are walked element-by-element.
+func scrubPayload(v any) any {
+	switch val := v.(type) {
+	case map[string]any:
+		out := make(map[string]any, len(val))
+		for k, vv := range val {
+			if _, hit := sensitiveAuditKeys[strings.ToLower(k)]; hit {
+				out[k] = redacted
+				continue
+			}
+			out[k] = scrubPayload(vv)
+		}
+		return out
+	case []any:
+		out := make([]any, len(val))
+		for i, e := range val {
+			out[i] = scrubPayload(e)
+		}
+		return out
+	default:
+		return v
+	}
 }

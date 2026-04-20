@@ -121,7 +121,10 @@ func Load() (Config, error) {
 		SentryPublicDSN:   os.Getenv("SENTRY_PUBLIC_DSN"),
 		SentryEnvironment: getenv("SENTRY_ENVIRONMENT", ""),
 		SentrySampleRate:  getenvFloat("SENTRY_SAMPLE_RATE", 1.0),
-		SentryTracesRate:  getenvFloat("SENTRY_TRACES_SAMPLE_RATE", 0.0),
+		// Default 0.1 (10%) — distributed tracing visible without flooding
+		// Sentry. Raise to 1.0 during perf investigation; lower to 0 to
+		// kill overhead entirely.
+		SentryTracesRate:  getenvFloat("SENTRY_TRACES_SAMPLE_RATE", 0.1),
 
 		RateLimitAnonRPS:    getenvFloat("RATELIMIT_ANON_RPS", 5),
 		RateLimitAnonBurst:  getenvInt("RATELIMIT_ANON_BURST", 10),

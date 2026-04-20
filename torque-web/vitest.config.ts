@@ -41,14 +41,14 @@ export default defineConfig({
       // regress; target 70/65/60/55 by S40. Mirrors v8's D007→D025
       // ratchet (started at 9.33%, climbed each sprint).
       thresholds: {
-        // Current measured (S31): lines 48.95 / stmts 46.75 / funcs 41.79
-        // / branches 43.18. Floor sits slightly under current so the first
-        // CI run does not flake; every future sprint RATCHETS up.
+        // Ratchet step 2 (remediation-B, 2026-04-20): lines 59.03 /
+        // stmts 56.57 / funcs 55.09 / branches 49.58. Floor sits slightly
+        // below measured so nobody introduces regression without noticing.
         // Target by S40: 70 / 65 / 60 / 55.
-        lines: 45,
-        statements: 45,
-        functions: 40,
-        branches: 40,
+        lines: 55,
+        statements: 55,
+        functions: 50,
+        branches: 48,
       },
     },
   },
