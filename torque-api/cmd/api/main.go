@@ -75,6 +75,7 @@ import (
 	"github.com/milennials/torque-api/internal/service/ai"
 	"github.com/milennials/torque-api/internal/service/billing"
 	jwtsvc "github.com/milennials/torque-api/internal/service/jwt"
+	knowledgesvc "github.com/milennials/torque-api/internal/service/knowledge"
 	"github.com/milennials/torque-api/internal/service/permission"
 	"github.com/milennials/torque-api/internal/worker"
 	"github.com/milennials/torque-api/internal/ws"
@@ -388,7 +389,8 @@ func newRouter(
 					// for the /playground/message SSE stream + PATCH /agents/:id.
 					// Empty OPENROUTER_API_KEY leaves provider=nil and the
 					// playground endpoint returns 503 PROVIDER_UNAVAILABLE.
-					agentBase := agentshandler.New(agentrepo.New(pool), bus)
+					agentRepo := agentrepo.New(pool)
+					agentBase := agentshandler.New(agentRepo, bus)
 					var aiProvider ai.Provider
 					if cfg.OpenRouterAPIKey != "" {
 						p, err := ai.NewOpenRouter(ai.Config{
@@ -403,7 +405,31 @@ func newRouter(
 							aiProvider = p
 						}
 					}
-					agentshandler.NewPlayground(agentBase, aiProvider).Routes(admin)
+					// S39 — embedder selection. Gemini is the production
+					// embedder; mock is the test + empty-key fallback so
+					// ingest + retrieval don't 500 in dev. Prod MUST set
+					// GEMINI_API_KEY or the retrieval quality collapses to
+					// "random chunk of matching hash".
+					var embedder ai.Embedder
+					if cfg.GeminiAPIKey != "" {
+						em, err := ai.NewGeminiEmbedder(ai.GeminiConfig{
+							BaseURL: cfg.GeminiBaseURL,
+							APIKey:  cfg.GeminiAPIKey,
+							Model:   cfg.GeminiEmbeddingModel,
+						})
+						if err != nil {
+							logger.Warn().Err(err).Msg("gemini embedder init failed — falling back to mock")
+							embedder = ai.NewMockEmbedder()
+						} else {
+							embedder = em
+						}
+					} else {
+						logger.Warn().Msg("GEMINI_API_KEY empty — using MockEmbedder (retrieval quality is meaningless in prod)")
+						embedder = ai.NewMockEmbedder()
+					}
+					ingestSvc := knowledgesvc.New(agentRepo, embedder, logger)
+					agentBase = agentBase.WithIngest(ingestSvc)
+					agentshandler.NewPlayground(agentBase, aiProvider, embedder).Routes(admin)
 					proposalshandler.New(proposalrepo.New(pool), bus).Routes(admin)
 					workflowshandler.New(workflowrepo.New(pool), bus).Routes(admin)
 					campaignshandler.New(campaignrepo.New(pool), bus).Routes(admin)

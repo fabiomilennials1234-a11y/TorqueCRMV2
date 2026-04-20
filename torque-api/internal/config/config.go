@@ -89,6 +89,16 @@ type Config struct {
 	OpenRouterAPIKey  string
 	OpenRouterReferer string
 	OpenRouterTitle   string
+
+	// --- RAG embeddings (S39 — F06.3) ---
+	// Gemini text-embedding-004 is the default embedder (768 dim, same
+	// shape as the pgvector column added in migration 0019). Empty
+	// API key falls back to the deterministic MockEmbedder — useful
+	// for tests and for dev environments without a Google API key,
+	// but retrieval quality is meaningless; prod MUST set the real key.
+	GeminiBaseURL        string
+	GeminiAPIKey         string
+	GeminiEmbeddingModel string
 }
 
 // Load reads the config from the environment. Returns an error if any required
@@ -150,6 +160,10 @@ func Load() (Config, error) {
 		OpenRouterAPIKey:  os.Getenv("OPENROUTER_API_KEY"),
 		OpenRouterReferer: getenv("OPENROUTER_REFERER", "https://torque.app"),
 		OpenRouterTitle:   getenv("OPENROUTER_TITLE", "Torque CRM"),
+
+		GeminiBaseURL:        getenv("GEMINI_BASE_URL", "https://generativelanguage.googleapis.com/v1beta"),
+		GeminiAPIKey:         os.Getenv("GEMINI_API_KEY"),
+		GeminiEmbeddingModel: getenv("GEMINI_EMBEDDING_MODEL", "text-embedding-004"),
 	}
 
 	if c.DatabaseURL == "" {

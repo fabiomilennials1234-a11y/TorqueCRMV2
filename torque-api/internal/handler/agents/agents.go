@@ -32,16 +32,30 @@ import (
 	"github.com/milennials/torque-api/internal/httpx"
 	mw "github.com/milennials/torque-api/internal/httpx/middleware"
 	agentrepo "github.com/milennials/torque-api/internal/repository/agent"
+	"github.com/milennials/torque-api/internal/service/knowledge"
 	"github.com/milennials/torque-api/internal/ws"
 )
 
 type Handler struct {
 	repo *agentrepo.Repository
 	bus  *event.Bus
+	// ingest is optional — wired at boot when the embedder is available.
+	// nil ingest = the enqueue endpoint still persists the source row
+	// but never flips it to ready. Useful for keeping the CRUD paths
+	// operational in a future config where ingest is delegated to a
+	// separate service.
+	ingest *knowledge.Service
 }
 
 func New(repo *agentrepo.Repository, bus *event.Bus) *Handler {
 	return &Handler{repo: repo, bus: bus}
+}
+
+// WithIngest attaches the ingest service. Returns the same handler
+// (fluent style) to keep main.go terse.
+func (h *Handler) WithIngest(ingest *knowledge.Service) *Handler {
+	h.ingest = ingest
+	return h
 }
 
 func (h *Handler) Routes(r chi.Router) {
@@ -51,8 +65,12 @@ func (h *Handler) Routes(r chi.Router) {
 	r.Post("/agents/{id}/activate", h.activate)
 	r.Post("/agents/{id}/disable", h.disable)
 	r.Post("/agents/{id}/kill-switch", h.killSwitch)
+	// S39 — bind / unbind the agent's RAG collection.
+	r.Put("/agents/{id}/knowledge-collection", h.bindCollection)
 
+	r.Get("/knowledge/collections", h.listCollections)
 	r.Post("/knowledge/collections", h.createCollection)
+	r.Get("/knowledge/collections/{cid}/sources", h.listSources)
 	r.Post("/knowledge/collections/{cid}/sources", h.enqueueSource)
 
 	r.Post("/agents/{id}/sessions", h.openSession)
@@ -76,6 +94,36 @@ type agentView struct {
 	ToolsAllowlist  []string  `json:"tools_allowlist"`
 	KillSwitch      bool      `json:"kill_switch"`
 	Status          string    `json:"status"`
+	// KnowledgeCollectionID binds the agent to a RAG collection (S39).
+	// When non-nil, the playground/production SSE handler runs topK
+	// retrieval and prepends context before the LLM call.
+	KnowledgeCollectionID *uuid.UUID `json:"knowledge_collection_id,omitempty"`
+}
+
+type collectionView struct {
+	ID          uuid.UUID `json:"id"`
+	Name        string    `json:"name"`
+	Description *string   `json:"description,omitempty"`
+	SourceCount int       `json:"source_count"`
+	CreatedAt   time.Time `json:"created_at"`
+	UpdatedAt   time.Time `json:"updated_at"`
+}
+
+type sourceView struct {
+	ID           uuid.UUID  `json:"id"`
+	CollectionID uuid.UUID  `json:"collection_id"`
+	Kind         string     `json:"kind"`
+	Title        string     `json:"title"`
+	URI          *string    `json:"uri,omitempty"`
+	Status       string     `json:"status"`
+	Error        *string    `json:"error,omitempty"`
+	IngestedAt   *time.Time `json:"ingested_at,omitempty"`
+	CreatedAt    time.Time  `json:"created_at"`
+	UpdatedAt    time.Time  `json:"updated_at"`
+}
+
+type bindCollectionReq struct {
+	CollectionID *uuid.UUID `json:"collection_id"`
 }
 
 type createAgentReq struct {
@@ -98,9 +146,13 @@ type createCollectionReq struct {
 }
 
 type enqueueSourceReq struct {
-	Kind  string          `json:"kind"`
-	Title string          `json:"title"`
-	URI   *string         `json:"uri,omitempty"`
+	Kind     string          `json:"kind"`
+	Title    string          `json:"title"`
+	URI      *string         `json:"uri,omitempty"`
+	// Content is the inline text payload for kind=text|markdown. URL /
+	// PDF / DOCX sources defer fetching to a future sprint; passing
+	// Content for those kinds is ignored (URL fetch wins when wired).
+	Content  string          `json:"content,omitempty"`
 	Metadata json.RawMessage `json:"metadata,omitempty"`
 }
 
@@ -214,6 +266,24 @@ func (h *Handler) killSwitch(w http.ResponseWriter, r *http.Request) {
 
 // -------- knowledge handlers -----------------------------------------
 
+func (h *Handler) listCollections(w http.ResponseWriter, r *http.Request) {
+	orgID, _ := mw.OrgIDFrom(r.Context())
+	list, err := h.repo.ListCollections(r.Context(), orgID)
+	if err != nil {
+		httpx.WriteError(w, http.StatusInternalServerError, "INTERNAL", "could not list collections")
+		return
+	}
+	out := make([]collectionView, len(list))
+	for i, c := range list {
+		out[i] = collectionView{
+			ID: c.ID, Name: c.Name, Description: c.Description,
+			SourceCount: c.SourceCount,
+			CreatedAt:   c.CreatedAt, UpdatedAt: c.UpdatedAt,
+		}
+	}
+	httpx.WriteJSON(w, http.StatusOK, map[string]any{"data": out})
+}
+
 func (h *Handler) createCollection(w http.ResponseWriter, r *http.Request) {
 	orgID, _ := mw.OrgIDFrom(r.Context())
 	var body createCollectionReq
@@ -230,7 +300,65 @@ func (h *Handler) createCollection(w http.ResponseWriter, r *http.Request) {
 		httpx.WriteError(w, http.StatusBadRequest, "INVALID_COLLECTION", err.Error())
 		return
 	}
+	h.bus.Publish(ws.Event{
+		Type: "knowledge.collection_created", TenantID: orgID, EntityType: "knowledge_collection",
+		EntityID: &id, OccurredAt: time.Now().UTC(),
+	})
 	httpx.WriteJSON(w, http.StatusCreated, map[string]any{"id": id, "name": body.Name})
+}
+
+func (h *Handler) listSources(w http.ResponseWriter, r *http.Request) {
+	orgID, _ := mw.OrgIDFrom(r.Context())
+	cid, ok := parseID(w, r, "cid")
+	if !ok {
+		return
+	}
+	list, err := h.repo.ListSources(r.Context(), orgID, cid)
+	if err != nil {
+		httpx.WriteError(w, http.StatusInternalServerError, "INTERNAL", "could not list sources")
+		return
+	}
+	out := make([]sourceView, len(list))
+	for i, s := range list {
+		out[i] = sourceView{
+			ID: s.ID, CollectionID: s.CollectionID, Kind: s.Kind, Title: s.Title, URI: s.URI,
+			Status: s.Status, Error: s.Error, IngestedAt: s.IngestedAt,
+			CreatedAt: s.CreatedAt, UpdatedAt: s.UpdatedAt,
+		}
+	}
+	httpx.WriteJSON(w, http.StatusOK, map[string]any{"data": out})
+}
+
+// bindCollection updates agent.knowledge_collection_id. Passing `null`
+// unbinds the agent (retrieval disabled next request). Ownership of the
+// collection is revalidated at the repo layer — cross-tenant set attempts
+// return 404.
+func (h *Handler) bindCollection(w http.ResponseWriter, r *http.Request) {
+	orgID, _ := mw.OrgIDFrom(r.Context())
+	id, ok := parseID(w, r, "id")
+	if !ok {
+		return
+	}
+	var body bindCollectionReq
+	if err := httpx.DecodeJSON(r, &body); err != nil {
+		httpx.WriteError(w, http.StatusBadRequest, "INVALID_BODY", "could not parse")
+		return
+	}
+	if err := h.repo.SetAgentKnowledgeCollection(r.Context(), orgID, id, body.CollectionID); err != nil {
+		if errors.Is(err, agentrepo.ErrNotFound) {
+			httpx.WriteError(w, http.StatusNotFound, "NOT_FOUND", "agent or collection not found")
+			return
+		}
+		httpx.WriteError(w, http.StatusInternalServerError, "INTERNAL", "could not bind collection")
+		return
+	}
+	a, err := h.repo.GetAgent(r.Context(), orgID, id)
+	if err != nil {
+		httpx.WriteError(w, http.StatusInternalServerError, "INTERNAL", "could not reload agent")
+		return
+	}
+	h.publish(orgID, id, "agent.knowledge_bound", toAgentView(a))
+	httpx.WriteJSON(w, http.StatusOK, toAgentView(a))
 }
 
 func (h *Handler) enqueueSource(w http.ResponseWriter, r *http.Request) {
@@ -244,6 +372,24 @@ func (h *Handler) enqueueSource(w http.ResponseWriter, r *http.Request) {
 		httpx.WriteError(w, http.StatusBadRequest, "INVALID_BODY", "could not parse")
 		return
 	}
+	// S39 — for inline kinds (text / markdown) require Content. URL
+	// kinds require URI with https scheme (validated in the repo).
+	// Rejecting at the handler produces a nicer error than surfacing
+	// a later ingest failure.
+	switch body.Kind {
+	case "text", "markdown":
+		if body.Content == "" {
+			httpx.WriteError(w, http.StatusBadRequest, "INVALID_SOURCE",
+				"content is required for text/markdown kinds")
+			return
+		}
+	case "url":
+		if body.URI == nil || *body.URI == "" {
+			httpx.WriteError(w, http.StatusBadRequest, "INVALID_SOURCE",
+				"uri is required for url kind")
+			return
+		}
+	}
 	id, err := h.repo.EnqueueSource(r.Context(), agentrepo.EnqueueSourceInput{
 		OrganizationID: orgID, CollectionID: cid,
 		Kind: body.Kind, Title: body.Title, URI: body.URI, Metadata: body.Metadata,
@@ -256,8 +402,14 @@ func (h *Handler) enqueueSource(w http.ResponseWriter, r *http.Request) {
 		Type: "knowledge.source_enqueued", TenantID: orgID, EntityType: "knowledge_source",
 		EntityID: &id, OccurredAt: time.Now().UTC(),
 	})
-	// 202: the ingest worker picks it up. Actual embedding population
-	// happens asynchronously.
+	// Kick off detached ingest for inline kinds. URL fetch is not yet
+	// implemented — those sources stay queued until a follow-up sprint
+	// wires the fetch + HTTPS allowlist path.
+	if h.ingest != nil && (body.Kind == "text" || body.Kind == "markdown") && body.Content != "" {
+		h.ingest.RunDetached(orgID, id, body.Content)
+	}
+	// 202: the ingest runs in the background. The UI polls source
+	// status + subscribes to WS for real-time transitions.
 	httpx.WriteJSON(w, http.StatusAccepted, map[string]any{"id": id, "status": "queued"})
 }
 
@@ -358,5 +510,6 @@ func toAgentView(a agentrepo.Agent) agentView {
 		SystemPrompt: a.SystemPrompt,
 		Model: a.Model, Temperature: a.Temperature, MaxOutputTokens: a.MaxOutputTokens,
 		ToolsAllowlist: a.ToolsAllowlist, KillSwitch: a.KillSwitch, Status: a.Status,
+		KnowledgeCollectionID: a.KnowledgeCollectionID,
 	}
 }

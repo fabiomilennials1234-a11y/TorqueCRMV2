@@ -24,19 +24,20 @@ var (
 )
 
 type Agent struct {
-	ID              uuid.UUID
-	OrganizationID  uuid.UUID
-	Name            string
-	Description     *string
-	SystemPrompt    string
-	Model           string
-	Temperature     float64
-	MaxOutputTokens int
-	ToolsAllowlist  []string
-	KillSwitch      bool
-	Status          string
-	CreatedAt       time.Time
-	UpdatedAt       time.Time
+	ID                    uuid.UUID
+	OrganizationID        uuid.UUID
+	Name                  string
+	Description           *string
+	SystemPrompt          string
+	Model                 string
+	Temperature           float64
+	MaxOutputTokens       int
+	ToolsAllowlist        []string
+	KillSwitch            bool
+	Status                string
+	KnowledgeCollectionID *uuid.UUID
+	CreatedAt             time.Time
+	UpdatedAt             time.Time
 }
 
 type AgentSession struct {
@@ -128,7 +129,8 @@ func (r *Repository) GetAgent(ctx context.Context, orgID, id uuid.UUID) (Agent, 
 	const q = `
 		SELECT id, organization_id, name, description, system_prompt, model,
 		       temperature, max_output_tokens, tools_allowlist,
-		       kill_switch, status::text, created_at, updated_at
+		       kill_switch, status::text, knowledge_collection_id,
+		       created_at, updated_at
 		  FROM agents
 		 WHERE id = $1 AND organization_id = $2
 		 LIMIT 1
@@ -137,7 +139,7 @@ func (r *Repository) GetAgent(ctx context.Context, orgID, id uuid.UUID) (Agent, 
 	err := r.pool.QueryRow(ctx, q, id, orgID).Scan(
 		&a.ID, &a.OrganizationID, &a.Name, &a.Description, &a.SystemPrompt, &a.Model,
 		&a.Temperature, &a.MaxOutputTokens, &a.ToolsAllowlist,
-		&a.KillSwitch, &a.Status, &a.CreatedAt, &a.UpdatedAt,
+		&a.KillSwitch, &a.Status, &a.KnowledgeCollectionID, &a.CreatedAt, &a.UpdatedAt,
 	)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return Agent{}, ErrNotFound
@@ -153,7 +155,8 @@ func (r *Repository) ListAgents(ctx context.Context, orgID uuid.UUID) ([]Agent, 
 	const q = `
 		SELECT id, organization_id, name, description, system_prompt, model,
 		       temperature, max_output_tokens, tools_allowlist,
-		       kill_switch, status::text, created_at, updated_at
+		       kill_switch, status::text, knowledge_collection_id,
+		       created_at, updated_at
 		  FROM agents
 		 WHERE organization_id = $1
 		 ORDER BY name
@@ -169,7 +172,7 @@ func (r *Repository) ListAgents(ctx context.Context, orgID uuid.UUID) ([]Agent, 
 		if err := rows.Scan(
 			&a.ID, &a.OrganizationID, &a.Name, &a.Description, &a.SystemPrompt, &a.Model,
 			&a.Temperature, &a.MaxOutputTokens, &a.ToolsAllowlist,
-			&a.KillSwitch, &a.Status, &a.CreatedAt, &a.UpdatedAt,
+			&a.KillSwitch, &a.Status, &a.KnowledgeCollectionID, &a.CreatedAt, &a.UpdatedAt,
 		); err != nil {
 			return nil, err
 		}
