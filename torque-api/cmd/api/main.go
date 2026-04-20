@@ -40,6 +40,7 @@ import (
 	onboardinghandler "github.com/milennials/torque-api/internal/handler/onboarding"
 	"github.com/milennials/torque-api/internal/handler/openapi"
 	operationshandler "github.com/milennials/torque-api/internal/handler/operations"
+	performancehandler "github.com/milennials/torque-api/internal/handler/performance"
 	pipeshandler "github.com/milennials/torque-api/internal/handler/pipes"
 	preferenceshandler "github.com/milennials/torque-api/internal/handler/preferences"
 	productshandler "github.com/milennials/torque-api/internal/handler/products"
@@ -62,6 +63,7 @@ import (
 	memberrepo "github.com/milennials/torque-api/internal/repository/member"
 	onboardingrepo "github.com/milennials/torque-api/internal/repository/onboarding"
 	operationrepo "github.com/milennials/torque-api/internal/repository/operation"
+	performancerepo "github.com/milennials/torque-api/internal/repository/performance"
 	piperepo "github.com/milennials/torque-api/internal/repository/pipe"
 	productrepo "github.com/milennials/torque-api/internal/repository/product"
 	proposalrepo "github.com/milennials/torque-api/internal/repository/proposal"
@@ -397,6 +399,11 @@ func newRouter(
 				productRepo := productrepo.New(pool)
 				membershandler.NewRead(memberRepo).Routes(t)
 				productshandler.NewRead(productRepo).Routes(t)
+
+				// S47 — F09 Performance: reads are member-accessible,
+				// writes land on the admin group.
+				performanceHandler := performancehandler.New(performancerepo.New(pool), bus)
+				performanceHandler.Routes(t)
 				onboardinghandler.New(onboardingrepo.New(pool)).Routes(t)
 				billinghandler.NewRead(subRepo).Routes(t)
 				settingsRepo := settingsrepo.New(pool)
@@ -488,6 +495,7 @@ func newRouter(
 					membershandler.NewAdmin(memberRepo, bus).Routes(admin)
 					productshandler.NewAdmin(productRepo, bus).Routes(admin)
 					pipeshandler.NewAdmin(piperepo.New(pool), bus).Routes(admin)
+					performanceHandler.AdminRoutes(admin)
 
 					// Billing checkout/cancel (admin-only). Provider is
 					// pluggable; S24 wires the mock, Asaas lands after
