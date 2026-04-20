@@ -837,18 +837,22 @@ O bloco da sprint em §8 muda de "prospectivo" para "entregue":
 
 ---
 
-### Sprint S21 — F10: Equipe + F11: Produtos
+### Sprint S21 — F10: Equipe + F11: Produtos ✅ ENTREGUE (2026-04-20)
 
 | Campo | Valor |
 |-------|-------|
-| **Objetivo** | Comissões, metas, podium + catálogo de produtos |
-| **Resultado esperado** | Gestão de equipe com métricas + catálogo com import XLSX |
-| **Dependências** | S20 (F09 para métricas), S11 (F03 para produtos) |
-| **Agentes** | `general-purpose` |
-| **Áreas afetadas** | Backend + Frontend |
-| **Stack** | Go, React |
-| **Riscos** | Cálculo de comissões é sensível (dinheiro); XLSX import edge cases |
-| **Critério de conclusão** | Comissões calculadas corretamente. Metas trackadas. Catálogo funcional. Import XLSX sem erros. |
+| **Objetivo** | CRUD de membros + catálogo base de produtos para Propostas |
+| **Resultado esperado** | Admins gerenciam time (invite/role/deactivate/permission overrides) + catálogo CRUD com cursor pagination |
+| **Dependências** | S02 (team_members table), S11 (F03 referencia produtos) |
+| **Agentes** | DBA → Backend → QA → Frontend → Docs |
+| **Áreas afetadas** | DB (0014), Backend Go (handler/repo members + products), Frontend React (hooks, SettingsPage, ProductsPage) |
+| **Stack** | Go 1.22 + pgx v5, React 18 + TanStack Query v5 |
+| **Riscos** | Self-demote causando org-lockout (mitigado por 403 no handler); SKU collision cross-tenant (mitigado por unique partial index per-tenant) |
+| **Critério de conclusão** | Migration 0014 aplicada + 4 permission keys seeded + CRUD members e products expostos com RequireRole(admin) nas mutations + SettingsPage aba Equipe com dados reais + ProductsPage em /products + frontend typecheck/lint/vitest verdes |
+| **Escopo parcial** | Invite com token de email (requer SMTP) fica para sprint futura. Comissões/metas/premiações/confetti (escopo clássico de F10) e import XLSX / materiais (F11) também ficam para sprints futuras. |
+| **Artefatos** | `torque-api/migrations/0014_*.sql`, `torque-api/internal/{domain/team.go,repository/member,repository/product,handler/members,handler/products}`, `torque-web/src/{hooks/useMembers.ts,hooks/useProducts.ts,features/products/ProductsPage.tsx,features/settings/SettingsPage.tsx,routes.tsx}`, integration tests gated por DATABASE_URL em `repository/member/member_test.go` + `repository/product/product_test.go` |
+| **Branch** | `sprint/S21` → PR para `develop` |
+| **STATE** | D036 |
 
 ---
 

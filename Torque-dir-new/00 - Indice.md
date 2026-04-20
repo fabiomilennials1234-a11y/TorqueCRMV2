@@ -129,7 +129,7 @@ status: vivo
 
 ## Status atual
 
-**Etapa:** S00-S09 ✅. S10 ✅ F02 Pipe Confirmação (2026-04-19). Runtime pendente no host.
+**Etapa:** S00-S21 ✅. S21 ✅ F10 Equipe + F11 Produtos (2026-04-20). Runtime backend pendente no host.
 
 **S00** — ESLint flat (a11y + hooks + ban `dangerouslySetInnerHTML`), TS strict, Prettier, Vitest (51 testes), CI, vocabulario canonico, `--clay-*` → `--card-*`/`.tactile-*`, pos-login navigation por `ui_mode`.
 
@@ -147,7 +147,11 @@ status: vivo
 
 **S07** — Repositorios `lead` (cursor ADR-004 + search + soft-delete) e `pipe` (Move atomico Serializable). Handlers `/api/v1/leads` CRUD + `/api/v1/pipes` list/stages/entries/move. Eventos `lead.{created,updated,deleted}` e `pipe_entry.moved` no bus.
 
-Proxima sprint: **S08** — F01 Frontend: Hub + KanbanPage com dados reais + DnD entre stages via pipe_entry.moved.
+**S16–S20** — F06 Copilot frontend hooks, F07 Workflow backend+frontend, F08 Campanhas backend+frontend, F09 Analytics read-only summaries. Detalhes em STATE.md D030–D034.
+
+**S21** — F10 Equipe + F11 Produtos. Migration 0014 (products + seeds members/products perms). Backend split Read/Admin (RequireRole). Self-demote/self-deactivate refused. Frontend: SettingsPage Equipe com dados reais, ProductsPage nova. Detalhes em STATE.md D036.
+
+Próxima sprint: **S22** — F12 Propostas integradas com produtos + Follow-up UI.
 
 ---
 
