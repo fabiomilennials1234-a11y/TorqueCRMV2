@@ -154,11 +154,13 @@ referencia: "[[Analise Comparativa v8 vs Torque-v2]]"
 
 ---
 
-## S34 — MessageList + infinite scroll + WS live-updates
+## S34 — MessageList + infinite scroll + WS live-updates ✅ ENTREGUE PARCIAL (2026-04-20)
 
 **Tamanho**: M
 **Dono lógico**: Frontend + Backend
 **Objetivo**: Lista de mensagens em tempo real dentro de uma conversa.
+
+**Resultado**: MessageBubble primitive (7 kinds: text/image/audio/video/document/sticker/system + status icons + direction variants); MessageList com auto-scroll inteligente (bottom em outbound OU quando user estava no bottom; preserva posição em inbound se user scrollou para cima); wire em InboxPage substitui EmptyState placeholder. **Escopo parcial**: backend cap 100-200 msgs sem cursor (S13 deferiu); infinite scroll reverso para history antiga chega em S35 junto com envio + backend cursor bidirecional. 138/138 vitest em 48 files. STATE D051. Branch `sprint/S34` → merge no-ff.
 
 **Referência v8**: `useWhatsAppChat.ts` linhas 200-700 (realtime subscription + pagination reversa).
 
