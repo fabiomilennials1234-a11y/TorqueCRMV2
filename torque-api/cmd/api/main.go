@@ -28,6 +28,7 @@ import (
 	agentshandler "github.com/milennials/torque-api/internal/handler/agents"
 	authhandler "github.com/milennials/torque-api/internal/handler/auth"
 	"github.com/milennials/torque-api/internal/handler/bootstrap"
+	campaignshandler "github.com/milennials/torque-api/internal/handler/campaigns"
 	confirmationshandler "github.com/milennials/torque-api/internal/handler/confirmations"
 	"github.com/milennials/torque-api/internal/handler/health"
 	inboxhandler "github.com/milennials/torque-api/internal/handler/inbox"
@@ -43,6 +44,7 @@ import (
 	"github.com/milennials/torque-api/internal/domain"
 	"github.com/milennials/torque-api/internal/observability/sentry"
 	agentrepo "github.com/milennials/torque-api/internal/repository/agent"
+	campaignrepo "github.com/milennials/torque-api/internal/repository/campaign"
 	confirmationrepo "github.com/milennials/torque-api/internal/repository/confirmation"
 	inboxrepo "github.com/milennials/torque-api/internal/repository/inbox"
 	leadrepo "github.com/milennials/torque-api/internal/repository/lead"
@@ -340,6 +342,7 @@ func newRouter(
 					agentshandler.New(agentrepo.New(pool), bus).Routes(admin)
 					proposalshandler.New(proposalrepo.New(pool), bus).Routes(admin)
 					workflowshandler.New(workflowrepo.New(pool), bus).Routes(admin)
+					campaignshandler.New(campaignrepo.New(pool), bus).Routes(admin)
 				})
 			})
 
