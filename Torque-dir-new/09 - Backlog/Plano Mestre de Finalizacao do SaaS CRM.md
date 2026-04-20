@@ -912,18 +912,22 @@ O bloco da sprint em §8 muda de "prospectivo" para "entregue":
 
 ---
 
-### Sprint S25 — F15: Configurações
+### Sprint S25 — F15: Configurações ✅ ENTREGUE PARCIAL (2026-04-20)
 
 | Campo | Valor |
 |-------|-------|
-| **Objetivo** | 8 tabs de configuração centralizadas |
-| **Resultado esperado** | Settings da org, equipe, integrações, notificações, etc. |
-| **Dependências** | Transversal — incrementa ao longo das features |
-| **Agentes** | `general-purpose` |
-| **Áreas afetadas** | Backend + Frontend |
+| **Objetivo** | Consolidar tabs de Configurações sobre dados reais |
+| **Resultado esperado** | Org profile editável + webhooks CRUD + notification preferences no backend; OrgSection do SettingsPage conectado |
+| **Dependências** | S21 (team members) |
+| **Agentes** | DBA → Backend → QA → Frontend → Docs |
+| **Áreas afetadas** | DB (0017), Backend repo/handler settings, Frontend hooks + SettingsPage OrgSection |
 | **Stack** | Go, React |
-| **Riscos** | Baixo — consolidação de configs já parcialmente expostas |
-| **Critério de conclusão** | 8 tabs funcionais. Todas as settings persistidas. RBAC aplicado. |
+| **Entregas** | Migration 0017 (ALTER organizations + webhook_endpoints + notification_preferences + 5 perm keys); CRUD split Read/Admin/Me; useOrgSettings hooks; OrgSection consome useOrganization+useUpdateOrganization com dirty detection. |
+| **Escopo parcial explícito** | UIs completos de webhook tab e notifications tab ficam para sprint futura. Backend + hooks prontos para consumo. TeamSection (S21) e ProductsPage (S21) continuam como surfaces canônicos para aquelas tabs. |
+| **Critério de conclusão** | ✅ Backend completo (org/webhooks/notifications). ✅ RBAC aplicado. ✅ OrgSection live. ⏳ Webhook tab UI + Notifications tab UI pendente. |
+| **Artefatos** | `torque-api/{migrations/0017_*,internal/repository/settings/*,internal/handler/settings/*}`, `torque-web/src/{hooks/useOrgSettings.ts,features/settings/SettingsPage.tsx}` |
+| **Branch** | `sprint/S25` → PR para `develop` |
+| **STATE** | D040 |
 
 ---
 
