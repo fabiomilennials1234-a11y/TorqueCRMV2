@@ -107,6 +107,7 @@ status: vivo
 - [[Quick Wins]]
 - [[Riscos e Duvidas]]
 - [[Analise Comparativa v8 vs Torque-v2]] — gap analysis completa (features, qualidade, testes, escalabilidade) com score composto e backlog P0-P3
+- [[Plano de Acao Paridade v8 - Sprints S30-S52]] — 23 sprints em 7 fases (A-G) para fechar o gap funcional; ~28 semanas; mantém ADRs e topologia linear cumulativa
 
 ### 10 - Referencias
 - Integracoes/ — [[WhatsApp (Evolution API)]], [[Meta (Facebook Ads e Messenger)]], [[SZ.Chat]], [[Google Calendar]], [[TinyERP]], [[Asaas (Provedor de Pagamento)]], [[n8n (Orquestrador Externo)]], [[Modelo LLM Generativo]], [[Embeddings Vetoriais]], [[Text-to-Speech]], [[Observabilidade (Sentry)]]
