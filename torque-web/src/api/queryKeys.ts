@@ -51,6 +51,14 @@ export const queryKeys = {
       filters ? (['tasks', 'list', filters] as const) : (['tasks', 'list'] as const),
     detail: (id: string) => ['tasks', 'detail', id] as const,
   },
+
+  inbox: {
+    all: () => ['inbox'] as const,
+    conversations: (filters?: Record<string, unknown>) =>
+      filters ? (['inbox', 'conversations', filters] as const) : (['inbox', 'conversations'] as const),
+    conversation: (id: string) => ['inbox', 'conversations', 'detail', id] as const,
+    messages: (id: string) => ['inbox', 'conversations', id, 'messages'] as const,
+  },
 } as const
 
 export type QueryKeyFactory = typeof queryKeys
