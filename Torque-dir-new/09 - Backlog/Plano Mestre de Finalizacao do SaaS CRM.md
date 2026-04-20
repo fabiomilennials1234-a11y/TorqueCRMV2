@@ -717,7 +717,7 @@ O bloco da sprint em §8 muda de "prospectivo" para "entregue":
 
 ---
 
-### Sprint S13 — F04: Inbox Multi-canal Frontend
+### Sprint S13 — F04: Inbox Multi-canal Frontend ✅ ENTREGUE (2026-04-19)
 
 | Campo | Valor |
 |-------|-------|
