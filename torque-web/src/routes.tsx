@@ -12,6 +12,8 @@ import { WorkflowBuilderPage } from '@/features/workflows/WorkflowBuilderPage'
 import { CampaignsPage } from '@/features/campaigns/CampaignsPage'
 import { AgentsPage } from '@/features/copilot/AgentsPage'
 import { AnalyticsPage } from '@/features/analytics/AnalyticsPage'
+import { OnboardingPage } from '@/features/onboarding/OnboardingPage'
+import { OnboardingGate } from '@/components/OnboardingGate'
 import { ProductsPage } from '@/features/products/ProductsPage'
 import { SettingsPage } from '@/features/settings/SettingsPage'
 import { NotFoundPage } from '@/features/errors/NotFoundPage'
@@ -48,14 +50,26 @@ export const router = createBrowserRouter([
     path: '/',
     element: <ProtectedRoute />,
     children: [
+      // Onboarding wizard — fora do AppShell, sem gate de modo.
+      {
+        path: 'onboarding',
+        element: <OnboardingPage />,
+      },
       // Modo Vendedor — layout próprio (sem AppShell)
       {
         path: 'cockpit',
-        element: <CockpitShell />,
-        children: [{ index: true, element: <CockpitView /> }],
+        element: <OnboardingGate />,
+        children: [
+          {
+            element: <CockpitShell />,
+            children: [{ index: true, element: <CockpitView /> }],
+          },
+        ],
       },
-      // Modo Gerente — AppShell + gate de permissão
+      // Modo Gerente — AppShell + gate de permissão + gate de onboarding
       {
+        element: <OnboardingGate />,
+        children: [{
         element: <ManagerModeGate />,
         children: [
           {
@@ -78,6 +92,7 @@ export const router = createBrowserRouter([
             ],
           },
         ],
+        }],
       },
     ],
   },

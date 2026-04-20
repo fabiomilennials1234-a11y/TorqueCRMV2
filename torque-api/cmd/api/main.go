@@ -35,6 +35,7 @@ import (
 	inboxhandler "github.com/milennials/torque-api/internal/handler/inbox"
 	leadshandler "github.com/milennials/torque-api/internal/handler/leads"
 	membershandler "github.com/milennials/torque-api/internal/handler/members"
+	onboardinghandler "github.com/milennials/torque-api/internal/handler/onboarding"
 	"github.com/milennials/torque-api/internal/handler/openapi"
 	operationshandler "github.com/milennials/torque-api/internal/handler/operations"
 	pipeshandler "github.com/milennials/torque-api/internal/handler/pipes"
@@ -53,6 +54,7 @@ import (
 	inboxrepo "github.com/milennials/torque-api/internal/repository/inbox"
 	leadrepo "github.com/milennials/torque-api/internal/repository/lead"
 	memberrepo "github.com/milennials/torque-api/internal/repository/member"
+	onboardingrepo "github.com/milennials/torque-api/internal/repository/onboarding"
 	operationrepo "github.com/milennials/torque-api/internal/repository/operation"
 	piperepo "github.com/milennials/torque-api/internal/repository/pipe"
 	productrepo "github.com/milennials/torque-api/internal/repository/product"
@@ -345,6 +347,7 @@ func newRouter(
 				productRepo := productrepo.New(pool)
 				membershandler.NewRead(memberRepo).Routes(t)
 				productshandler.NewRead(productRepo).Routes(t)
+				onboardinghandler.New(onboardingrepo.New(pool)).Routes(t)
 
 				// --- Admin-only surfaces (Copilot kill-switch + KB +
 				// proposal money flow). Any authenticated member could
