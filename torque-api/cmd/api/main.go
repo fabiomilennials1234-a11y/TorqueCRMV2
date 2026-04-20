@@ -35,6 +35,7 @@ import (
 	"github.com/milennials/torque-api/internal/handler/health"
 	inboxhandler "github.com/milennials/torque-api/internal/handler/inbox"
 	leadshandler "github.com/milennials/torque-api/internal/handler/leads"
+	masterhandler "github.com/milennials/torque-api/internal/handler/master"
 	membershandler "github.com/milennials/torque-api/internal/handler/members"
 	onboardinghandler "github.com/milennials/torque-api/internal/handler/onboarding"
 	"github.com/milennials/torque-api/internal/handler/openapi"
@@ -54,7 +55,9 @@ import (
 	campaignrepo "github.com/milennials/torque-api/internal/repository/campaign"
 	confirmationrepo "github.com/milennials/torque-api/internal/repository/confirmation"
 	inboxrepo "github.com/milennials/torque-api/internal/repository/inbox"
+	auditrepo "github.com/milennials/torque-api/internal/repository/audit"
 	leadrepo "github.com/milennials/torque-api/internal/repository/lead"
+	masterrepo "github.com/milennials/torque-api/internal/repository/master"
 	memberrepo "github.com/milennials/torque-api/internal/repository/member"
 	onboardingrepo "github.com/milennials/torque-api/internal/repository/onboarding"
 	operationrepo "github.com/milennials/torque-api/internal/repository/operation"
@@ -396,6 +399,19 @@ func newRouter(
 					}
 					billinghandler.NewAdmin(subRepo, provider, bus).Routes(admin)
 					settingshandler.NewAdmin(settingsRepo).Routes(admin)
+				})
+
+				// --- Master-only surfaces (cross-org) -----------------
+				t.Group(func(mst chi.Router) {
+					mst.Use(mw.RequireMaster)
+					masterhandler.New(masterhandler.Options{
+						Repo:         masterrepo.New(pool),
+						Users:        users,
+						Audit:        auditrepo.New(pool),
+						JWT:          jsvc,
+						CookieSecure: cfg.CookieSecure,
+						CookieDomain: cfg.CookieDomain,
+					}).Routes(mst)
 				})
 			})
 
