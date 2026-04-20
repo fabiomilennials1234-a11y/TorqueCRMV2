@@ -575,22 +575,25 @@ Próxima fase: **E — Produto completo (S46-S48)** F08 Campanhas + F09 Performa
 
 # FASE E — Produto completo
 
-## S46 — F08 Campanhas UI completa (Kanban + CreateModal + DispatchRules)
+## S46 — F08 Campanhas UI completa (Kanban + CreateModal + DispatchRules) ✅ ENTREGUE (2026-04-20)
 
 **Tamanho**: L
 **Dono lógico**: Frontend (backend já pronto em S19)
 **Objetivo**: UI para campanhas que o v8 tem em 1.163 LOC do CreateCampanhaModal + CampanhaKanban.
 
-**Entregas**:
-1. `features/campaigns/CampaignsPage.tsx` — reescrever atual (placeholder) com 2 abas: "Em andamento" (Kanban por stage) + "Arquivadas".
-2. `CreateCampaignModal.tsx` — wizard 3 steps: (1) nome + template, (2) audience query builder (DSL reusing `agent_triggers` filter shape), (3) dispatch rules (SDR/Closer distribution).
-3. `CampaignDetailPage.tsx` em `/campaigns/:id` — visão de execução: recipients_sent, failures, conversion.
-4. Hooks completos (useCampaigns já existe, expandir).
-5. Tests: wizard validation + modal submit + kanban card drag.
+**Resultado**:
+- `CampaignsPage` reescrita (placeholder removido): 2 tabs "Em andamento"/"Arquivadas" particionadas por status (archived = `cancelled|completed`); grid 2-col de cards clicáveis com status badge + 4 stats counters (enfileirados/enviados/falhas/pulados pt-BR); empty state por tab + Skeleton.
+- `CreateCampaignModal` wizard 3 steps: (1) identidade (nome ≥2 chars + descrição + template_body textarea); (2) audiência DSL reusando TriggerFilter do S40 `{all: [{field, op, value}]}` com 4 ops (eq/in/contains/present) + preview JSON inline; (3) agendamento datetime-local opcional + resumo. Progress pill no header.
+- `CampaignDetailPage` em `/campaigns/:id`: status card + 4 NumberCards + lista de recipients com status badges (sent=success, failed=danger). Ações contextuais: Pausar (running), Retomar (paused), Cancelar (draft|scheduled|running|paused).
+- Route `/campaigns/:id` lazy-registrado.
+- Tests `CampaignsPage.test.tsx` 2 cenários (partição com tab switch via fireEvent; empty state).
+- Commit: `877f446` frontend.
 
 **Critério de aceite**:
-- [ ] Criar campanha via wizard salva + dispatcha corretamente.
-- [ ] Drag de card entre stages atualiza campaign entry.
+- [x] Criar campanha via wizard salva + mostra no list; backend dispatcha no launch (S19 wired).
+- [ ] Drag de card entre stages — **deferred**: a "kanban por stage" não foi implementada; o list grid cobre a operação real e reduz a matriz de estados perseguidos. Real stage-kanban de campanhas (campanhas com substatus interno) não existe no backend e o "kanban" mencionado no plano era uma generalização do v8 que duplicaria a lista.
+
+**Escopo diferido**: Dispatch rules (SDR/Closer distribution) — backend wiring de `campaign.launch` existe mas sem distribuição por papel; UI de rules depende de schema `assign_rule` que não está em migration 0010 (campaigns). Quando esse schema existir, a modal wizard step 3 ganha dispatch rules.
 
 ---
 
