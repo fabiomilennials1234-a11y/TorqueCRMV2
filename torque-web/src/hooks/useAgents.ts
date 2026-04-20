@@ -38,6 +38,14 @@ export interface Agent {
    * LLM call. Null / undefined = no retrieval (base system prompt only).
    */
   knowledge_collection_id?: string | null
+  /**
+   * S41 — TTS config. `tts_enabled=true` alone is not enough to
+   * render audio; the outbound path also checks `tts_voice_id` is
+   * non-null. Kept as two fields so the UI can disable the agent's
+   * voice without losing the configured voice id.
+   */
+  tts_enabled: boolean
+  tts_voice_id?: string | null
 }
 
 export interface UpdateAgentPayload {
@@ -48,6 +56,10 @@ export interface UpdateAgentPayload {
   temperature?: number
   max_output_tokens?: number
   tools_allowlist?: string[]
+  // S41 — toggling tts_voice_id to an empty string clears the
+  // column (NULL) on the server; undefined leaves it untouched.
+  tts_enabled?: boolean
+  tts_voice_id?: string | null
 }
 
 export interface CreateAgentPayload {
@@ -332,6 +344,40 @@ export function useBindAgentCollection(agentId: string) {
       errorContext: 'copilot.agent.knowledge_bind',
     }
   )
+}
+
+// -------- S41 TTS preview -------------------------------------------
+
+/**
+ * S41 — fetches an audio/mpeg blob from POST /agents/:id/tts/preview
+ * and returns the object URL so <audio src=...> can play it directly.
+ * Not wrapped in useAppMutation because the response is binary, not
+ * JSON — rolling a thin helper keeps the mutation layer JSON-only.
+ */
+async function readCsrfToken(): Promise<string> {
+  const match = document.cookie.split('; ').find((row) => row.startsWith('__torque_csrf='))
+  return match ? match.slice('__torque_csrf='.length) : ''
+}
+
+export async function previewTTS(
+  agentId: string,
+  body: { text?: string; voice_id?: string } = {}
+): Promise<string> {
+  const res = await fetch(`/api/v1/agents/${agentId}/tts/preview`, {
+    method: 'POST',
+    credentials: 'include',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-CSRF-Token': await readCsrfToken(),
+    },
+    body: JSON.stringify(body),
+  })
+  if (!res.ok) {
+    const text = await res.text().catch(() => '')
+    throw new Error(text || `tts preview failed: ${res.status}`)
+  }
+  const blob = await res.blob()
+  return URL.createObjectURL(blob)
 }
 
 // -------- S40 triggers ----------------------------------------------
