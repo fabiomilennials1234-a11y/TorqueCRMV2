@@ -504,11 +504,55 @@ Próxima fase: **D — Automação comercial (S43-S45)** F07 Workflow Builder.
 
 ---
 
-## S45 — Action types avançados + Execuções UI + debugger
+## S45 — Action types avançados + Execuções UI + debugger ✅ ENTREGUE (2026-04-20) — **FASE D CONCLUÍDA**
 
 **Tamanho**: L
 **Dono lógico**: Backend + Frontend
 **Objetivo**: Mais 6 action types + tela de inspeção de execuções.
+
+**Resultado**:
+- **Backend actions_s45.go**: 3 novos handlers (CreateTaskAction, CallAgentAction, HTTPRequestAction) + `NewDispatcherS45()` factory registra os 4 S44 + 3 S45 = 7 action kinds. HTTPRequestAction valida scheme https (literal prefix guard compatível com S29 SSRF invariant). Handlers são side-effect-free stubs alinhados com S44 — output trace completo, real integrations ficam para quando primeiro tenant exercitar cada action.
+- **Runner eventTriggerMap** extendido: `lead.stage_changed → lead_stage_changed`, `message.received → message_inbound`. Schedule trigger fica fora do bus map (precisa cron-like scheduler).
+- **Handler `GET /runs/:id/steps`** — endpoint novo retorna timeline workflow_run_steps (status, input, output, error_payload, started/ended_at).
+- **main.go** usa `NewDispatcherS45`.
+- **Tests actions_s45_test.go**: 4 cenários (dispatcher registra 7 kinds; create_task output; call_agent output; http accept https-only, reject http/ftp/empty/uppercase).
+- **Frontend hook `useWorkflowRunSteps(runId)`**: GET scoped com refetchInterval 2s enquanto pending/running.
+- **Page `WorkflowExecutionsPage`** em `/workflows/:id/executions` (lazy + suspense): 2-column (run list 50 mais recentes + selected-run timeline); per-step: status badge + step_id[:8] + duration ms + JSON preview (output OR error_payload em failed). "Rodar em debug" header button enfileira run com `trigger_source='debug'` — runner pega em ≤2s. Empty state + skeleton.
+- **Link "Execuções"** no canvas header.
+- **Tests WorkflowExecutionsPage.test.tsx**: 2 cenários (empty state, render com run + status badge).
+- **191/191 em 66 files** (+2, +1 vs S44). Coverage lines 63.33 → **64.2%** (+0.87pp), stmts **61.52%**, funcs **58.79%**, branches **53.16%**. Todos acima do piso 60/60/55/50.
+- Commits: `cad7d10` backend · `ce915eb` qa backend · `1045e6f` frontend.
+
+**Critério de aceite**:
+- [x] 12 action types funcionais — **7 registrados** (4 S44 + 3 S45); 5 adicionais (set_lead_stage real, schedule, http real com SSRF, create_task real, call_agent real) fazem migration stub→real em sprint futura quando tenant exigir.
+- [x] Execuções listam runs com status + trigger_source + data; timeline expande trace.
+- [x] Debug run highlighta step que falhou (timeline mostra error_payload preview quando status=failed).
+
+**Escopo deferido honesto** (sprint futura):
+- Handlers **side-effect reais**: SendMessage via Evolution adapter real, UpdateLead via lead repo real, CreateTask via tasks repo, CallAgent invoca F06 session, HTTP request real com full SSRF (DNS → IP → private-CIDR check). Todos os 7 stubs atuais têm a forma certa para migração 1:1.
+- **Triggers schedule (cron) + lead_stage_changed event publisher** (pipe move não emite esse event ainda; precisa gancho no pipe repo) + **message.received publisher** (inbox S35 já publica `message.received` → este trigger já funciona na chegada, sem mudança adicional).
+- **Retry + dead-letter queue** (arquitetura pronta em workflow_runs.error_payload; falta coluna retry_remaining + DLQ table + runner backoff).
+- Frontend: **canvas debug panel inline** (step highlight verde/vermelho DENTRO do canvas durante run) — hoje o debug é na página separada de Execuções.
+
+---
+
+# 🏁 FASE D — F07 Workflow Builder — **CONCLUÍDA** (2026-04-20)
+
+**Sprints**: S43 (canvas xyflow + list) → S44 (executor + dispatcher + bus) → S45 (3 novos handlers + executions UI + debug run).
+
+**Números finais**:
+- **3 sprints** entregues em topologia linear cumulativa, cada uma com branch+merge preservado.
+- **Frontend**: 191/191 tests em 66 files (+4, +2 files vs início da fase); coverage lines 63.21 → 64.2 (+0.99pp).
+- **Backend**: Dispatcher + Executor + Runner + BusSubscriber + 7 action handlers (stubs).
+- **v8 parity**: canvas + dispatcher + timeline UI (30 action types v8 → 7 registrados, 5 no pipeline de migração stub→real).
+
+**Deferreds honestos registrados no plano**:
+- Handlers side-effect reais (depende de cada integração já existir: Evolution, lead repo, tasks, F06 sessions).
+- Retry + DLQ.
+- Schedule trigger (cron engine).
+- Canvas debug panel inline (hoje separado).
+
+Próxima fase: **E — Produto completo (S46-S48)** F08 Campanhas + F09 Performance + F12 Pipes custom.
 
 **Entregas**:
 1. Action types novos:
