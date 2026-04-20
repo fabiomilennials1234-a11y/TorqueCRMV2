@@ -1,203 +1,157 @@
-import {
-  Plus,
-  Pause,
-  Play,
-  MoreHorizontal,
-  TrendingUp,
-  Users,
-  Target,
-  Clock,
-  type LucideIcon,
-} from 'lucide-react'
-import { Button } from '@/ui/button'
+/**
+ * F08 Campanhas — CampaignsPage (S46).
+ *
+ * Substitui o placeholder anterior por duas abas ("Em andamento" / "Arquivadas")
+ * populadas via useCampaigns, com stats cards + link para CampaignDetailPage.
+ * CreateCampaignModal (wizard 3 steps) fica embutido via "Nova campanha".
+ */
+
+import { Plus } from 'lucide-react'
+import { useMemo, useState } from 'react'
+import { Link } from 'react-router-dom'
+
 import { Badge } from '@/ui/badge'
-import { Card } from '@/ui/card'
-import { Sparkline } from '@/ui/spark'
+import { Button } from '@/ui/button'
+import { EmptyState } from '@/ui/empty-state'
 import { PageHeader } from '@/ui/page-header'
-import { campaigns } from '@/lib/seed'
-import { formatRelative } from '@/lib/utils'
+import { Skeleton } from '@/ui/skeleton'
+import { QueryBoundary } from '@/components/QueryBoundary'
+import {
+  useCampaigns,
+  type Campaign,
+  type CampaignStatus,
+} from '@/hooks/useCampaigns'
+import { CreateCampaignModal } from '@/features/campaigns/CreateCampaignModal'
+
+const statusTone: Record<CampaignStatus, 'success' | 'danger' | 'neutral'> = {
+  draft: 'neutral',
+  scheduled: 'neutral',
+  running: 'success',
+  paused: 'neutral',
+  completed: 'success',
+  cancelled: 'danger',
+}
+
+type Tab = 'active' | 'archived'
+
+// Backend não expõe `archived` ainda; consideramos "archived" = cancelled|completed
+// porque esse é o estado terminal que deixa a campanha fora da operação.
+const archivedStatuses: CampaignStatus[] = ['completed', 'cancelled']
 
 export function CampaignsPage() {
+  const query = useCampaigns()
+  const [tab, setTab] = useState<Tab>('active')
+  const [creating, setCreating] = useState(false)
+
+  const partitioned = useMemo(() => {
+    const data = query.data ?? []
+    const active = data.filter((c) => !archivedStatuses.includes(c.status))
+    const archived = data.filter((c) => archivedStatuses.includes(c.status))
+    return { active, archived }
+  }, [query.data])
+
+  const visible = tab === 'active' ? partitioned.active : partitioned.archived
+
   return (
-    <div className="mx-auto max-w-[1400px] px-8">
+    <div className="mx-auto max-w-5xl px-8 py-8">
       <PageHeader
-        eyebrow="Campanhas · Outbound"
-        title="Cadências em execução"
-        description="Fluxos conversacionais ativos que aquecem leads frios até o handoff humano."
+        eyebrow="Disparo"
+        title="Campanhas"
+        description="Mensagens em massa para listas de leads filtradas."
         actions={
-          <Button variant="primary" size="md" className="gap-1.5">
-            <Plus className="h-4 w-4" />
+          <Button type="button" variant="primary" size="sm" onClick={() => setCreating(true)}>
+            <Plus className="mr-1 h-3.5 w-3.5" />
             Nova campanha
           </Button>
         }
       />
 
-      {/* Summary */}
-      <div className="mt-8 grid grid-cols-1 gap-px overflow-hidden rounded-lg bg-hairline shadow-elev-1 md:grid-cols-4">
-        <Metric icon={Users} label="Em campanhas" value="3.240" hint="leads enrolados" />
-        <Metric
-          icon={Target}
-          label="Taxa de resposta"
-          value="16.9%"
-          hint="+3.1pp vs mês"
-          tone="up"
-        />
-        <Metric
-          icon={TrendingUp}
-          label="Conversão para qualificado"
-          value="5.2%"
-          hint="+0.8pp"
-          tone="up"
-        />
-        <Metric icon={Clock} label="Mensagens agendadas" value="842" hint="nas próximas 24h" />
-      </div>
-
-      <div className="mt-8 space-y-4">
-        {campaigns.map((c) => (
-          <CampaignRow key={c.id} c={c} />
-        ))}
-
-        <button className="group flex w-full items-center justify-center gap-2 rounded-lg py-6 text-sm text-ink-dim shadow-[inset_0_0_0_1px_hsl(var(--hairline))] transition-shadow hover:text-ink-muted hover:shadow-[inset_0_0_0_1px_hsl(var(--ink-dim))]">
-          <Plus className="h-4 w-4" />
-          Nova campanha · partir de template ICP industrial
+      <div className="mt-4 inline-flex rounded-md bg-elevated/40 p-1 shadow-hairline">
+        <button
+          type="button"
+          className={
+            'rounded px-3 py-1 text-xs ' +
+            (tab === 'active' ? 'bg-surface text-ink shadow-elev-1' : 'text-ink-dim')
+          }
+          onClick={() => setTab('active')}
+        >
+          Em andamento ({partitioned.active.length})
+        </button>
+        <button
+          type="button"
+          className={
+            'rounded px-3 py-1 text-xs ' +
+            (tab === 'archived' ? 'bg-surface text-ink shadow-elev-1' : 'text-ink-dim')
+          }
+          onClick={() => setTab('archived')}
+        >
+          Arquivadas ({partitioned.archived.length})
         </button>
       </div>
-    </div>
-  )
-}
 
-function Metric({
-  icon: Icon,
-  label,
-  value,
-  hint,
-  tone,
-}: {
-  icon: LucideIcon
-  label: string
-  value: string
-  hint: string
-  tone?: 'up' | 'down'
-}) {
-  return (
-    <div className="bg-surface p-5">
-      <div className="flex items-center gap-2 text-2xs uppercase tracking-[0.14em] text-ink-dim">
-        <Icon className="h-3 w-3" strokeWidth={1.75} />
-        {label}
-      </div>
-      <div className="mt-3 font-display text-[1.75rem] tabular-nums leading-none tracking-tightest text-ink">
-        {value}
-      </div>
-      <div
-        className={[
-          'font-metric mt-1 text-xs',
-          tone === 'up' ? 'text-success' : 'text-ink-dim',
-        ].join(' ')}
-      >
-        {hint}
-      </div>
-    </div>
-  )
-}
-
-function CampaignRow({ c }: { c: (typeof campaigns)[number] }) {
-  const progress = c.planned > 0 ? (c.sent / c.planned) * 100 : 0
-  const responded = c.sent > 0 ? (c.replied / c.sent) * 100 : 0
-
-  return (
-    <Card className="transition-all hover:shadow-elev-2">
-      <div className="flex items-start gap-6 p-5">
-        {/* Status orb */}
-        <div className="relative mt-1 shrink-0">
-          <div
-            className={[
-              'h-2.5 w-2.5 rounded-full',
-              c.status === 'running' && 'bg-success',
-              c.status === 'paused' && 'bg-warning',
-              c.status === 'draft' && 'bg-ink-dim',
-            ]
-              .filter(Boolean)
-              .join(' ')}
+      <QueryBoundary
+        query={query}
+        loadingFallback={<Skeleton className="mt-6 h-32 w-full" />}
+        isEmpty={() => visible.length === 0}
+        emptyFallback={
+          <EmptyState
+            title={tab === 'active' ? 'Nenhuma campanha em andamento' : 'Nenhuma campanha arquivada'}
+            description={
+              tab === 'active'
+                ? 'Crie uma nova campanha para começar a disparar.'
+                : 'Campanhas finalizadas ou canceladas aparecem aqui.'
+            }
           />
-          {c.status === 'running' && (
-            <span className="absolute -inset-1 animate-ping rounded-full bg-success/20" />
-          )}
-        </div>
+        }
+      >
+        {() => <CampaignGrid campaigns={visible} />}
+      </QueryBoundary>
 
-        <div className="min-w-0 flex-1">
-          <div className="flex items-center gap-3">
-            <h3 className="font-display text-[1.125rem] leading-tight tracking-tightest text-ink">
-              {c.name}
-            </h3>
-            <Badge
-              tone={
-                c.status === 'running' ? 'success' : c.status === 'paused' ? 'warning' : 'neutral'
-              }
-            >
-              {c.status === 'running'
-                ? 'executando'
-                : c.status === 'paused'
-                  ? 'pausado'
-                  : 'rascunho'}
-            </Badge>
-          </div>
-          <div className="mt-1 flex items-center gap-3 text-xs text-ink-dim">
-            {c.startedAt ? (
-              <span className="font-metric">iniciada {formatRelative(c.startedAt)}</span>
-            ) : (
-              <span>nunca executada</span>
-            )}
-            <span>·</span>
-            <span>Canal: WhatsApp · Cadência 3-5-8</span>
-          </div>
-
-          {/* Progress track */}
-          {c.status !== 'draft' && (
-            <div className="mt-4">
-              <div className="flex items-baseline justify-between text-2xs uppercase tracking-[0.12em] text-ink-dim">
-                <span>Progresso de envio</span>
-                <span className="font-metric text-ink-muted">
-                  {c.sent.toLocaleString('pt-BR')} / {c.planned.toLocaleString('pt-BR')}
-                </span>
-              </div>
-              <div className="mt-1.5 h-1 overflow-hidden rounded-full bg-hairline">
-                <div
-                  className="h-full rounded-full bg-accent transition-all"
-                  style={{ width: `${progress}%` }}
-                />
-              </div>
-            </div>
-          )}
-        </div>
-
-        {/* Stats */}
-        <div className="flex shrink-0 items-center gap-8">
-          <Stat label="Resposta" value={`${responded.toFixed(1)}%`} />
-          <Stat label="Convertidos" value={c.converted.toString()} />
-          <Sparkline data={[3, 5, 8, 6, 9, 12, 14, 11, 16, 15, 18, 20]} width={80} height={28} />
-          <div className="flex items-center gap-0.5">
-            <Button variant="ghost" size="icon">
-              {c.status === 'running' ? (
-                <Pause className="h-4 w-4" />
-              ) : (
-                <Play className="h-4 w-4" />
-              )}
-            </Button>
-            <Button variant="ghost" size="icon">
-              <MoreHorizontal className="h-4 w-4" />
-            </Button>
-          </div>
-        </div>
-      </div>
-    </Card>
+      {creating && <CreateCampaignModal onClose={() => setCreating(false)} />}
+    </div>
   )
 }
 
-function Stat({ label, value }: { label: string; value: string }) {
+function CampaignGrid({ campaigns }: { campaigns: Campaign[] }) {
   return (
-    <div className="text-right">
-      <div className="text-2xs uppercase tracking-[0.12em] text-ink-dim">{label}</div>
-      <div className="font-metric text-sm tabular-nums text-ink">{value}</div>
+    <ul className="mt-6 grid grid-cols-1 gap-3 md:grid-cols-2">
+      {campaigns.map((c) => (
+        <li key={c.id}>
+          <Link
+            to={`/campaigns/${c.id}`}
+            className="block rounded-lg bg-surface p-4 shadow-elev-1 transition hover:shadow-elev-2"
+          >
+            <div className="flex items-center gap-2">
+              <span className="font-medium text-ink">{c.name}</span>
+              <Badge tone={statusTone[c.status]}>{c.status}</Badge>
+            </div>
+            {c.description && (
+              <p className="mt-1 truncate text-2xs text-ink-dim">{c.description}</p>
+            )}
+            <dl className="mt-3 grid grid-cols-4 gap-2 text-2xs">
+              <Stat label="Enfileirados" value={c.stats_queued} />
+              <Stat label="Enviados" value={c.stats_sent} />
+              <Stat label="Falhas" value={c.stats_failed} tone="danger" />
+              <Stat label="Pulados" value={c.stats_skipped} />
+            </dl>
+          </Link>
+        </li>
+      ))}
+    </ul>
+  )
+}
+
+function Stat({ label, value, tone }: { label: string; value: number; tone?: 'danger' }) {
+  return (
+    <div className="rounded-md bg-elevated/30 px-2 py-1.5">
+      <dt className="text-ink-dim">{label}</dt>
+      <dd
+        className={
+          'font-mono text-sm ' + (tone === 'danger' && value > 0 ? 'text-danger' : 'text-ink')
+        }
+      >
+        {value.toLocaleString('pt-BR')}
+      </dd>
     </div>
   )
 }
