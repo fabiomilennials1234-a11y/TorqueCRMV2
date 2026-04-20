@@ -25,6 +25,7 @@ import (
 	"github.com/milennials/torque-api/internal/config"
 	"github.com/milennials/torque-api/internal/db"
 	"github.com/milennials/torque-api/internal/event"
+	agentshandler "github.com/milennials/torque-api/internal/handler/agents"
 	authhandler "github.com/milennials/torque-api/internal/handler/auth"
 	"github.com/milennials/torque-api/internal/handler/bootstrap"
 	confirmationshandler "github.com/milennials/torque-api/internal/handler/confirmations"
@@ -39,6 +40,7 @@ import (
 	tasksahandler "github.com/milennials/torque-api/internal/handler/tasks"
 	mw "github.com/milennials/torque-api/internal/httpx/middleware"
 	"github.com/milennials/torque-api/internal/observability/sentry"
+	agentrepo "github.com/milennials/torque-api/internal/repository/agent"
 	confirmationrepo "github.com/milennials/torque-api/internal/repository/confirmation"
 	inboxrepo "github.com/milennials/torque-api/internal/repository/inbox"
 	leadrepo "github.com/milennials/torque-api/internal/repository/lead"
@@ -321,6 +323,7 @@ func newRouter(
 				proposalshandler.New(proposalrepo.New(pool), bus).Routes(t)
 				inboxhandler.New(inboxrepo.New(pool), bus).Routes(t)
 				tasksahandler.New(taskrepo.New(pool), bus).Routes(t)
+				agentshandler.New(agentrepo.New(pool), bus).Routes(t)
 			})
 
 			// WebSocket upgrade — authenticated + session carries org_id.

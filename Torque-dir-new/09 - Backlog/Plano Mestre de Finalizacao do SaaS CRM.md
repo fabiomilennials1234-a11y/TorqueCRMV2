@@ -747,7 +747,7 @@ O bloco da sprint em §8 muda de "prospectivo" para "entregue":
 
 ---
 
-### Sprint S15 — F06: Copilot Backend (RAG + Agents)
+### Sprint S15 — F06: Copilot Backend (RAG + Agents) ✅ ENTREGUE (2026-04-19)
 
 | Campo | Valor |
 |-------|-------|
