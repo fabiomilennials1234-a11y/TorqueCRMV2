@@ -131,7 +131,7 @@ status: vivo
 
 ## Status atual
 
-**Etapa:** **Fase A concluída (2026-04-20)** — foundation repair fechado (S30 lazy loading + S31 vitest thresholds + S32 tenant isolation tests + Dependabot + gosec). Próxima: Fase B (S33-S36) F04 Inbox chat real-time. S00-S29 ✅ — Roadmap original de 30 sprints COMPLETO. S29 entregou security audit OWASP Top 10, k6 load test, runbooks operacionais (incident-response + oncall-basics) e security-scan.yml (gosec + govulncheck + npm audit + Trivy). Próximos passos: runtime backend no host, follow-ups não-bloqueantes, pentest + load test contra staging, lançamento.
+**Etapa:** **Fase B em andamento** — S33 ✅ F04 InboxPage shell real (ConversationList + ConversationHeader, 135/135 tests em 47 files). Próxima: S34 (MessageList + WS live updates). Fase A concluída (S30+S31+S32). S00-S29 ✅ — Roadmap original de 30 sprints COMPLETO. S29 entregou security audit OWASP Top 10, k6 load test, runbooks operacionais (incident-response + oncall-basics) e security-scan.yml (gosec + govulncheck + npm audit + Trivy). Próximos passos: runtime backend no host, follow-ups não-bloqueantes, pentest + load test contra staging, lançamento.
 
 **S00** — ESLint flat (a11y + hooks + ban `dangerouslySetInnerHTML`), TS strict, Prettier, Vitest (51 testes), CI, vocabulario canonico, `--clay-*` → `--card-*`/`.tactile-*`, pos-login navigation por `ui_mode`.
 

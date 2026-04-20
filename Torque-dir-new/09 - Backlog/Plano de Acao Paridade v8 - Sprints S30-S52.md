@@ -129,11 +129,13 @@ referencia: "[[Analise Comparativa v8 vs Torque-v2]]"
 
 > v8 tem `ChatWhatsApp.tsx` com 2.443 LOC. Vamos re-implementar em ~500 LOC total (componentizado) aproveitando que o backend `/api/v1/conversations` já existe desde S13 e que o WebSocket hub já emite `message.received` patches.
 
-## S33 — ConversationList + ChatHeader (shell do Inbox)
+## S33 — ConversationList + ChatHeader (shell do Inbox) ✅ ENTREGUE (2026-04-20)
 
 **Tamanho**: M (1-2 semanas)
 **Dono lógico**: Frontend
 **Objetivo**: Lista de conversas com filtros + header com info de contato + channel badge. Sem envio de mensagens ainda.
+
+**Resultado**: 3 arquivos novos (ConversationList + ConversationHeader + __tests__/ConversationList.test.tsx) + InboxPage reescrito (370 LOC mockup → ~90 LOC wiring real). URL-driven filters (q/state/c) via useSearchParams; WS invalidation em conversation.*+message.sent herdado do useConversations; ChannelBadge/Pill/QueryBoundary/Avatar reusados. 135/135 vitest em 47 files. STATE D050. Branch `sprint/S33` → merge no-ff.
 
 **Referência v8**: `src/components/chat/WhatsAppChat.tsx` linhas 1-500 (sidebar + header).
 
