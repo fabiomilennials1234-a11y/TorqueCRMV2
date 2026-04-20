@@ -13,7 +13,12 @@
  * No offset pagination, ever. The backend will 400 on `?page=` on purpose.
  */
 
-import { useInfiniteQuery, type QueryKey, type UseInfiniteQueryResult } from '@tanstack/react-query'
+import {
+  useInfiniteQuery,
+  type InfiniteData,
+  type QueryKey,
+  type UseInfiniteQueryResult,
+} from '@tanstack/react-query'
 import { useMemo } from 'react'
 
 import { get } from '@/api/client'
@@ -41,7 +46,7 @@ export interface UseInfiniteListOptions {
 }
 
 export interface UseInfiniteListResult<T>
-  extends Omit<UseInfiniteQueryResult<CursorPage<T>, unknown>, 'data'> {
+  extends Omit<UseInfiniteQueryResult<InfiniteData<CursorPage<T>, string | null>, unknown>, 'data'> {
   items: T[]
   totalPagesLoaded: number
 }
@@ -56,12 +61,24 @@ export function useInfiniteList<T>(opts: UseInfiniteListOptions): UseInfiniteLis
     staleTime,
   } = opts
 
-  const query = useInfiniteQuery<CursorPage<T>, unknown>({
+  // TanStack Query v5 wants the 5 generics to flow: TQueryFnData, TError,
+  // TData, TQueryKey, TPageParam. With them inferred from the queryFn return
+  // type we get precise typing on `query.data?.pages`.
+  const query = useInfiniteQuery<
+    CursorPage<T>,
+    unknown,
+    InfiniteData<CursorPage<T>, string | null>,
+    QueryKey,
+    string | null
+  >({
     queryKey,
     enabled,
-    initialPageParam: null as string | null,
+    initialPageParam: null,
     getNextPageParam: (lastPage) => lastPage.meta?.next_cursor ?? null,
-    staleTime,
+    // `staleTime` is spread conditionally — with
+    // `exactOptionalPropertyTypes: true`, passing `undefined` trips the
+    // TanStack type that expects `number | StaleTimeFunction`.
+    ...(staleTime !== undefined ? { staleTime } : {}),
     queryFn: ({ pageParam, signal }) => {
       const search = new URLSearchParams()
       if (pageSize !== undefined) search.set('page_size', String(pageSize))
@@ -83,7 +100,7 @@ export function useInfiniteList<T>(opts: UseInfiniteListOptions): UseInfiniteLis
     },
   })
 
-  const items = useMemo(() => {
+  const items = useMemo<T[]>(() => {
     return query.data?.pages.flatMap((p) => p.data) ?? []
   }, [query.data])
 

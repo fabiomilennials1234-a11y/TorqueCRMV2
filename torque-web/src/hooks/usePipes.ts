@@ -109,18 +109,14 @@ export interface MovePayload {
  * rolls back.
  */
 export function useMovePipeEntry(pipeId: string) {
+  // The optimistic-snap on this hook targets a list cache (PipeEntry[]) while
+  // the mutation returns a single PipeEntry — useAppMutation ties
+  // TOptimisticData to TData, so the two would clash. The WS broadcast of
+  // `pipe_entry.moved` already patches the list in usePipeEntries within
+  // ~50 ms, and invalidate on settle is a belt-and-suspenders refresh.
   return useAppMutation<PipeEntry, MovePayload>(
     (body) => post<PipeEntry>(`/api/v1/pipes/${pipeId}/entries/move`, body),
     {
-      optimistic: {
-        queryKey: queryKeys.pipes.entries(pipeId),
-        updater: (prev, body) => {
-          if (!prev) return prev
-          return prev.map((e) =>
-            e.lead_id === body.lead_id ? { ...e, stage_id: body.new_stage_id } : e
-          )
-        },
-      },
       invalidate: [queryKeys.pipes.entries(pipeId)],
       errorContext: 'pipe.move',
     }

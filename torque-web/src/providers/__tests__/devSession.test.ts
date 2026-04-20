@@ -4,7 +4,8 @@ import { DEV_SESSION, isDevAuthEnabled } from '@/providers/devSession'
 
 describe('devSession', () => {
   beforeEach(() => {
-    vi.stubEnv('DEV', 'true')
+    // `DEV` is typed as boolean in ImportMetaEnv — pass boolean.
+    vi.stubEnv('DEV', true)
   })
   afterEach(() => {
     vi.unstubAllEnvs()
@@ -27,13 +28,12 @@ describe('devSession', () => {
   })
 
   it('returns false in production builds regardless of VITE_DEV_AUTH', () => {
-    vi.stubEnv('DEV', '')
+    vi.stubEnv('DEV', false)
     vi.stubEnv('VITE_DEV_AUTH', '1')
     expect(isDevAuthEnabled()).toBe(false)
   })
 
   it('DEV_SESSION grants every declared feature permission', () => {
-    // Every permission must be truthy so PermissionGate does not block a walk.
     for (const [k, v] of Object.entries(DEV_SESSION.featurePermissions)) {
       expect(v, `permission ${k} should be true`).toBe(true)
     }
