@@ -38,8 +38,10 @@ jobs:
       - name: Format check
         run: npx prettier --check .
 
-      - name: Test
-        run: npm run test
+      - name: Test (with coverage thresholds)
+        # `--coverage` activates vitest.config.ts thresholds (45/45/40/40
+        # baseline from S31). Failing thresholds fail the job.
+        run: npm run test -- --coverage
 
       - name: Build
         run: npm run build

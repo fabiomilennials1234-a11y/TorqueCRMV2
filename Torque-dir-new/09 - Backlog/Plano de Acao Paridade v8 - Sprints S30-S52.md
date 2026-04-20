@@ -78,11 +78,13 @@ referencia: "[[Analise Comparativa v8 vs Torque-v2]]"
 
 ---
 
-## S31 — Vitest thresholds + gaps críticos
+## S31 — Vitest thresholds + gaps críticos ✅ ENTREGUE (2026-04-20)
 
 **Tamanho**: S (1 semana)
 **Dono lógico**: QA + Frontend
 **Objetivo**: Ativar enforcement de cobertura (não temos hoje) + cobrir 9 hooks críticos listados em D045 §5.3.
+
+**Resultado**: 10 test files novos (+33 tests), thresholds initial ratchet 45/45/40/40 (baseline measured 48.95/46.75/41.79/43.18), ci.yml agora gateia via --coverage. **132/132 tests em 46 files**. Mirror do v8 D007→D025 (9.33%→73.53%). STATE D048. Branch `sprint/S31` → merge no-ff.
 
 **Entregas**:
 1. `torque-web/vitest.config.ts` — adicionar `test.coverage.thresholds: { lines: 55, statements: 55, functions: 45, branches: 45 }` (conservador no S31; rachet sobe a cada sprint até 70/65/60/55 em S40 — espelha o D007→D025 do v8).
