@@ -51,6 +51,7 @@ interface MeResponse {
     display_name: string
     role: 'admin' | 'membro'
     ui_mode: 'manager' | 'salesperson'
+    team_member_id: string
   }
   organization: {
     id: string
@@ -74,6 +75,7 @@ function toSessionBundle(me: MeResponse): SessionBundle {
       id: me.user.id,
       email: me.user.email,
       displayName: me.user.display_name,
+      teamMemberId: me.user.team_member_id,
     },
     org: {
       id: me.organization.id,

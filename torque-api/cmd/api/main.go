@@ -355,7 +355,8 @@ func newRouter(
 				leadshandler.New(leadrepo.New(pool), bus).Routes(t)
 				pipeshandler.New(piperepo.New(pool), bus).Routes(t)
 				confirmationshandler.New(confirmationrepo.New(pool), bus).Routes(t)
-				inboxhandler.New(inboxrepo.New(pool), bus).Routes(t)
+				inboxhandler.New(inboxrepo.New(pool), bus).
+					WithAudit(auditrepo.New(pool)).Routes(t)
 				tasksahandler.New(taskrepo.New(pool), bus).Routes(t)
 				analyticshandler.New(analyticsrepo.New(pool)).Routes(t)
 

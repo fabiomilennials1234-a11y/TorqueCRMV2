@@ -100,11 +100,15 @@ type meResponse struct {
 }
 
 type meUser struct {
-	ID          uuid.UUID     `json:"id"`
-	Email       string        `json:"email"`
-	DisplayName string        `json:"display_name"`
-	Role        domain.Role   `json:"role"`
-	UIMode      domain.UIMode `json:"ui_mode"`
+	ID           uuid.UUID     `json:"id"`
+	Email        string        `json:"email"`
+	DisplayName  string        `json:"display_name"`
+	Role         domain.Role   `json:"role"`
+	UIMode       domain.UIMode `json:"ui_mode"`
+	// TeamMemberID is the caller's active membership row. Exposed in S36
+	// so the frontend can tell "Assumir" apart from "Já é minha" without
+	// a second roundtrip to /members.
+	TeamMemberID uuid.UUID     `json:"team_member_id"`
 }
 
 type meOrganization struct {
@@ -192,11 +196,12 @@ func (h *Handler) login(w http.ResponseWriter, r *http.Request) {
 
 	httpx.WriteJSON(w, http.StatusOK, loginResponse{
 		User: meUser{
-			ID:          user.ID,
-			Email:       user.Email,
-			DisplayName: user.DisplayName,
-			Role:        chosen.Role,
-			UIMode:      user.UIMode,
+			ID:           user.ID,
+			Email:        user.Email,
+			DisplayName:  user.DisplayName,
+			Role:         chosen.Role,
+			UIMode:       user.UIMode,
+			TeamMemberID: chosen.TeamMemberID,
 		},
 		Organization: meOrganization{
 			ID:            org.ID,
@@ -364,11 +369,12 @@ func (h *Handler) me(w http.ResponseWriter, r *http.Request) {
 
 	httpx.WriteJSON(w, http.StatusOK, meResponse{
 		User: meUser{
-			ID:          user.ID,
-			Email:       user.Email,
-			DisplayName: user.DisplayName,
-			Role:        sess.Role,
-			UIMode:      user.UIMode,
+			ID:           user.ID,
+			Email:        user.Email,
+			DisplayName:  user.DisplayName,
+			Role:         sess.Role,
+			UIMode:       user.UIMode,
+			TeamMemberID: sess.TeamMemberID,
 		},
 		Organization: meOrganization{
 			ID:            org.ID,

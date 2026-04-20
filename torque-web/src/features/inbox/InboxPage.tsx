@@ -19,6 +19,7 @@ import { ConversationList } from '@/features/inbox/ConversationList'
 import { MessageComposer } from '@/features/inbox/MessageComposer'
 import { MessageList } from '@/features/inbox/MessageList'
 import { useConversations, type ConversationState } from '@/hooks/useInbox'
+import { useSession } from '@/hooks/useSession'
 import { EmptyState } from '@/ui/empty-state'
 
 type StateFilter = 'all' | ConversationState
@@ -27,6 +28,7 @@ const VALID_STATES = new Set<StateFilter>(['all', 'open', 'pending', 'resolved',
 
 export function InboxPage() {
   const [searchParams, setSearchParams] = useSearchParams()
+  const session = useSession()
 
   const search = searchParams.get('q') ?? ''
   const stateRaw = searchParams.get('state') ?? 'all'
@@ -67,12 +69,17 @@ export function InboxPage() {
         {activeConversation ? (
           <>
             {/*
-              TODO(S36): currentMemberId needs the caller's team_member_id
-              exposed in SessionBundle (today we only have user.id). For
-              now, `Assumir` renders only when the header receives an id;
-              Resolver / Reabrir are always available.
+              currentMemberId ligado em S36 via SessionBundle.user.teamMemberId.
+              ConversationHeader usa o id para (a) renderizar badge "Minha"
+              quando assigned_to bate e (b) passar o id como novo
+              assignee ao clicar Assumir.
             */}
-            <ConversationHeader conversation={activeConversation} />
+            <ConversationHeader
+              conversation={activeConversation}
+              {...(session.user.teamMemberId
+                ? { currentMemberId: session.user.teamMemberId }
+                : {})}
+            />
             <MessageList conversationId={activeConversation.id} />
             <MessageComposer
               conversationId={activeConversation.id}

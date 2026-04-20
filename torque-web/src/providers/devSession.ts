@@ -57,6 +57,7 @@ export const DEV_SESSION: SessionBundle = {
     id: '00000000-0000-0000-0000-0000000000b1',
     email: 'marcelo@gmail.com',
     displayName: 'Marcelo Montemezzo (dev)',
+    teamMemberId: '00000000-0000-0000-0000-0000000000c1',
   },
   org: {
     id: '00000000-0000-0000-0000-0000000000a1',

@@ -283,6 +283,9 @@ export interface SessionBundle {
     email: string
     displayName: string
     uiPreferences?: UiPreferences
+    // S36: team_member_id exposto em /me para a UI distinguir "assumir"
+    // vs "já é minha" sem roundtrip extra a /members.
+    teamMemberId: string
   }
   org: Organization
   role: TeamMember['role']

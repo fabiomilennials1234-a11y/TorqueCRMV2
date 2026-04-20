@@ -204,11 +204,13 @@ referencia: "[[Analise Comparativa v8 vs Torque-v2]]"
 
 ---
 
-## S36 — Inbox polish: takeover humano + resolução + atribuição + takeover automático por SLA
+## S36 — Inbox polish: takeover humano + resolução + atribuição ✅ ENTREGUE PARCIAL (2026-04-20) — FASE B DONE
 
 **Tamanho**: M
 **Dono lógico**: Backend + Frontend
 **Objetivo**: Regras operacionais que o v8 tem e que fazem o Inbox funcionar para um time grande.
+
+**Resultado**: team_member_id exposto em /me DTO; InboxPage wire com session.user.teamMemberId → ConversationHeader badge "Minha" + botão "Assumir" funcionam end-to-end. assign handler detecta takeover e escreve audit_log row (via Handler.WithAudit chain), WS event ganha flag `takeover: bool`. useSession safe-default + devSession ajustados. 148/148 vitest em 50 files. STATE D053. Branch `sprint/S36` → merge no-ff. **Fase B concluída.** **Escopo parcial honesto**: SLA watcher periódico (kind conversation.sla_check + conversation.sla_breached) fica para sprint de workers futuros — pool atual não tem scheduler periódico nativo. Pipeline async message.outbound via Evolution idem.
 
 **Entregas**:
 1. Backend: `POST /api/v1/conversations/:id/assign` (já existe, revisar), `POST /:id/resolve`, `POST /:id/reopen`, `POST /:id/takeover` (master/admin assume).
