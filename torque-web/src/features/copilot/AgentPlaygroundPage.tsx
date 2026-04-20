@@ -14,7 +14,7 @@
  *   stream; a UI não replica o toggle — é via AgentListPage.
  */
 
-import { ArrowLeft, RotateCcw, Send, Square } from 'lucide-react'
+import { ArrowLeft, Book, Plus, RotateCcw, Send, Square } from 'lucide-react'
 import { useEffect, useId, useMemo, useRef, useState } from 'react'
 import { Link, Navigate, useParams } from 'react-router-dom'
 
@@ -24,7 +24,16 @@ import { Input } from '@/ui/input'
 import { PageHeader } from '@/ui/page-header'
 import { Skeleton } from '@/ui/skeleton'
 import { friendlyMessage } from '@/api/errors'
-import { useAgent, useUpdateAgent, type UpdateAgentPayload } from '@/hooks/useAgents'
+import {
+  useAgent,
+  useBindAgentCollection,
+  useCreateCollection,
+  useEnqueueSource,
+  useKnowledgeCollections,
+  useKnowledgeSources,
+  useUpdateAgent,
+  type UpdateAgentPayload,
+} from '@/hooks/useAgents'
 import { useAgentStream } from '@/hooks/useAgentStream'
 
 type ChatTurn = {
@@ -230,6 +239,8 @@ function PlaygroundInner({ agent, agentId }: { agent: ReturnType<typeof useAgent
             )}
           </div>
         </form>
+
+        <KnowledgePanel agentId={agentId} collectionId={agent.knowledge_collection_id ?? null} />
       </aside>
 
       {/* Chat pane */}
@@ -354,6 +365,166 @@ function TranscriptBubble({
         )}
       </div>
     </div>
+  )
+}
+
+function KnowledgePanel({
+  agentId,
+  collectionId,
+}: {
+  agentId: string
+  collectionId: string | null
+}) {
+  const collections = useKnowledgeCollections()
+  const sources = useKnowledgeSources(collectionId ?? undefined)
+  const bind = useBindAgentCollection(agentId)
+  const createCollection = useCreateCollection()
+  const enqueue = useEnqueueSource(collectionId ?? '')
+
+  const [creatingCollection, setCreatingCollection] = useState(false)
+  const [collectionName, setCollectionName] = useState('')
+  const [sourceTitle, setSourceTitle] = useState('')
+  const [sourceContent, setSourceContent] = useState('')
+  const collectionSelectId = useId()
+
+  async function handleBind(value: string) {
+    await bind.mutateAsync({ collection_id: value === '' ? null : value })
+  }
+
+  async function handleCreateCollection(e: React.FormEvent) {
+    e.preventDefault()
+    const name = collectionName.trim()
+    if (!name) return
+    const created = await createCollection.mutateAsync({ name })
+    setCollectionName('')
+    setCreatingCollection(false)
+    await bind.mutateAsync({ collection_id: created.id })
+  }
+
+  async function handleAddSource(e: React.FormEvent) {
+    e.preventDefault()
+    if (!collectionId) return
+    const title = sourceTitle.trim()
+    const content = sourceContent.trim()
+    if (!title || !content) return
+    await enqueue.mutateAsync({ kind: 'text', title, content })
+    setSourceTitle('')
+    setSourceContent('')
+  }
+
+  return (
+    <section className="mt-8 border-t border-hairline pt-6">
+      <div className="mb-3 flex items-center gap-2">
+        <Book className="h-4 w-4 text-ink-muted" />
+        <h3 className="text-sm font-medium text-ink">Base de conhecimento</h3>
+      </div>
+      <p className="mb-3 text-2xs text-ink-dim">
+        Ligue uma coleção para injetar contexto recuperado (topK=5) no system prompt antes de cada mensagem.
+      </p>
+
+      <div className="space-y-2">
+        <label htmlFor={collectionSelectId} className="block text-xs text-ink-muted">
+          Coleção ativa
+        </label>
+        <select
+          id={collectionSelectId}
+          className="w-full rounded-md bg-elevated/40 px-3 py-2 text-sm text-ink shadow-hairline focus:outline-none focus:ring-1 focus:ring-accent/50"
+          value={collectionId ?? ''}
+          onChange={(e) => void handleBind(e.target.value)}
+          disabled={bind.isPending || collections.isLoading}
+        >
+          <option value="">— sem retrieval —</option>
+          {(collections.data ?? []).map((c) => (
+            <option key={c.id} value={c.id}>
+              {c.name} ({c.source_count})
+            </option>
+          ))}
+        </select>
+      </div>
+
+      {!creatingCollection ? (
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          className="mt-2"
+          onClick={() => setCreatingCollection(true)}
+        >
+          <Plus className="mr-1 h-3.5 w-3.5" />
+          Nova coleção
+        </Button>
+      ) : (
+        <form className="mt-2 flex items-center gap-2" onSubmit={handleCreateCollection}>
+          <Input
+            value={collectionName}
+            onChange={(e) => setCollectionName(e.target.value)}
+            placeholder="Nome da coleção"
+          />
+          <Button type="submit" variant="primary" size="sm" disabled={createCollection.isPending}>
+            Criar
+          </Button>
+          <Button type="button" variant="ghost" size="sm" onClick={() => setCreatingCollection(false)}>
+            Cancelar
+          </Button>
+        </form>
+      )}
+
+      {collectionId && (
+        <div className="mt-6 space-y-3">
+          <h4 className="text-xs font-medium text-ink-muted">Fontes</h4>
+          {sources.isLoading ? (
+            <Skeleton className="h-12 w-full" />
+          ) : (sources.data ?? []).length === 0 ? (
+            <p className="text-2xs text-ink-dim">Nenhuma fonte ingerida ainda.</p>
+          ) : (
+            <ul className="space-y-1.5">
+              {sources.data!.map((s) => (
+                <li
+                  key={s.id}
+                  className="flex items-center justify-between rounded-md bg-elevated/30 px-3 py-2 text-xs"
+                >
+                  <span className="truncate pr-2 text-ink">{s.title}</span>
+                  <Badge
+                    tone={
+                      s.status === 'ready'
+                        ? 'success'
+                        : s.status === 'failed'
+                          ? 'danger'
+                          : 'neutral'
+                    }
+                  >
+                    {s.status}
+                  </Badge>
+                </li>
+              ))}
+            </ul>
+          )}
+
+          <form className="space-y-2" onSubmit={handleAddSource}>
+            <Input
+              value={sourceTitle}
+              onChange={(e) => setSourceTitle(e.target.value)}
+              placeholder="Título da fonte (ex: FAQ 2026)"
+            />
+            <textarea
+              value={sourceContent}
+              onChange={(e) => setSourceContent(e.target.value)}
+              rows={4}
+              placeholder="Cole o texto aqui — será dividido em chunks e embeddado."
+              className="w-full resize-y rounded-md bg-elevated/40 px-3 py-2 text-xs text-ink shadow-hairline placeholder:text-ink-dim focus:outline-none focus:ring-1 focus:ring-accent/50"
+            />
+            <Button
+              type="submit"
+              variant="outline"
+              size="sm"
+              disabled={enqueue.isPending || !sourceTitle.trim() || !sourceContent.trim()}
+            >
+              {enqueue.isPending ? 'Enviando…' : 'Adicionar fonte'}
+            </Button>
+          </form>
+        </div>
+      )}
+    </section>
   )
 }
 

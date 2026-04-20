@@ -10,7 +10,11 @@
 
 services:
   db:
-    image: postgres:15-alpine
+    # pgvector/pgvector:pg15 bundles the `vector` extension required by
+    # migration 0019 (F06 Copilot RAG). Without it, CREATE EXTENSION vector
+    # fails at boot. Prod uses a managed Postgres with pgvector enabled by
+    # the provider (Hostinger managed DB: request extension toggle).
+    image: pgvector/pgvector:pg15
     container_name: torque-db
     environment:
       POSTGRES_USER: torque

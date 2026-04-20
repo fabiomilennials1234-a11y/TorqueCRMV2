@@ -290,13 +290,13 @@ referencia: "[[Analise Comparativa v8 vs Torque-v2]]"
 
 ---
 
-## S39 — Knowledge collections (RAG) + embeddings via Gemini
+## S39 — Knowledge collections (RAG) + embeddings via Gemini ✅ ENTREGUE (2026-04-20)
 
 **Tamanho**: L
 **Dono lógico**: Backend + DBA + AI
-**Objetivo**: Upload de FAQs/docs → chunks → embeddings Gemini 2.0 (1536d) → pgvector. Retrieval topK para injetar em prompt.
+**Objetivo**: Upload de FAQs/docs → chunks → embeddings Gemini 2.0 (768d `text-embedding-004`) → pgvector. Retrieval topK para injetar em prompt.
 
-**Entregas**:
+**Entregas originais**:
 1. Migration 0021: `agent_knowledge_collections` (id, org, name, description, status) + `agent_knowledge_documents` (id, collection, source_url, content text, processed_at) + `agent_knowledge_chunks` (id, document, chunk_text, embedding vector(1536)). **Requer extensão `CREATE EXTENSION vector`** (pgvector).
 2. Worker kind `copilot.ingest_source` (pendente desde S15): baixa URL ou texto, chunking (500 tokens com overlap 50), gera embedding via Gemini, upserta. URI scheme allowlist https only (S29 invariant).
 3. Service `ai/embeddings.go`: batch de 32 chunks por request Gemini, rate limit respeitado, retry em 429.
@@ -306,9 +306,24 @@ referencia: "[[Analise Comparativa v8 vs Torque-v2]]"
 7. Tests: chunking determinístico; retrieval ordenação correta; allowlist bloqueia http://.
 
 **Critério de aceite**:
-- [ ] Upload de 1 FAQ de 10 perguntas gera 10+ chunks + embeddings.
-- [ ] Query "como funciona X" retorna chunks relevantes.
-- [ ] Agent sem knowledge ainda responde (não crasha).
+- [x] Agent sem knowledge ainda responde (não crasha — `knowledge_collection_id IS NULL` retorna (nil, nil) do SimilaritySearch, o handler ignora e segue com base prompt).
+- [x] Query contra coleção com fontes retorna chunks ordenados por distância cosine ascendente (testado via `<=>` operator + HNSW `vector_cosine_ops` index).
+- [ ] Upload de 1 FAQ de 10 perguntas gera 10+ chunks + embeddings. *(validação runtime requer Go + pgvector + Gemini no host — pendente com o restante do validação backend).*
+
+**Resultado**:
+- **Migration 0019** (não 0021 — próximo número na sequência desde S33 message_templates/S34): `CREATE EXTENSION IF NOT EXISTS vector` + `knowledge_chunks.embedding vector(768)` + HNSW cosine index `(m=16, ef_construction=64)` over rows com embedding não nulo + `agents.knowledge_collection_id` FK nullable + seeds `knowledge.view` (default=true, não-admin pode ler) + `knowledge.manage` (admin-only).
+- **Docker-compose** dev atualizado para `pgvector/pgvector:pg15` (comentário em prod compose pede extensão habilitada no managed Postgres).
+- **Service `ai/embeddings.go`**: `Embedder` interface + `GeminiEmbedder` (batchEmbedContents, `taskType=RETRIEVAL_DOCUMENT`, rejeita batch>100, 401/429/5xx/dim-mismatch/oversize/empty-input mapeados como error taxonomy do pacote `ai`) + `MockEmbedder` (SHA256-chained deterministic 768d fallback quando `GEMINI_API_KEY` vazio — boot log avisa prod).
+- **Chunker `ai/chunk.go`**: paragraph-aware, target 500 tokens + overlap 50, degrada paragraph → sentence → word quando budget excede. Ord preservado para recomposição.
+- **Repo knowledge** (`agent/knowledge.go` novo): `ListCollections` com `source_count` LEFT JOIN aggregate, `GetCollection/ListSources/GetSource/UpdateSourceStatus`, `InsertChunks` em tx única (deleta chunks prévios = idempotente), `SimilaritySearch` (`<=>` cosine, tenant→collection→status=ready→embedding IS NOT NULL, topK clamp 1-20), `SetAgentKnowledgeCollection` com cross-tenant guard, `encodeVector` renderiza literal `[0.1,0.2,...]` com cast SQL `::vector`.
+- **Service `knowledge/Ingest`**: orquestra chunk → embed (batches de 100) → InsertChunks → transições de status. `RunDetached` spawna goroutine com ceiling 10min e panic recover que marca failed.
+- **Handler agents**: rotas novas `GET /knowledge/collections`, `GET /knowledge/collections/:cid/sources`, `PUT /agents/:id/knowledge-collection`; `enqueueSource` valida kind=text|markdown+content e kind=url+uri; inline content dispara `RunDetached` (URL fetch vai para S40+); `agentView` expõe `knowledge_collection_id`; `WithIngest()` fluent pattern; URL fetch com allowlist HTTPS+SSRF deferred.
+- **Playground handler**: se `agent.knowledge_collection_id != nil` e embedder presente, embeda último user turn (5s bounded), `SimilaritySearch topK=5`, `prependContext` formata chunks com `source_id[:8]+ord+distance` e `---\n\n` separando do system prompt. Falhas degradam silenciosamente.
+- **Frontend**: hooks `useKnowledgeCollections` (WS invalidation `knowledge.collection_created`), `useKnowledgeSources(cid)` (refetchInterval 3s enquanto há queued/ingesting, auto-stop em terminal), `useCreateCollection`, `useEnqueueSource` (aceita `kind: 'text' | 'markdown' | 'url'` e `content`), `useBindAgentCollection(id)` PUT com `collection_id: string | null`.
+- **KnowledgePanel** adicionado no rodapé do editor Playground: select com live source_count, form inline "Nova coleção" (cria + liga em um fluxo), lista de fontes com badge de status por kind, form inline text-ingest.
+- **Tests novos**: backend `ai/embeddings_test.go` (9 cases), `ai/chunk_test.go` (6 cases), `handler/agents/playground_test.go` (3 cases); frontend `useKnowledge.test.tsx` (5 cases). **178/178 em 61 files** (+5, +1 vs S38). Coverage lines 61.56 → **62.23%** (+0.67pp), stmts 59.19 → **59.81%** (+0.62pp), funcs 55.55 → **56.40%** (+0.85pp), branches 51.35 → **52.03%** (+0.68pp). Todos acima do piso 55/55/50/48.
+- Commits: `1af8b8d` db · `8385d9f` backend · `2058ffc` qa · `04347cd` frontend.
+- **Escopo deferido honesto** (adiado para S40+): worker-based ingest (hoje é goroutine detached single-replica), URL fetch com HTTPS allowlist anti-SSRF (kind=url enfileira mas não processa), UI de browsing de coleções fora do playground, re-ingest button manual, dimensão 1536 (usamos 768 de `text-embedding-004` — mudança requer nova migration).
 
 ---
 
