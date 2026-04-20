@@ -59,6 +59,15 @@ migrate-create: ## Create new migration pair (usage: make migrate-create name=ad
 	@if [ -z "$(name)" ]; then echo "usage: make migrate-create name=<snake_case>"; exit 1; fi
 	$(MIGRATE) create -ext sql -dir $(MIGRATIONS_DIR) -seq $(name)
 
+# ---- Seeds ------------------------------------------------------------------
+.PHONY: seed-dev
+seed-dev: ## Load dev seeds (marcelo@gmail.com / admin). Refuses if ENV != dev.
+	@set -a; [ -f .env ] && . ./.env; set +a; \
+	 if [ "$${ENV:-dev}" != "dev" ]; then \
+	   echo "seed-dev: refusing to run in ENV=$${ENV}"; exit 1; \
+	 fi; \
+	 psql "$(DATABASE_URL)" -v ON_ERROR_STOP=1 -f seeds/dev_admin.sql
+
 # ---- Docker -----------------------------------------------------------------
 .PHONY: docker-up
 docker-up: ## docker compose up (Postgres + migrate + API)
