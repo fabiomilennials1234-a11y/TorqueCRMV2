@@ -10,7 +10,7 @@
 
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 
-import { del, get, post } from '@/api/client'
+import { del, get, patch, post } from '@/api/client'
 import { useAppMutation } from '@/hooks/useAppMutation'
 import { useWSSubscribe } from '@/hooks/useWSSubscribe'
 
@@ -20,12 +20,28 @@ export interface Agent {
   id: string
   name: string
   description?: string | null
+  /**
+   * system_prompt was added to the view in S38 so the Playground editor
+   * can render + edit the persisted prompt without a separate roundtrip.
+   * Admin-only endpoint already guards access.
+   */
+  system_prompt: string
   model: string
   temperature: number
   max_output_tokens: number
   tools_allowlist: string[]
   kill_switch: boolean
   status: AgentStatus
+}
+
+export interface UpdateAgentPayload {
+  name?: string
+  description?: string | null
+  system_prompt?: string
+  model?: string
+  temperature?: number
+  max_output_tokens?: number
+  tools_allowlist?: string[]
 }
 
 export interface CreateAgentPayload {
@@ -174,6 +190,17 @@ export function useEnqueueSource(collectionId: string) {
         body
       ),
     { errorContext: 'knowledge.source.enqueue' }
+  )
+}
+
+/** S38: PATCH /api/v1/agents/:id — partial update do config do agente. */
+export function useUpdateAgent(id: string) {
+  return useAppMutation<Agent, UpdateAgentPayload>(
+    (body) => patch<Agent>(`/api/v1/agents/${id}`, body),
+    {
+      invalidate: [['copilot', 'agents']],
+      errorContext: 'copilot.agent.update',
+    }
   )
 }
 

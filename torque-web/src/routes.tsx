@@ -32,7 +32,8 @@ const KanbanPage = lazy(() => lazyRetry(() => import('@/features/pipeline/Kanban
 const InboxPage = lazy(() => lazyRetry(() => import('@/features/inbox/InboxPage').then((m) => ({ default: m.InboxPage }))))
 const WorkflowBuilderPage = lazy(() => lazyRetry(() => import('@/features/workflows/WorkflowBuilderPage').then((m) => ({ default: m.WorkflowBuilderPage }))))
 const CampaignsPage = lazy(() => lazyRetry(() => import('@/features/campaigns/CampaignsPage').then((m) => ({ default: m.CampaignsPage }))))
-const AgentsPage = lazy(() => lazyRetry(() => import('@/features/copilot/AgentsPage').then((m) => ({ default: m.AgentsPage }))))
+const AgentListPage = lazy(() => lazyRetry(() => import('@/features/copilot/AgentListPage').then((m) => ({ default: m.AgentListPage }))))
+const AgentPlaygroundPage = lazy(() => lazyRetry(() => import('@/features/copilot/AgentPlaygroundPage').then((m) => ({ default: m.AgentPlaygroundPage }))))
 const AnalyticsPage = lazy(() => lazyRetry(() => import('@/features/analytics/AnalyticsPage').then((m) => ({ default: m.AnalyticsPage }))))
 const SettingsPage = lazy(() => lazyRetry(() => import('@/features/settings/SettingsPage').then((m) => ({ default: m.SettingsPage }))))
 const CheckoutPage = lazy(() => lazyRetry(() => import('@/features/billing/CheckoutPage').then((m) => ({ default: m.CheckoutPage }))))
@@ -109,7 +110,8 @@ export const router = createBrowserRouter([
                   { path: 'inbox', element: withSuspense(<InboxPage />) },
                   { path: 'workflows', element: withSuspense(<WorkflowBuilderPage />) },
                   { path: 'campaigns', element: withSuspense(<CampaignsPage />) },
-                  { path: 'copilot', element: withSuspense(<AgentsPage />) },
+                  { path: 'copilot', element: withSuspense(<AgentListPage />) },
+                  { path: 'copilot/:id', element: withSuspense(<AgentPlaygroundPage />) },
                   { path: 'analytics', element: withSuspense(<AnalyticsPage />) },
                   { path: 'settings', element: withSuspense(<SettingsPage />) },
                   { path: 'billing', element: withSuspense(<CheckoutPage />) },
