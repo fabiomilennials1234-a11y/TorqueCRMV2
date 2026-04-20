@@ -129,7 +129,7 @@ status: vivo
 
 ## Status atual
 
-**Etapa:** S00-S25 ✅. S25 ✅ F15 Configurações (org profile + webhooks + notifications, 2026-04-20). Runtime backend pendente no host.
+**Etapa:** S00-S26 ✅. S26 ✅ F16 Master Admin (cross-org + impersonation audit, 2026-04-20). Runtime backend pendente no host.
 
 **S00** — ESLint flat (a11y + hooks + ban `dangerouslySetInnerHTML`), TS strict, Prettier, Vitest (51 testes), CI, vocabulario canonico, `--clay-*` → `--card-*`/`.tactile-*`, pos-login navigation por `ui_mode`.
 
