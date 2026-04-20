@@ -129,7 +129,7 @@ status: vivo
 
 ## Status atual
 
-**Etapa:** S00-S28 ✅. S28 ✅ CI/CD pipeline (ci.yml + release.yml + deploy.yml + Docker/nginx, 2026-04-20). Runtime backend pendente no host.
+**Etapa:** S00-S29 ✅ (2026-04-20). **Roadmap original de 30 sprints COMPLETO.** S29 entregou security audit OWASP Top 10, k6 load test, runbooks operacionais (incident-response + oncall-basics) e security-scan.yml (gosec + govulncheck + npm audit + Trivy). Próximos passos: runtime backend no host, follow-ups não-bloqueantes, pentest + load test contra staging, lançamento.
 
 **S00** — ESLint flat (a11y + hooks + ban `dangerouslySetInnerHTML`), TS strict, Prettier, Vitest (51 testes), CI, vocabulario canonico, `--clay-*` → `--card-*`/`.tactile-*`, pos-login navigation por `ui_mode`.
 
