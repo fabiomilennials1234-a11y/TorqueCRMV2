@@ -950,18 +950,22 @@ O bloco da sprint em §8 muda de "prospectivo" para "entregue":
 
 ---
 
-### Sprint S27 — Integrações Externas Completas
+### Sprint S27 — Integrações Externas (foundation) ✅ ENTREGUE PARCIAL (2026-04-20)
 
 | Campo | Valor |
 |-------|-------|
-| **Objetivo** | Completar integrações: Evolution API (WhatsApp), Meta (IG/Messenger), TinyERP, Google Calendar |
-| **Resultado esperado** | Todas as integrações documentadas funcionais em produção |
+| **Objetivo** | Camada de adapters + resilience (retry + circuit breaker) |
+| **Resultado esperado** | Interfaces MessagingProvider/CalendarProvider/ERPProvider + Mocks + breaker/retry |
 | **Dependências** | Features que consomem cada integração |
-| **Agentes** | `general-purpose`, `code-reviewer` |
-| **Áreas afetadas** | Backend integrations |
-| **Stack** | Go, APIs externas |
-| **Riscos** | Alto — APIs externas são imprevisíveis; rate limits; breaking changes |
-| **Critério de conclusão** | Cada integração com health check. Retry + circuit breaker. Webhook validation. |
+| **Agentes** | Backend → QA → Docs |
+| **Áreas afetadas** | `torque-api/internal/service/integration/` |
+| **Stack** | Go |
+| **Entregas** | Interfaces unificadas (Name/Health/send primitivo), Mocks com counters atômicos, CircuitBreaker 3-state, Retry com exponential backoff, error taxonomy (Unreachable/RateLimited/AuthFailed/Unsupported/CircuitOpen). Tests unit cobrem todos os paths. |
+| **Escopo parcial explícito** | Live providers (Evolution API / Meta / TinyERP / GCal) adiados — requerem credenciais + dual-review nos send paths (money flow adjacency). Mocks cobrem F02/F03/F04 em dev. |
+| **Critério de conclusão** | ✅ Interfaces prontas. ✅ Mocks operam para dev. ✅ Retry + circuit breaker testados. ⏳ Live providers por provider em sprint dedicada quando credenciais disponíveis. |
+| **Artefatos** | `torque-api/internal/service/integration/{integration.go,integration_test.go}` |
+| **Branch** | `sprint/S27` → PR para `develop` |
+| **STATE** | D042 |
 
 ---
 
