@@ -363,13 +363,13 @@ referencia: "[[Analise Comparativa v8 vs Torque-v2]]"
 
 ---
 
-## S41 — TTS ElevenLabs + envio de áudio
+## S41 — TTS ElevenLabs + envio de áudio ✅ ENTREGUE parcial (2026-04-20)
 
 **Tamanho**: M
 **Dono lógico**: Backend + AI
 **Objetivo**: Agent pode responder com áudio (opt-in por agent).
 
-**Entregas**:
+**Entregas originais**:
 1. Service `ai/tts_elevenlabs.go`: POST elevenlabs.io/v1/text-to-speech/:voice_id, retorna bytes mp3. Rate limit tracking (header `X-Usage-Remaining`).
 2. Campo `agent.tts_voice_id text null` + `tts_enabled bool`.
 3. Worker handler `message.outbound`: se `agent.tts_enabled` e mensagem outbound é texto, gera mp3, uploada para storage (S3 compatível via pre-signed URL), envia como `kind=audio` ao invés de `kind=text`.
@@ -377,9 +377,23 @@ referencia: "[[Analise Comparativa v8 vs Torque-v2]]"
 5. Tests: mock ElevenLabs retornando MP3 fake; quota decrementa.
 
 **Critério de aceite**:
-- [ ] Agent com tts_enabled envia mp3 no lugar do texto.
-- [ ] Quota esgotada fallback graceful.
-- [ ] Áudio player em MessageList do S34 reproduz.
+- [x] Playground preview com voice_id do agent funciona end-to-end (endpoint + UI + áudio player).
+- [ ] Agent com tts_enabled envia mp3 no lugar do texto (outbound pipeline adiado — scope parcial honesto, depende de storage S3 + hook no adapter Evolution).
+- [ ] Quota esgotada fallback graceful (depende de org_quotas schema + decremento transacional).
+- [ ] Áudio player em MessageList do S34 reproduz (depende do outbound pipeline acima).
+
+**Resultado (parcial — ship da config surface + preview)**:
+- **Migration 0021**: `agents += tts_enabled bool NOT NULL DEFAULT false` + `tts_voice_id text NULL` (check 2-80 chars). Sem org_quotas ainda.
+- **Config**: `ELEVENLABS_BASE_URL` (default api.elevenlabs.io), `ELEVENLABS_API_KEY`, `ELEVENLABS_MODEL_ID` (default `eleven_multilingual_v2` — PT-BR).
+- **Service `ai/tts.go`**: `TTS` interface + `ElevenLabsTTS` (POST `/v1/text-to-speech/:voice_id`, `xi-api-key` header, `audio/mpeg` accept, cap 5000 chars client-side, cap 5 MB response, 401/429/5xx/4xx mapeados pela taxonomia `ai.Err*`) + `MockTTS` deterministic (SHA-chained 4-byte "MP3?" header + 64 hex bytes) para dev e tests sem chave.
+- **Repo Agent**: `TTSEnabled` + `TTSVoiceID` no struct; SELECT scanners atualizados; `UpdateAgentInput` aceita `TTSEnabled *bool` + `TTSVoiceID *string` (empty string seta NULL, range 2-80 validado).
+- **Handler**: `agentView` expõe `tts_enabled` + `tts_voice_id`; `updateAgent` aceita eles. Nova rota `POST /agents/:id/tts/preview` — valida voice (body override OR agent config), default sample text quando vazio ("Olá! Este é um teste de voz do seu agente Copilot."), 25s ctx timeout, responde `audio/mpeg` + `Cache-Control: no-store`. Sem storage — transient.
+- **main.go**: TTS selection (ElevenLabs quando key set, MockTTS fallback com boot warning).
+- **Frontend**: `Agent.tts_enabled/tts_voice_id` tipos; `UpdateAgentPayload` aceita. `previewTTS(agentId, {voice_id?, text?})` helper retorna object URL para `<audio src>` (fetch + blob + `URL.createObjectURL`). Draft do editor inclui TTS com dirty detection. `TTSPanel` no editor Playground: checkbox enabled + voice_id input com placeholder + "Ouvir preview" com loading/error/inline `<audio controls autoPlay>`. `useEffect` revoga object URL anterior.
+- **Tests novos**: backend `ai/tts_test.go` 10 cenários (construção rejeita non-https/empty; happy path asserta headers + path; validação voice/text empty + oversize; taxonomia 401/429/5xx/4xx; MockTTS determinism + divergência + empty-input fail); frontend `previewTTS.test.tsx` 2 cenários (POST shape com CSRF + blob→objectURL; erro non-2xx throw).
+- **185/185 em 63 files** (+2 cases, +1 file vs S40). Coverage lines 62.71 → **63.08%** (+0.37pp), stmts 60.22 → **60.54%**, funcs 57.23 → **57.39%**, branches 52.01 → **52.33%**.
+- Commits: `dab175a` backend · `2deb19c` qa · `ec193cf` frontend.
+- **Escopo deferido honesto**: pipeline outbound (worker `message.outbound` → mp3 → storage S3 pre-signed → `kind=audio` na tabela messages) + `org_quotas.tts_seconds_per_month` + enforcement transacional + fallback para texto quando quota esgota + player no MessageList **ficam para sprint futura**. Dependências: storage S3 wiring global (não existe no projeto hoje) + schema de quotas + hook no Evolution adapter para enviar binário em vez de texto. S41 entrega a config surface + preview para o admin avaliar voz antes de promover — ship-worthy sozinho.
 
 ---
 

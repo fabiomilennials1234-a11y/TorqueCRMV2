@@ -99,6 +99,15 @@ type Config struct {
 	GeminiBaseURL        string
 	GeminiAPIKey         string
 	GeminiEmbeddingModel string
+
+	// --- TTS (S41 — F06.5) ---
+	// ElevenLabs is the default TTS provider. Empty key falls back to
+	// a deterministic MockTTS so the Playground preview endpoint
+	// returns something playable in dev. Prod MUST set the real key
+	// or the agents will ship silence.
+	ElevenLabsBaseURL string
+	ElevenLabsAPIKey  string
+	ElevenLabsModelID string
 }
 
 // Load reads the config from the environment. Returns an error if any required
@@ -164,6 +173,10 @@ func Load() (Config, error) {
 		GeminiBaseURL:        getenv("GEMINI_BASE_URL", "https://generativelanguage.googleapis.com/v1beta"),
 		GeminiAPIKey:         os.Getenv("GEMINI_API_KEY"),
 		GeminiEmbeddingModel: getenv("GEMINI_EMBEDDING_MODEL", "text-embedding-004"),
+
+		ElevenLabsBaseURL: getenv("ELEVENLABS_BASE_URL", "https://api.elevenlabs.io"),
+		ElevenLabsAPIKey:  os.Getenv("ELEVENLABS_API_KEY"),
+		ElevenLabsModelID: getenv("ELEVENLABS_MODEL_ID", "eleven_multilingual_v2"),
 	}
 
 	if c.DatabaseURL == "" {

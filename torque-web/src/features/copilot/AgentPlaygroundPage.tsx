@@ -14,7 +14,18 @@
  *   stream; a UI não replica o toggle — é via AgentListPage.
  */
 
-import { ArrowLeft, Book, Plus, RotateCcw, Send, Square, Trash2, Zap } from 'lucide-react'
+import {
+  ArrowLeft,
+  Book,
+  Play,
+  Plus,
+  RotateCcw,
+  Send,
+  Square,
+  Trash2,
+  Volume2,
+  Zap,
+} from 'lucide-react'
 import { useEffect, useId, useMemo, useRef, useState } from 'react'
 import { Link, Navigate, useParams } from 'react-router-dom'
 
@@ -25,6 +36,7 @@ import { PageHeader } from '@/ui/page-header'
 import { Skeleton } from '@/ui/skeleton'
 import { friendlyMessage } from '@/api/errors'
 import {
+  previewTTS,
   useAgent,
   useAgentTriggers,
   useBindAgentCollection,
@@ -75,6 +87,8 @@ function PlaygroundInner({ agent, agentId }: { agent: ReturnType<typeof useAgent
     model: agent.model,
     temperature: agent.temperature,
     max_output_tokens: agent.max_output_tokens,
+    tts_enabled: agent.tts_enabled,
+    tts_voice_id: agent.tts_voice_id ?? '',
   })
 
   // Conversa local do playground. Não persiste — a sessão formal vive
@@ -94,7 +108,9 @@ function PlaygroundInner({ agent, agentId }: { agent: ReturnType<typeof useAgent
       draft.system_prompt !== agent.system_prompt ||
       draft.model !== agent.model ||
       draft.temperature !== agent.temperature ||
-      draft.max_output_tokens !== agent.max_output_tokens
+      draft.max_output_tokens !== agent.max_output_tokens ||
+      draft.tts_enabled !== agent.tts_enabled ||
+      (draft.tts_voice_id ?? '') !== (agent.tts_voice_id ?? '')
     )
   }, [agent, draft])
 
@@ -245,6 +261,13 @@ function PlaygroundInner({ agent, agentId }: { agent: ReturnType<typeof useAgent
           </div>
         </form>
 
+        <TTSPanel
+          agentId={agentId}
+          enabled={draft.tts_enabled ?? false}
+          voiceId={draft.tts_voice_id ?? ''}
+          onEnabledChange={(v) => setDraft((d) => ({ ...d, tts_enabled: v }))}
+          onVoiceIdChange={(v) => setDraft((d) => ({ ...d, tts_voice_id: v }))}
+        />
         <KnowledgePanel agentId={agentId} collectionId={agent.knowledge_collection_id ?? null} />
         <TriggersPanel agentId={agentId} />
       </aside>
@@ -529,6 +552,120 @@ function KnowledgePanel({
             </Button>
           </form>
         </div>
+      )}
+    </section>
+  )
+}
+
+function TTSPanel({
+  agentId,
+  enabled,
+  voiceId,
+  onEnabledChange,
+  onVoiceIdChange,
+}: {
+  agentId: string
+  enabled: boolean
+  voiceId: string
+  onEnabledChange: (v: boolean) => void
+  onVoiceIdChange: (v: string) => void
+}) {
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [audioUrl, setAudioUrl] = useState<string | null>(null)
+  const enabledId = useId()
+  const voiceIdField = useId()
+
+  // Free the previous object URL when it changes or the component unmounts —
+  // URL.createObjectURL holds the blob in memory until revoked.
+  useEffect(() => {
+    return () => {
+      if (audioUrl) URL.revokeObjectURL(audioUrl)
+    }
+  }, [audioUrl])
+
+  async function handlePreview() {
+    if (!voiceId.trim()) return
+    setLoading(true)
+    setError(null)
+    try {
+      const url = await previewTTS(agentId, { voice_id: voiceId.trim() })
+      if (audioUrl) URL.revokeObjectURL(audioUrl)
+      setAudioUrl(url)
+    } catch (e) {
+      setError(e instanceof Error ? e.message : String(e))
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  return (
+    <section className="mt-8 border-t border-hairline pt-6">
+      <div className="mb-3 flex items-center gap-2">
+        <Volume2 className="h-4 w-4 text-ink-muted" />
+        <h3 className="text-sm font-medium text-ink">Voz (TTS)</h3>
+      </div>
+      <p className="mb-3 text-2xs text-ink-dim">
+        Quando habilitado, respostas do agente são renderizadas como áudio (ElevenLabs). Preview não
+        consome quota da conversa real.
+      </p>
+
+      <div className="flex items-center gap-2">
+        <input
+          id={enabledId}
+          type="checkbox"
+          checked={enabled}
+          onChange={(e) => onEnabledChange(e.target.checked)}
+          className="h-4 w-4"
+        />
+        <label htmlFor={enabledId} className="text-xs text-ink-muted">
+          Habilitar síntese de voz
+        </label>
+      </div>
+
+      <div className="mt-3">
+        <label htmlFor={voiceIdField} className="mb-1 block text-xs text-ink-muted">
+          Voice ID (ElevenLabs)
+        </label>
+        <Input
+          id={voiceIdField}
+          value={voiceId}
+          onChange={(e) => onVoiceIdChange(e.target.value)}
+          placeholder="Ex: 21m00Tcm4TlvDq8ikWAM"
+        />
+        <p className="mt-1 text-2xs text-ink-dim">
+          Deixe vazio para desvincular. O ID fica em elevenlabs.io → Voice Library.
+        </p>
+      </div>
+
+      <div className="mt-3 flex items-center gap-2">
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          onClick={() => void handlePreview()}
+          disabled={loading || !voiceId.trim()}
+        >
+          <Play className="mr-1 h-3.5 w-3.5" />
+          {loading ? 'Gerando…' : 'Ouvir preview'}
+        </Button>
+      </div>
+
+      {error && (
+        <p role="alert" className="mt-2 text-2xs text-danger">
+          {error}
+        </p>
+      )}
+      {audioUrl && (
+        <audio
+          className="mt-2 w-full"
+          src={audioUrl}
+          controls
+          autoPlay
+          onError={() => setError('Falha ao reproduzir o áudio.')}
+        >
+          <track kind="captions" />
+        </audio>
       )}
     </section>
   )

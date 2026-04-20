@@ -29,14 +29,18 @@ type PlaygroundHandler struct {
 	// and prepend topK chunks to the system prompt. nil = retrieval
 	// disabled regardless of agent config (S39 graceful degradation).
 	embedder ai.Embedder
+	// tts is optional; when nil, the TTS preview endpoint returns 503.
+	// Prod wires ElevenLabsTTS; dev without a key wires MockTTS.
+	tts ai.TTS
 }
 
 // NewPlayground wraps a base Handler with an LLM provider. Passing nil
 // as provider lets callers mount the non-LLM routes; the SSE endpoint
 // then returns 503. `embedder` is optional — a nil embedder means
 // retrieval is skipped even if the agent is bound to a collection.
-func NewPlayground(base *Handler, provider ai.Provider, embedder ai.Embedder) *PlaygroundHandler {
-	return &PlaygroundHandler{Handler: base, provider: provider, embedder: embedder}
+// `tts` is optional — nil disables the preview endpoint.
+func NewPlayground(base *Handler, provider ai.Provider, embedder ai.Embedder, tts ai.TTS) *PlaygroundHandler {
+	return &PlaygroundHandler{Handler: base, provider: provider, embedder: embedder, tts: tts}
 }
 
 // Routes extends the base routes with the playground + agent update.
@@ -44,18 +48,22 @@ func (h *PlaygroundHandler) Routes(r chi.Router) {
 	h.Handler.Routes(r)
 	r.Patch("/agents/{id}", h.updateAgent)
 	r.Post("/agents/{id}/playground/message", h.playground)
+	r.Post("/agents/{id}/tts/preview", h.ttsPreview)
 }
 
 // -------- update -----------------------------------------------------
 
 type updateAgentReq struct {
-	Name            *string  `json:"name,omitempty"`
-	Description     *string  `json:"description,omitempty"`
-	SystemPrompt    *string  `json:"system_prompt,omitempty"`
-	Model           *string  `json:"model,omitempty"`
-	Temperature     *float64 `json:"temperature,omitempty"`
-	MaxOutputTokens *int     `json:"max_output_tokens,omitempty"`
+	Name            *string   `json:"name,omitempty"`
+	Description     *string   `json:"description,omitempty"`
+	SystemPrompt    *string   `json:"system_prompt,omitempty"`
+	Model           *string   `json:"model,omitempty"`
+	Temperature     *float64  `json:"temperature,omitempty"`
+	MaxOutputTokens *int      `json:"max_output_tokens,omitempty"`
 	ToolsAllowlist  *[]string `json:"tools_allowlist,omitempty"`
+	// S41 — TTS config. Passing "" clears tts_voice_id (NULL).
+	TTSEnabled *bool   `json:"tts_enabled,omitempty"`
+	TTSVoiceID *string `json:"tts_voice_id,omitempty"`
 }
 
 func (h *PlaygroundHandler) updateAgent(w http.ResponseWriter, r *http.Request) {
@@ -78,6 +86,7 @@ func (h *PlaygroundHandler) updateAgent(w http.ResponseWriter, r *http.Request) 
 		Name: body.Name, Description: body.Description, SystemPrompt: body.SystemPrompt,
 		Model: body.Model, Temperature: body.Temperature,
 		MaxOutputTokens: body.MaxOutputTokens, ToolsAllowlist: body.ToolsAllowlist,
+		TTSEnabled: body.TTSEnabled, TTSVoiceID: body.TTSVoiceID,
 	})
 	if errors.Is(err, agentrepo.ErrNotFound) {
 		httpx.WriteError(w, http.StatusNotFound, "NOT_FOUND", "agent not found")
@@ -266,6 +275,87 @@ func prependContext(systemPrompt string, chunks []agentrepo.RetrievedChunk) stri
 	b.WriteString("---\n\n")
 	b.WriteString(systemPrompt)
 	return b.String()
+}
+
+// -------- TTS preview -----------------------------------------------
+
+type ttsPreviewReq struct {
+	// Text defaults to a short sample when empty so the Playground
+	// "Ouvir" button works with a one-click flow without the user
+	// typing a script.
+	Text string `json:"text,omitempty"`
+	// VoiceID overrides the agent's tts_voice_id for this request
+	// only — useful when the editor hasn't saved yet and the user
+	// wants to compare voices. Empty = use agent's persisted voice.
+	VoiceID string `json:"voice_id,omitempty"`
+}
+
+const defaultTTSPreviewText = "Olá! Este é um teste de voz do seu agente Copilot."
+
+// ttsPreview synthesizes a short audio sample with the agent's voice
+// (or a per-request override) and streams the mp3 back. The response
+// content-type is audio/mpeg so a browser <audio src=fetch-blob-url>
+// can play it directly. No storage upload — the preview is transient.
+func (h *PlaygroundHandler) ttsPreview(w http.ResponseWriter, r *http.Request) {
+	if h.tts == nil {
+		httpx.WriteError(w, http.StatusServiceUnavailable, "TTS_UNAVAILABLE",
+			"TTS provider is not configured on this deployment")
+		return
+	}
+	orgID, _ := mw.OrgIDFrom(r.Context())
+	id, err := uuid.Parse(chi.URLParam(r, "id"))
+	if err != nil {
+		httpx.WriteError(w, http.StatusBadRequest, "INVALID_ID", "id must be a uuid")
+		return
+	}
+	var body ttsPreviewReq
+	// Empty body is allowed — defaults apply.
+	_ = httpx.DecodeJSON(r, &body)
+
+	agent, err := h.repo.GetAgent(r.Context(), orgID, id)
+	if errors.Is(err, agentrepo.ErrNotFound) {
+		httpx.WriteError(w, http.StatusNotFound, "NOT_FOUND", "agent not found")
+		return
+	}
+	if err != nil {
+		httpx.WriteError(w, http.StatusInternalServerError, "INTERNAL", "could not load agent")
+		return
+	}
+
+	voiceID := strings.TrimSpace(body.VoiceID)
+	if voiceID == "" {
+		if agent.TTSVoiceID == nil || *agent.TTSVoiceID == "" {
+			httpx.WriteError(w, http.StatusBadRequest, "NO_VOICE",
+				"agent has no tts_voice_id configured and no override was supplied")
+			return
+		}
+		voiceID = *agent.TTSVoiceID
+	}
+	text := strings.TrimSpace(body.Text)
+	if text == "" {
+		text = defaultTTSPreviewText
+	}
+
+	ctx, cancel := context.WithTimeout(r.Context(), 25*time.Second)
+	defer cancel()
+	audio, err := h.tts.Synthesize(ctx, voiceID, text)
+	if err != nil {
+		code := classify(err)
+		status := http.StatusBadGateway
+		switch {
+		case errors.Is(err, ai.ErrAuthFailed):
+			status = http.StatusServiceUnavailable
+		case errors.Is(err, ai.ErrRateLimited):
+			status = http.StatusTooManyRequests
+		case errors.Is(err, ai.ErrBadRequest):
+			status = http.StatusBadRequest
+		}
+		httpx.WriteError(w, status, code, err.Error())
+		return
+	}
+	w.Header().Set("Content-Type", "audio/mpeg")
+	w.Header().Set("Cache-Control", "no-store")
+	_, _ = w.Write(audio)
 }
 
 // classify maps ai errors to stable codes the frontend can branch on.
