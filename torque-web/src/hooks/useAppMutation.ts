@@ -56,26 +56,28 @@ export function useAppMutation<TData, TVariables = void, TContext = unknown>(
 
   return useMutation<TData, unknown, TVariables, TContext>({
     mutationFn,
-    onMutate: async (variables) => {
-      // Run the caller's onMutate first so their side-effects win.
-      const callerContext = rest.onMutate ? await rest.onMutate(variables) : undefined
+    // TanStack v5 signatures: onMutate is (variables, mutationContext),
+    // onError is (error, variables, context, mutation). We propagate all args
+    // to the caller's optional handlers so advanced use cases are not lost.
+    onMutate: async (variables, mutationContext) => {
+      const callerContext = rest.onMutate
+        ? ((await rest.onMutate(variables, mutationContext)) as TContext | undefined)
+        : undefined
 
-      if (!optimistic) return callerContext
+      if (!optimistic) return callerContext as TContext
 
       await client.cancelQueries({ queryKey: optimistic.queryKey })
       const previous = client.getQueryData<TData>(optimistic.queryKey)
       client.setQueryData<TData>(optimistic.queryKey, (current) =>
         optimistic.updater(current, variables)
       )
-      // Merge caller context with the rollback snapshot.
       const merged = {
         ...(callerContext as object | undefined),
         __optimistic: { previous } satisfies OptimisticContext<TData>,
       } as unknown as TContext
       return merged
     },
-    onError: (error, variables, context) => {
-      // Rollback.
+    onError: (error, variables, context, mutation) => {
       if (optimistic && context && typeof context === 'object' && '__optimistic' in context) {
         const snap = (context as { __optimistic: OptimisticContext<TData> }).__optimistic
         client.setQueryData<TData>(optimistic.queryKey, snap.previous)
@@ -83,15 +85,15 @@ export function useAppMutation<TData, TVariables = void, TContext = unknown>(
       if (!silent) {
         notifyAppError(error, errorContext)
       }
-      rest.onError?.(error, variables, context)
+      rest.onError?.(error, variables, context, mutation)
     },
-    onSettled: (data, error, variables, context) => {
+    onSettled: (data, error, variables, context, mutation) => {
       if (invalidate) {
         for (const key of invalidate) {
           void client.invalidateQueries({ queryKey: key })
         }
       }
-      rest.onSettled?.(data, error, variables, context)
+      rest.onSettled?.(data, error, variables, context, mutation)
     },
     ...(rest.onSuccess ? { onSuccess: rest.onSuccess } : {}),
   })

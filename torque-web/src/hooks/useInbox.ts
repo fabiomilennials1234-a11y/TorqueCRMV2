@@ -9,7 +9,6 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 
 import { get, patch, post } from '@/api/client'
-import { queryKeys } from '@/api/queryKeys'
 import { useAppMutation } from '@/hooks/useAppMutation'
 import { useWSSubscribe } from '@/hooks/useWSSubscribe'
 
@@ -155,27 +154,18 @@ export function useSetConversationState(id: string) {
   )
 }
 
-/** POST /api/v1/conversations/:id/messages */
+/**
+ * POST /api/v1/conversations/:id/messages
+ *
+ * Optimistic append would require TCache (Message[]) to differ from TData
+ * (Message), which useAppMutation does not support today. The WS event
+ * `message.sent` patches the messages cache within ~50 ms via
+ * useMessages's subscription, and invalidate on settle is the fallback.
+ */
 export function useSendMessage(id: string) {
   return useAppMutation<Message, { body?: string; kind?: MessageKind; media_url?: string }>(
     (b) => post<Message>(`/api/v1/conversations/${id}/messages`, b),
     {
-      optimistic: {
-        queryKey: inboxKeys().messages(id),
-        updater: (prev, body) => {
-          const optimistic: Message = {
-            id: `optimistic-${Date.now()}`,
-            conversation_id: id,
-            direction: 'outbound',
-            kind: body.kind ?? 'text',
-            body: body.body ?? null,
-            media_url: body.media_url ?? null,
-            status: 'queued',
-            occurred_at: new Date().toISOString(),
-          }
-          return prev ? [...prev, optimistic] : [optimistic]
-        },
-      },
       invalidate: [inboxKeys().messages(id), ['inbox', 'conversations']],
       errorContext: 'inbox.send',
     }

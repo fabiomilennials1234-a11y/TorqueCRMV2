@@ -38,12 +38,14 @@ export function Toaster() {
     const handler = (ev: Event) => {
       const detail = (ev as CustomEvent<TorqueToastDetail>).detail
       if (!detail?.message) return
+      // With exactOptionalPropertyTypes=true, omit undefined fields rather
+      // than assigning `undefined` to an optional string property.
       const toast: Toast = {
         id: typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : String(Math.random()),
         level: detail.level ?? 'info',
-        code: detail.code,
         message: detail.message,
-        context: detail.context,
+        ...(detail.code !== undefined ? { code: detail.code } : {}),
+        ...(detail.context !== undefined ? { context: detail.context } : {}),
       }
       setToasts((prev) => [...prev.slice(-(MAX_TOASTS - 1)), toast])
       window.setTimeout(() => {
