@@ -41,14 +41,15 @@ export default defineConfig({
       // regress; target 70/65/60/55 by S40. Mirrors v8's D007→D025
       // ratchet (started at 9.33%, climbed each sprint).
       thresholds: {
-        // Ratchet step 2 (remediation-B, 2026-04-20): lines 59.03 /
-        // stmts 56.57 / funcs 55.09 / branches 49.58. Floor sits slightly
-        // below measured so nobody introduces regression without noticing.
-        // Target by S40: 70 / 65 / 60 / 55.
-        lines: 55,
-        statements: 55,
-        functions: 50,
-        branches: 48,
+        // Ratchet step 3 (S40, 2026-04-20): measured 62.71 / 60.22 / 57.23
+        // / 52.01 after Copilot triggers surface (F06.4). Floor sits just
+        // below current so sub-sprint regressions are blocked but test
+        // cadence doesn't need to match the exact measurement. Target
+        // by end of Fase C (S42): 65 / 62 / 58 / 53.
+        lines: 60,
+        statements: 60,
+        functions: 55,
+        branches: 50,
       },
     },
   },

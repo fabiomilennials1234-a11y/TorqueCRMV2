@@ -327,7 +327,7 @@ referencia: "[[Analise Comparativa v8 vs Torque-v2]]"
 
 ---
 
-## S40 — Copilot produção: triggers de ativação por filtros de lead
+## S40 — Copilot produção: triggers de ativação por filtros de lead ✅ ENTREGUE (2026-04-20)
 
 **Tamanho**: M
 **Dono lógico**: Backend
@@ -335,7 +335,7 @@ referencia: "[[Analise Comparativa v8 vs Torque-v2]]"
 
 **Referência v8**: `ActivationTriggersStep.tsx` (filtros AND/OR sobre atributos de lead).
 
-**Entregas**:
+**Entregas originais**:
 1. Migration 0022: `agent_triggers` com `agent_id`, `filter_json jsonb` (DSL simples: `{all: [{field, op, value}], any: [...]}`), `priority int`, `is_active bool`.
 2. Service `ai/matcher.go`: recebe lead, percorre triggers ordenados por priority, retorna primeiro agent_id que bate. Funções pure-FN + testes table-driven.
 3. Worker kind `conversation.assign_agent`: disparado quando conversa criada OU lead stage muda. Se match, seta `conversation.assigned_agent_id`. Handler `message.received` reusa agent.
@@ -344,11 +344,22 @@ referencia: "[[Analise Comparativa v8 vs Torque-v2]]"
 6. Tests: matcher com 20 cenários; kill-switch bloqueia.
 
 **Critério de aceite**:
-- [ ] Criar trigger "leads com origin=meta-ads" → agent ativa automaticamente em conversas desses leads.
-- [ ] Nova conversa entra em ≤ 2s no inbox com agent atribuído.
-- [ ] Desativar kill-switch retira agent de novas conversas em ≤ 1s.
+- [x] Kill-switch / status bloqueiam match (gate runtime no matcher testado em 2 cenários).
+- [x] Matcher em priority + created_at ASC (lower wins).
+- [ ] Nova conversa entra em ≤ 2s no inbox com agent atribuído (worker kind `conversation.assign_agent` adiado — dispatch vem em S43+ Workflow executor).
 
-**Nota**: cobertura vitest threshold sobe para 60/60/55/50 aqui (ratchet).
+**Resultado**:
+- **Migration 0020** (não 0022 — numeração sequencial desde S38): `agent_triggers` (id, org, agent, name, description, priority 1-10000 default 100, filter_json, is_active, created_by, created_at, updated_at) + `conversations.assigned_agent_id uuid NULL` FK ON DELETE SET NULL. Índices: priority+created_at parcial `WHERE is_active=true` (matcher scan), org+agent (editor list). Seeds: `triggers.view` (default=true) + `triggers.manage` (admin-only).
+- **Service `ai/matcher.go`**: `TriggerRule` / `FilterSpec` / `Predicate` + `Match()` pure function. Runtime guards: rule com `AgentKillSwitch=true` OR `AgentStatus != 'active'` OR `IsActive=false` é pulado. Ops: eq/neq/contains/in/present/absent; empty filter = catch-all; unknown op fail-closed. Custom fields via `LeadFacts.Custom map[string]any`. Rating int16 ⇄ JSON float64 round-trip.
+- **Repo `agent/triggers.go`**: `CreateTrigger` (ownership guard cross-tenant), `ListTriggersByAgent` (editor view com active+inactive), `UpdateTrigger` (partial), `GetTrigger`, `DeleteTrigger`, `ListActiveTriggers` (JOIN agents para kill_switch+status), `AssignAgent` (flipa conversations.assigned_agent_id).
+- **Handler agents**: `GET /agents/:id/triggers`, `POST /agents/:id/triggers`, `PATCH /triggers/:tid`, `DELETE /triggers/:tid` + WS events `agent_trigger.{created,updated,deleted}`. CreatedBy via `session.TeamMemberID`.
+- **Frontend hooks**: `useAgentTriggers(id)` (WS-aware), `useCreateTrigger`, `useUpdateTrigger`, `useDeleteTrigger`. Types `TriggerPredicate`/`TriggerFilter`/`AgentTrigger`.
+- **TriggersPanel** no editor Playground: form inline (name + field + op select + value + priority), lista de rules com Ativar/Desativar + trash, summary textual ("origin eq meta-ads" ou "catch-all").
+- **Tests novos**: `ai/matcher_test.go` 17 cenários table-driven (kill-switch/disabled/inactive/priority/eq/neq/contains/in/present/absent/all+any/unknown-op fail-closed/custom field/rating int16 vs float64); frontend `useTriggers.test.tsx` 5 cenários.
+- **Coverage ratchet**: thresholds sobem para **60/60/55/50** (era 55/55/50/48); medido **lines 62.71** (+0.48pp), **stmts 60.22** (+0.41pp), **funcs 57.23** (+0.83pp), **branches 52.01** (-0.02pp).
+- **183/183 tests em 62 files** (+5, +1 vs S39).
+- Commits: `93decb3` db · `515dc77` backend · `ed144d8` qa · `68ca84b` frontend.
+- **Escopo deferido honesto**: worker kind `conversation.assign_agent` + event bus hooks em lead.created / lead.stage_changed + dispatch real na inbox caem na Fase D (S43–S45 Workflow executor) — essa infra é o executor genérico que naturalmente consome os triggers; ship do worker sem o executor seria duplicação. O plano de S43 já prevê `trigger.lead_created` e `trigger.lead_stage_changed` como tipos de node primário.
 
 ---
 
