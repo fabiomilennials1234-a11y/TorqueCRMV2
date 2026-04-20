@@ -65,3 +65,10 @@ services:
 
 # Postgres runs as a managed service on Hostinger, not inside this compose.
 # DATABASE_URL points at the managed instance.
+#
+# IMPORTANT: since S39 the schema depends on the `vector` extension
+# (pgvector) — migration 0019 runs CREATE EXTENSION IF NOT EXISTS vector.
+# The managed Hostinger instance must have pgvector enabled (request
+# toggle in the panel). If the managed offering ships Postgres 15 + the
+# `pgvector` apt bundle, CREATE EXTENSION succeeds. Otherwise copy the
+# pgvector image `pgvector/pgvector:pg15` into your own VPS container.
