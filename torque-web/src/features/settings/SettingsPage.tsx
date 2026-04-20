@@ -29,6 +29,10 @@ import {
   type MemberRole,
   type TeamMember,
 } from '@/hooks/useMembers'
+import {
+  useOrganization,
+  useUpdateOrganization,
+} from '@/hooks/useOrgSettings'
 import { cn } from '@/lib/utils'
 
 type SectionKey =
@@ -121,42 +125,110 @@ export function SettingsPage() {
 }
 
 function OrgSection() {
+  const org = useOrganization()
+  const update = useUpdateOrganization()
+  const [draft, setDraft] = useState<{
+    name: string
+    legal_name: string
+    cnpj: string
+    timezone: string
+  } | null>(null)
+
+  // Sync draft state to server response on first success.
+  const current = org.data
+  if (current && draft === null) {
+    setDraft({
+      name: current.name,
+      legal_name: current.legal_name ?? '',
+      cnpj: current.cnpj ?? '',
+      timezone: current.timezone ?? 'America/Sao_Paulo',
+    })
+  }
+
+  if (org.isLoading || !draft) {
+    return (
+      <div className="space-y-2">
+        <Skeleton className="h-8 w-1/3" />
+        <Skeleton className="h-32 w-full" />
+      </div>
+    )
+  }
+
+  if (org.isError) {
+    return (
+      <EmptyState
+        title="Não foi possível carregar a organização."
+        description={friendlyMessage(org.error)}
+        action={
+          <Button variant="ghost" size="sm" onClick={() => void org.refetch()}>
+            Tentar de novo
+          </Button>
+        }
+      />
+    )
+  }
+
+  const dirty =
+    !current ||
+    draft.name !== current.name ||
+    draft.legal_name !== (current.legal_name ?? '') ||
+    draft.cnpj !== (current.cnpj ?? '') ||
+    draft.timezone !== (current.timezone ?? 'America/Sao_Paulo')
+
   return (
-    <div className="space-y-6">
+    <form
+      className="space-y-6"
+      onSubmit={(e) => {
+        e.preventDefault()
+        if (!dirty) return
+        void update.mutateAsync({
+          name: draft.name,
+          legal_name: draft.legal_name,
+          cnpj: draft.cnpj,
+          timezone: draft.timezone,
+        })
+      }}
+    >
       <SettingsCard title="Identidade">
         <Field label="Nome fantasia">
-          <Input defaultValue="Siderúrgica Aurora" />
+          <Input
+            value={draft.name}
+            onChange={(e) => setDraft({ ...draft, name: e.target.value })}
+          />
         </Field>
-        <Field label="Domínio principal">
-          <Input defaultValue="aurora.ind.br" />
+        <Field label="Razão social">
+          <Input
+            value={draft.legal_name}
+            onChange={(e) => setDraft({ ...draft, legal_name: e.target.value })}
+          />
         </Field>
         <Field label="CNPJ">
-          <Input defaultValue="12.345.678/0001-90" className="font-metric" />
+          <Input
+            value={draft.cnpj}
+            onChange={(e) => setDraft({ ...draft, cnpj: e.target.value })}
+            className="font-metric"
+          />
         </Field>
         <Field label="Fuso horário">
-          <select className="h-9 w-full rounded-md bg-elevated/60 px-3 text-sm text-ink shadow-hairline">
-            <option>America/Sao_Paulo (GMT-3)</option>
+          <select
+            className="h-9 w-full rounded-md bg-elevated/60 px-3 text-sm text-ink shadow-hairline"
+            value={draft.timezone}
+            onChange={(e) => setDraft({ ...draft, timezone: e.target.value })}
+          >
+            <option value="America/Sao_Paulo">America/Sao_Paulo (GMT-3)</option>
+            <option value="America/Manaus">America/Manaus (GMT-4)</option>
+            <option value="America/Belem">America/Belem (GMT-3)</option>
+            <option value="UTC">UTC</option>
           </select>
         </Field>
       </SettingsCard>
 
-      <SettingsCard
-        title="Marca"
-        description="Aparece em relatórios, templates e notificações externas."
-      >
-        <div className="flex items-center gap-4">
-          <div className="flex h-16 w-16 items-center justify-center rounded-lg bg-accent/15 font-display text-lg text-accent shadow-[inset_0_0_0_1px_hsl(var(--accent)/0.3)]">
-            SA
-          </div>
-          <div>
-            <Button variant="secondary" size="sm">
-              Enviar logo
-            </Button>
-            <p className="mt-1 text-2xs text-ink-dim">SVG ou PNG transparente · 256px mínimo</p>
-          </div>
-        </div>
-      </SettingsCard>
-    </div>
+      <div className="flex justify-end">
+        <Button variant="primary" size="sm" type="submit" disabled={!dirty || update.isPending}>
+          {update.isPending ? 'Salvando…' : 'Salvar alterações'}
+        </Button>
+      </div>
+    </form>
   )
 }
 
