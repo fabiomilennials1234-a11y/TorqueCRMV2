@@ -124,8 +124,18 @@ async function request<T>(
 
   const res = await fetch(`${API_BASE}${path}`, init)
 
-  // --- 401: attempt refresh once ---
-  if (res.status === 401 && !retriedAfterRefresh) {
+  // --- 401: attempt refresh once (except on the auth endpoints themselves) ---
+  // POST /auth/login returning 401 means bad credentials, not an expired
+  // session. Triggering a refresh there would (a) leak the credential mis-
+  // match as AUTH_EXPIRED and (b) attempt a refresh with a cookie that does
+  // not exist yet. Same for /auth/refresh: a failing refresh must surface
+  // directly, never recurse.
+  const isAuthEndpoint =
+    path.startsWith('/api/v1/auth/login') ||
+    path.startsWith('/api/v1/auth/refresh') ||
+    path.startsWith('/api/v1/auth/logout')
+
+  if (res.status === 401 && !retriedAfterRefresh && !isAuthEndpoint) {
     const refreshed = await refreshToken()
     if (refreshed) {
       return request<T>(method, path, body, true)
