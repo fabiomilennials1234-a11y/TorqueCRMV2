@@ -36,6 +36,8 @@ type Agent struct {
 	KillSwitch            bool
 	Status                string
 	KnowledgeCollectionID *uuid.UUID
+	TTSEnabled            bool
+	TTSVoiceID            *string
 	CreatedAt             time.Time
 	UpdatedAt             time.Time
 }
@@ -130,6 +132,7 @@ func (r *Repository) GetAgent(ctx context.Context, orgID, id uuid.UUID) (Agent, 
 		SELECT id, organization_id, name, description, system_prompt, model,
 		       temperature, max_output_tokens, tools_allowlist,
 		       kill_switch, status::text, knowledge_collection_id,
+		       tts_enabled, tts_voice_id,
 		       created_at, updated_at
 		  FROM agents
 		 WHERE id = $1 AND organization_id = $2
@@ -139,7 +142,9 @@ func (r *Repository) GetAgent(ctx context.Context, orgID, id uuid.UUID) (Agent, 
 	err := r.pool.QueryRow(ctx, q, id, orgID).Scan(
 		&a.ID, &a.OrganizationID, &a.Name, &a.Description, &a.SystemPrompt, &a.Model,
 		&a.Temperature, &a.MaxOutputTokens, &a.ToolsAllowlist,
-		&a.KillSwitch, &a.Status, &a.KnowledgeCollectionID, &a.CreatedAt, &a.UpdatedAt,
+		&a.KillSwitch, &a.Status, &a.KnowledgeCollectionID,
+		&a.TTSEnabled, &a.TTSVoiceID,
+		&a.CreatedAt, &a.UpdatedAt,
 	)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return Agent{}, ErrNotFound
@@ -156,6 +161,7 @@ func (r *Repository) ListAgents(ctx context.Context, orgID uuid.UUID) ([]Agent, 
 		SELECT id, organization_id, name, description, system_prompt, model,
 		       temperature, max_output_tokens, tools_allowlist,
 		       kill_switch, status::text, knowledge_collection_id,
+		       tts_enabled, tts_voice_id,
 		       created_at, updated_at
 		  FROM agents
 		 WHERE organization_id = $1
@@ -172,7 +178,9 @@ func (r *Repository) ListAgents(ctx context.Context, orgID uuid.UUID) ([]Agent, 
 		if err := rows.Scan(
 			&a.ID, &a.OrganizationID, &a.Name, &a.Description, &a.SystemPrompt, &a.Model,
 			&a.Temperature, &a.MaxOutputTokens, &a.ToolsAllowlist,
-			&a.KillSwitch, &a.Status, &a.KnowledgeCollectionID, &a.CreatedAt, &a.UpdatedAt,
+			&a.KillSwitch, &a.Status, &a.KnowledgeCollectionID,
+			&a.TTSEnabled, &a.TTSVoiceID,
+			&a.CreatedAt, &a.UpdatedAt,
 		); err != nil {
 			return nil, err
 		}
@@ -192,6 +200,10 @@ type UpdateAgentInput struct {
 	Temperature     *float64
 	MaxOutputTokens *int
 	ToolsAllowlist  *[]string
+	// S41 — TTS config. *string with value=="" unsets the voice id
+	// (CHECK allows NULL only — callers should pass nil for unset).
+	TTSEnabled *bool
+	TTSVoiceID *string
 }
 
 // UpdateAgent applies a partial patch. Refuses zero-field patches with a
@@ -252,6 +264,26 @@ func (r *Repository) UpdateAgent(ctx context.Context, orgID, id uuid.UUID, in Up
 		sets = append(sets, fmt.Sprintf("tools_allowlist = $%d", idx))
 		args = append(args, *in.ToolsAllowlist)
 		idx++
+	}
+	if in.TTSEnabled != nil {
+		sets = append(sets, fmt.Sprintf("tts_enabled = $%d", idx))
+		args = append(args, *in.TTSEnabled)
+		idx++
+	}
+	if in.TTSVoiceID != nil {
+		v := strings.TrimSpace(*in.TTSVoiceID)
+		if v == "" {
+			sets = append(sets, fmt.Sprintf("tts_voice_id = $%d", idx))
+			args = append(args, nil)
+			idx++
+		} else {
+			if len(v) < 2 || len(v) > 80 {
+				return Agent{}, errors.New("tts_voice_id must be 2-80 chars")
+			}
+			sets = append(sets, fmt.Sprintf("tts_voice_id = $%d", idx))
+			args = append(args, v)
+			idx++
+		}
 	}
 	if len(sets) == 0 {
 		return r.GetAgent(ctx, orgID, id)

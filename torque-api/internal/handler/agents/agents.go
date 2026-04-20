@@ -105,6 +105,12 @@ type agentView struct {
 	// When non-nil, the playground/production SSE handler runs topK
 	// retrieval and prepends context before the LLM call.
 	KnowledgeCollectionID *uuid.UUID `json:"knowledge_collection_id,omitempty"`
+	// S41 — TTS config. tts_enabled alone is not sufficient; the
+	// outbound-audio path also needs tts_voice_id. The UI may set
+	// only one of the two mid-flow (e.g. disable while keeping the
+	// voice_id remembered) so both are reported independently.
+	TTSEnabled bool    `json:"tts_enabled"`
+	TTSVoiceID *string `json:"tts_voice_id,omitempty"`
 }
 
 type collectionView struct {
@@ -659,5 +665,7 @@ func toAgentView(a agentrepo.Agent) agentView {
 		Model: a.Model, Temperature: a.Temperature, MaxOutputTokens: a.MaxOutputTokens,
 		ToolsAllowlist: a.ToolsAllowlist, KillSwitch: a.KillSwitch, Status: a.Status,
 		KnowledgeCollectionID: a.KnowledgeCollectionID,
+		TTSEnabled:            a.TTSEnabled,
+		TTSVoiceID:            a.TTSVoiceID,
 	}
 }

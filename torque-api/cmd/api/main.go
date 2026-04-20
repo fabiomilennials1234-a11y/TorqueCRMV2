@@ -429,7 +429,30 @@ func newRouter(
 					}
 					ingestSvc := knowledgesvc.New(agentRepo, embedder, logger)
 					agentBase = agentBase.WithIngest(ingestSvc)
-					agentshandler.NewPlayground(agentBase, aiProvider, embedder).Routes(admin)
+					// S41 — TTS adapter selection. ElevenLabs when key
+					// is set; otherwise MockTTS so the preview endpoint
+					// stays functional in dev. A missing key in prod
+					// should fail loud — the config validation layer
+					// is the right place to enforce that when we're
+					// ready to promote TTS to required.
+					var tts ai.TTS
+					if cfg.ElevenLabsAPIKey != "" {
+						t, err := ai.NewElevenLabsTTS(ai.ElevenLabsConfig{
+							BaseURL: cfg.ElevenLabsBaseURL,
+							APIKey:  cfg.ElevenLabsAPIKey,
+							ModelID: cfg.ElevenLabsModelID,
+						})
+						if err != nil {
+							logger.Warn().Err(err).Msg("elevenlabs init failed — falling back to mock tts")
+							tts = ai.NewMockTTS()
+						} else {
+							tts = t
+						}
+					} else {
+						logger.Warn().Msg("ELEVENLABS_API_KEY empty — using MockTTS (synthesis quality is fake)")
+						tts = ai.NewMockTTS()
+					}
+					agentshandler.NewPlayground(agentBase, aiProvider, embedder, tts).Routes(admin)
 					proposalshandler.New(proposalrepo.New(pool), bus).Routes(admin)
 					workflowshandler.New(workflowrepo.New(pool), bus).Routes(admin)
 					campaignshandler.New(campaignrepo.New(pool), bus).Routes(admin)
