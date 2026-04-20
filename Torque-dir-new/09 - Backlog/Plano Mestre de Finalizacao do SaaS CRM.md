@@ -657,7 +657,7 @@ O bloco da sprint em §8 muda de "prospectivo" para "entregue":
 
 ---
 
-### Sprint S09 — F01 QA + LeadDetail + Polish
+### Sprint S09 — F01 QA + LeadDetail + Polish ✅ ENTREGUE (2026-04-19)
 
 | Campo | Valor |
 |-------|-------|
