@@ -46,6 +46,7 @@ import (
 	proposalshandler "github.com/milennials/torque-api/internal/handler/proposals"
 	settingshandler "github.com/milennials/torque-api/internal/handler/settings"
 	tasksahandler "github.com/milennials/torque-api/internal/handler/tasks"
+	templateshandler "github.com/milennials/torque-api/internal/handler/templates"
 	workflowshandler "github.com/milennials/torque-api/internal/handler/workflows"
 	mw "github.com/milennials/torque-api/internal/httpx/middleware"
 	"github.com/milennials/torque-api/internal/domain"
@@ -67,6 +68,7 @@ import (
 	refreshrepo "github.com/milennials/torque-api/internal/repository/refresh"
 	settingsrepo "github.com/milennials/torque-api/internal/repository/settings"
 	subscriptionrepo "github.com/milennials/torque-api/internal/repository/subscription"
+	templaterepo "github.com/milennials/torque-api/internal/repository/template"
 	taskrepo "github.com/milennials/torque-api/internal/repository/task"
 	userrepo "github.com/milennials/torque-api/internal/repository/user"
 	workflowrepo "github.com/milennials/torque-api/internal/repository/workflow"
@@ -369,6 +371,10 @@ func newRouter(
 				settingshandler.NewRead(settingsRepo).Routes(t)
 				settingshandler.NewMe(settingsRepo).Routes(t)
 
+				// S35: message templates (ComposerBar do Inbox).
+				templateRepo := templaterepo.New(pool)
+				templateshandler.NewRead(templateRepo).Routes(t)
+
 				// --- Admin-only surfaces (Copilot kill-switch + KB +
 				// proposal money flow). Any authenticated member could
 				// previously derail these; sprint/remediation gates them
@@ -399,6 +405,7 @@ func newRouter(
 					}
 					billinghandler.NewAdmin(subRepo, provider, bus).Routes(admin)
 					settingshandler.NewAdmin(settingsRepo).Routes(admin)
+					templateshandler.NewAdmin(templateRepo).Routes(admin)
 				})
 
 				// --- Master-only surfaces (cross-org) -----------------
