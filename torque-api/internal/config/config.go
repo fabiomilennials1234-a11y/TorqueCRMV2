@@ -71,6 +71,15 @@ type Config struct {
 	// Shape: "flag1=true,flag2=false". Everything in here is public — do NOT
 	// gate security-sensitive features behind a bootstrap flag.
 	FeatureFlags map[string]bool
+
+	// --- Billing (S24) ---
+	// BillingProvider selects the concrete integration. S24 ships "mock";
+	// "asaas" wiring lands once credentials + dual review are in place.
+	BillingProvider      string
+	// BillingWebhookSecret must match the X-Torque-Billing-Secret header
+	// on provider callbacks. Empty = webhook endpoint refuses every call
+	// (secure default — prod deploys MUST set this).
+	BillingWebhookSecret string
 }
 
 // Load reads the config from the environment. Returns an error if any required
@@ -121,6 +130,9 @@ func Load() (Config, error) {
 		RateLimitTrustProxy: getenvBool("RATELIMIT_TRUST_PROXY", false),
 
 		FeatureFlags: parseFlags(os.Getenv("FEATURE_FLAGS")),
+
+		BillingProvider:      getenv("BILLING_PROVIDER", "mock"),
+		BillingWebhookSecret: os.Getenv("BILLING_WEBHOOK_SECRET"),
 	}
 
 	if c.DatabaseURL == "" {

@@ -892,18 +892,23 @@ O bloco da sprint em §8 muda de "prospectivo" para "entregue":
 
 ---
 
-### Sprint S24 — F14: Checkout + PIX + Provisioning
+### Sprint S24 — F14: Checkout + PIX + Provisioning ✅ ENTREGUE PARCIAL (2026-04-20)
 
 | Campo | Valor |
 |-------|-------|
-| **Objetivo** | Monetização: wizard 3 steps, PIX via Asaas, provisioning de tenant |
-| **Resultado esperado** | Usuário escolhe plano, paga via PIX, org é provisionada automaticamente |
+| **Objetivo** | Fundação do billing com Provider interface + Mock + webhook state machine |
+| **Resultado esperado** | Checkout funcional contra provider mock; Asaas real fica para sprint com credenciais |
 | **Dependências** | S23 (Onboarding como entry point) |
-| **Agentes** | `code-architect` (design), `general-purpose`, `code-reviewer` (dual review — dinheiro) |
-| **Áreas afetadas** | Backend billing, integração Asaas, Frontend checkout |
-| **Stack** | Go, Asaas API, React |
-| **Riscos** | Muito alto — envolve dinheiro real; PIX webhook reliability; provisioning race conditions |
-| **Critério de conclusão** | Checkout funcional. PIX gerado e confirmado. Org provisionada. Quota aplicada. Dual review completo. |
+| **Agentes** | DBA → Backend → QA → Frontend → Docs |
+| **Áreas afetadas** | DB (0016), Backend service/repo/handler billing, Frontend hooks + CheckoutPage |
+| **Stack** | Go, React |
+| **Entregas** | Migration 0016 (subscriptions + billing_events + 3 perm keys); Provider iface + MockProvider; subscription repo com ErrAlreadyActive via unique partial index e ErrDuplicateEvent no webhook; handler splittado Read/Admin/Webhook (webhook autenticado por X-Torque-Billing-Secret header); useBilling hooks + CheckoutPage `/billing`. |
+| **Escopo parcial explícito** | AsaasProvider real adiado — requer credenciais + dual-review de money-flow fora do escopo desta sessão. Dual review deve rodar antes de flip de BILLING_PROVIDER=asaas em prod. |
+| **Riscos abertos** | Webhook secret em .env; prod exige rotacão e storage em secrets manager (Infra em sprint futura). Org provisioning (plan_id → quotas) é passivo hoje — quotas já carregam plan_base via plans; ativação de quotas restrita pode vir em sprint de F15/F16. |
+| **Critério de conclusão** | ✅ Mock checkout flow. ✅ PIX payload exibido. ✅ Webhook state machine com dedup. ✅ Testes de invariante one-live-sub-per-tenant. ⏳ Asaas real + dual review pendente. |
+| **Artefatos** | `torque-api/{migrations/0016_*,internal/service/billing/*,internal/repository/subscription/*,internal/handler/billing/*,internal/config/config.go}`, `torque-web/src/{hooks/useBilling.ts,features/billing/CheckoutPage.tsx,routes.tsx}` |
+| **Branch** | `sprint/S24` → PR para `develop` |
+| **STATE** | D039 |
 
 ---
 

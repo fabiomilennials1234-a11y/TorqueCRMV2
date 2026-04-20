@@ -28,6 +28,7 @@ import (
 	agentshandler "github.com/milennials/torque-api/internal/handler/agents"
 	analyticshandler "github.com/milennials/torque-api/internal/handler/analytics"
 	authhandler "github.com/milennials/torque-api/internal/handler/auth"
+	billinghandler "github.com/milennials/torque-api/internal/handler/billing"
 	"github.com/milennials/torque-api/internal/handler/bootstrap"
 	campaignshandler "github.com/milennials/torque-api/internal/handler/campaigns"
 	confirmationshandler "github.com/milennials/torque-api/internal/handler/confirmations"
@@ -60,9 +61,11 @@ import (
 	productrepo "github.com/milennials/torque-api/internal/repository/product"
 	proposalrepo "github.com/milennials/torque-api/internal/repository/proposal"
 	refreshrepo "github.com/milennials/torque-api/internal/repository/refresh"
+	subscriptionrepo "github.com/milennials/torque-api/internal/repository/subscription"
 	taskrepo "github.com/milennials/torque-api/internal/repository/task"
 	userrepo "github.com/milennials/torque-api/internal/repository/user"
 	workflowrepo "github.com/milennials/torque-api/internal/repository/workflow"
+	"github.com/milennials/torque-api/internal/service/billing"
 	jwtsvc "github.com/milennials/torque-api/internal/service/jwt"
 	"github.com/milennials/torque-api/internal/service/permission"
 	"github.com/milennials/torque-api/internal/worker"
@@ -307,6 +310,14 @@ func newRouter(
 	}
 	specHandler.Routes(r)
 
+	// --- Public billing webhook ----------------------------------------
+	// Sits OUTSIDE /api/v1 so it doesn't require a session; auth is via
+	// the X-Torque-Billing-Secret header.
+	subRepo := subscriptionrepo.New(pool)
+	r.Route("/webhooks", func(wh chi.Router) {
+		billinghandler.NewWebhook(subRepo, bus, cfg.BillingWebhookSecret).Routes(wh)
+	})
+
 	// --- API v1: auth entry points (pre-session) -----------------------
 	r.Route("/api/v1", func(v1 chi.Router) {
 		// Authenticator is transparent — attaches session when cookie is
@@ -348,6 +359,7 @@ func newRouter(
 				membershandler.NewRead(memberRepo).Routes(t)
 				productshandler.NewRead(productRepo).Routes(t)
 				onboardinghandler.New(onboardingrepo.New(pool)).Routes(t)
+				billinghandler.NewRead(subRepo).Routes(t)
 
 				// --- Admin-only surfaces (Copilot kill-switch + KB +
 				// proposal money flow). Any authenticated member could
@@ -363,6 +375,21 @@ func newRouter(
 					membershandler.NewAdmin(memberRepo, bus).Routes(admin)
 					productshandler.NewAdmin(productRepo, bus).Routes(admin)
 					pipeshandler.NewAdmin(piperepo.New(pool), bus).Routes(admin)
+
+					// Billing checkout/cancel (admin-only). Provider is
+					// pluggable; S24 wires the mock, Asaas lands after
+					// credentials + dual review.
+					var provider billing.Provider
+					switch cfg.BillingProvider {
+					case "asaas":
+						// Placeholder — real Asaas client lands in a
+						// follow-up sprint gated by credentials.
+						logger.Warn().Msg("asaas provider not yet implemented; falling back to mock")
+						provider = billing.NewMock()
+					default:
+						provider = billing.NewMock()
+					}
+					billinghandler.NewAdmin(subRepo, provider, bus).Routes(admin)
 				})
 			})
 
