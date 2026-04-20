@@ -14,7 +14,7 @@
  *   stream; a UI não replica o toggle — é via AgentListPage.
  */
 
-import { ArrowLeft, Book, Plus, RotateCcw, Send, Square } from 'lucide-react'
+import { ArrowLeft, Book, Plus, RotateCcw, Send, Square, Trash2, Zap } from 'lucide-react'
 import { useEffect, useId, useMemo, useRef, useState } from 'react'
 import { Link, Navigate, useParams } from 'react-router-dom'
 
@@ -26,12 +26,17 @@ import { Skeleton } from '@/ui/skeleton'
 import { friendlyMessage } from '@/api/errors'
 import {
   useAgent,
+  useAgentTriggers,
   useBindAgentCollection,
   useCreateCollection,
+  useCreateTrigger,
+  useDeleteTrigger,
   useEnqueueSource,
   useKnowledgeCollections,
   useKnowledgeSources,
   useUpdateAgent,
+  useUpdateTrigger,
+  type TriggerFilter,
   type UpdateAgentPayload,
 } from '@/hooks/useAgents'
 import { useAgentStream } from '@/hooks/useAgentStream'
@@ -241,6 +246,7 @@ function PlaygroundInner({ agent, agentId }: { agent: ReturnType<typeof useAgent
         </form>
 
         <KnowledgePanel agentId={agentId} collectionId={agent.knowledge_collection_id ?? null} />
+        <TriggersPanel agentId={agentId} />
       </aside>
 
       {/* Chat pane */}
@@ -525,6 +531,204 @@ function KnowledgePanel({
         </div>
       )}
     </section>
+  )
+}
+
+function TriggersPanel({ agentId }: { agentId: string }) {
+  const triggers = useAgentTriggers(agentId)
+  const create = useCreateTrigger(agentId)
+
+  const [showForm, setShowForm] = useState(false)
+  const [name, setName] = useState('')
+  const [priority, setPriority] = useState(100)
+  const [field, setField] = useState('origin')
+  const [op, setOp] = useState<'eq' | 'neq' | 'contains' | 'in' | 'present' | 'absent'>('eq')
+  const [value, setValue] = useState('')
+  const priorityId = useId()
+
+  async function handleCreate(e: React.FormEvent) {
+    e.preventDefault()
+    const trimmedName = name.trim()
+    if (!trimmedName) return
+    const filter: TriggerFilter =
+      op === 'present' || op === 'absent'
+        ? { all: [{ field, op }] }
+        : op === 'in'
+          ? {
+              all: [
+                {
+                  field,
+                  op,
+                  value: value
+                    .split(',')
+                    .map((v) => v.trim())
+                    .filter(Boolean),
+                },
+              ],
+            }
+          : { all: [{ field, op, value: value.trim() }] }
+    await create.mutateAsync({ name: trimmedName, priority, filter })
+    setName('')
+    setValue('')
+    setShowForm(false)
+  }
+
+  return (
+    <section className="mt-8 border-t border-hairline pt-6">
+      <div className="mb-3 flex items-center gap-2">
+        <Zap className="h-4 w-4 text-ink-muted" />
+        <h3 className="text-sm font-medium text-ink">Gatilhos de ativação</h3>
+      </div>
+      <p className="mb-3 text-2xs text-ink-dim">
+        Regras priorizadas que atribuem este agent a novas conversas quando o lead bate o filtro.
+        Menor prioridade ganha (1 = mais alta).
+      </p>
+
+      {triggers.isLoading ? (
+        <Skeleton className="h-10 w-full" />
+      ) : (triggers.data ?? []).length === 0 ? (
+        <p className="text-2xs text-ink-dim">Nenhum gatilho configurado.</p>
+      ) : (
+        <ul className="space-y-1.5">
+          {triggers.data!.map((t) => (
+            <TriggerRow key={t.id} agentId={agentId} trigger={t} />
+          ))}
+        </ul>
+      )}
+
+      {!showForm ? (
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          className="mt-2"
+          onClick={() => setShowForm(true)}
+        >
+          <Plus className="mr-1 h-3.5 w-3.5" />
+          Novo gatilho
+        </Button>
+      ) : (
+        <form className="mt-3 space-y-2 rounded-md bg-elevated/20 p-3" onSubmit={handleCreate}>
+          <Input
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            placeholder="Nome (ex: Leads Meta Ads)"
+          />
+          <div className="grid grid-cols-2 gap-2">
+            <Input
+              value={field}
+              onChange={(e) => setField(e.target.value)}
+              placeholder="Campo (origin, segment, tags, ...)"
+            />
+            <select
+              className="rounded-md bg-elevated/40 px-2 py-2 text-sm text-ink shadow-hairline focus:outline-none focus:ring-1 focus:ring-accent/50"
+              value={op}
+              onChange={(e) => setOp(e.target.value as typeof op)}
+            >
+              <option value="eq">eq</option>
+              <option value="neq">neq</option>
+              <option value="contains">contains</option>
+              <option value="in">in (CSV)</option>
+              <option value="present">present</option>
+              <option value="absent">absent</option>
+            </select>
+          </div>
+          {op !== 'present' && op !== 'absent' && (
+            <Input
+              value={value}
+              onChange={(e) => setValue(e.target.value)}
+              placeholder={op === 'in' ? 'valor1, valor2, ...' : 'Valor de comparação'}
+            />
+          )}
+          <div className="flex items-center gap-2">
+            <label htmlFor={priorityId} className="text-2xs text-ink-muted">
+              Prioridade
+            </label>
+            <Input
+              id={priorityId}
+              type="number"
+              min={1}
+              max={10000}
+              value={priority}
+              onChange={(e) => setPriority(Number(e.target.value))}
+              className="w-24"
+            />
+            <Button type="submit" variant="primary" size="sm" disabled={create.isPending}>
+              Criar
+            </Button>
+            <Button type="button" variant="ghost" size="sm" onClick={() => setShowForm(false)}>
+              Cancelar
+            </Button>
+          </div>
+        </form>
+      )}
+    </section>
+  )
+}
+
+function TriggerRow({
+  agentId,
+  trigger,
+}: {
+  agentId: string
+  trigger: ReturnType<typeof useAgentTriggers>['data'] extends readonly (infer T)[] | undefined ? T : never
+}) {
+  const update = useUpdateTrigger(agentId, trigger.id)
+  const remove = useDeleteTrigger(agentId, trigger.id)
+
+  async function handleToggle() {
+    await update.mutateAsync({ is_active: !trigger.is_active })
+  }
+
+  async function handleDelete() {
+    await remove.mutateAsync()
+  }
+
+  const summary = useMemo(() => {
+    const parts: string[] = []
+    for (const p of trigger.filter.all ?? []) {
+      let v = ''
+      if (p.value == null) {
+        v = ''
+      } else if (typeof p.value === 'string') {
+        v = p.value
+      } else if (typeof p.value === 'number' || typeof p.value === 'boolean') {
+        v = String(p.value)
+      } else {
+        v = JSON.stringify(p.value)
+      }
+      parts.push(`${p.field} ${p.op}${v ? ` "${v}"` : ''}`)
+    }
+    if (parts.length === 0) return 'catch-all'
+    return parts.join(' AND ')
+  }, [trigger.filter])
+
+  return (
+    <li className="flex items-center justify-between rounded-md bg-elevated/30 px-3 py-2 text-xs">
+      <div className="min-w-0 flex-1 pr-2">
+        <div className="flex items-center gap-2">
+          <span className="font-medium text-ink">{trigger.name}</span>
+          <Badge tone="neutral">p{trigger.priority}</Badge>
+          {!trigger.is_active && <Badge tone="neutral">inativo</Badge>}
+        </div>
+        <div className="mt-0.5 truncate text-2xs text-ink-dim">{summary}</div>
+      </div>
+      <div className="flex items-center gap-1">
+        <Button type="button" variant="ghost" size="sm" onClick={handleToggle} disabled={update.isPending}>
+          {trigger.is_active ? 'Desativar' : 'Ativar'}
+        </Button>
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          onClick={handleDelete}
+          disabled={remove.isPending}
+          aria-label="Remover gatilho"
+        >
+          <Trash2 className="h-3.5 w-3.5" />
+        </Button>
+      </div>
+    </li>
   )
 }
 

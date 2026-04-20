@@ -334,6 +334,107 @@ export function useBindAgentCollection(agentId: string) {
   )
 }
 
+// -------- S40 triggers ----------------------------------------------
+
+/**
+ * S40 — filter DSL. Matches ai.FilterSpec on the backend:
+ *   { all: [{field,op,value}], any: [{...}] }
+ * Empty filter (both blocks empty) matches every lead — used by
+ * catch-all rules at a low priority.
+ */
+export interface TriggerPredicate {
+  field: string
+  op: 'eq' | 'neq' | 'contains' | 'in' | 'present' | 'absent'
+  value?: unknown
+}
+
+export interface TriggerFilter {
+  all?: TriggerPredicate[]
+  any?: TriggerPredicate[]
+}
+
+export interface AgentTrigger {
+  id: string
+  agent_id: string
+  name: string
+  description?: string | null
+  priority: number
+  filter: TriggerFilter
+  is_active: boolean
+  created_at: string
+  updated_at: string
+}
+
+export interface CreateTriggerPayload {
+  name: string
+  description?: string
+  priority?: number
+  filter: TriggerFilter
+}
+
+export interface UpdateTriggerPayload {
+  name?: string
+  description?: string | null
+  priority?: number
+  filter?: TriggerFilter
+  is_active?: boolean
+}
+
+function triggerKeys() {
+  return {
+    list: (agentId: string) => ['copilot', 'agents', agentId, 'triggers'] as const,
+  }
+}
+
+export function useAgentTriggers(agentId: string | undefined) {
+  const client = useQueryClient()
+
+  useWSSubscribe<AgentTrigger>(
+    ['agent_trigger.created', 'agent_trigger.updated', 'agent_trigger.deleted'],
+    () => {
+      if (agentId) void client.invalidateQueries({ queryKey: triggerKeys().list(agentId) })
+    },
+    [agentId]
+  )
+
+  return useQuery<AgentTrigger[]>({
+    queryKey: agentId ? triggerKeys().list(agentId) : ['copilot', 'triggers', 'disabled'],
+    enabled: Boolean(agentId),
+    queryFn: async () =>
+      (await get<{ data: AgentTrigger[] }>(`/api/v1/agents/${agentId}/triggers`)).data,
+  })
+}
+
+export function useCreateTrigger(agentId: string) {
+  return useAppMutation<AgentTrigger, CreateTriggerPayload>(
+    (body) => post<AgentTrigger>(`/api/v1/agents/${agentId}/triggers`, body),
+    {
+      invalidate: [['copilot', 'agents', agentId, 'triggers']],
+      errorContext: 'copilot.trigger.create',
+    }
+  )
+}
+
+export function useUpdateTrigger(agentId: string, triggerId: string) {
+  return useAppMutation<AgentTrigger, UpdateTriggerPayload>(
+    (body) => patch<AgentTrigger>(`/api/v1/triggers/${triggerId}`, body),
+    {
+      invalidate: [['copilot', 'agents', agentId, 'triggers']],
+      errorContext: 'copilot.trigger.update',
+    }
+  )
+}
+
+export function useDeleteTrigger(agentId: string, triggerId: string) {
+  return useAppMutation<void, void>(
+    () => del<void>(`/api/v1/triggers/${triggerId}`),
+    {
+      invalidate: [['copilot', 'agents', agentId, 'triggers']],
+      errorContext: 'copilot.trigger.delete',
+    }
+  )
+}
+
 /** S38: PATCH /api/v1/agents/:id — partial update do config do agente. */
 export function useUpdateAgent(id: string) {
   return useAppMutation<Agent, UpdateAgentPayload>(
