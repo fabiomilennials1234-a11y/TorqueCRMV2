@@ -129,7 +129,7 @@ status: vivo
 
 ## Status atual
 
-**Etapa:** S00-S27 ✅. S27 ✅ Integrations Foundation (adapter ifaces + mocks + resilience, 2026-04-20). Runtime backend pendente no host.
+**Etapa:** S00-S28 ✅. S28 ✅ CI/CD pipeline (ci.yml + release.yml + deploy.yml + Docker/nginx, 2026-04-20). Runtime backend pendente no host.
 
 **S00** — ESLint flat (a11y + hooks + ban `dangerouslySetInnerHTML`), TS strict, Prettier, Vitest (51 testes), CI, vocabulario canonico, `--clay-*` → `--card-*`/`.tactile-*`, pos-login navigation por `ui_mode`.
 

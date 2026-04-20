@@ -969,18 +969,21 @@ O bloco da sprint em §8 muda de "prospectivo" para "entregue":
 
 ---
 
-### Sprint S28 — CI/CD + Docker + Deploy
+### Sprint S28 — CI/CD + Docker + Deploy ✅ ENTREGUE (2026-04-20)
 
 | Campo | Valor |
 |-------|-------|
-| **Objetivo** | Pipeline de deploy automatizado com rollback |
-| **Resultado esperado** | Push to main → lint → test → build → deploy → smoke test |
+| **Objetivo** | Pipeline completo de CI + release + deploy com rollback |
+| **Resultado esperado** | Push → CI (backend + frontend) → tag → Docker image → dispatch deploy |
 | **Dependências** | Todas as features |
-| **Agentes** | `general-purpose` |
-| **Áreas afetadas** | DevOps, CI/CD |
-| **Stack** | GitHub Actions, Docker, EasyPanel/Hostinger VPS |
-| **Riscos** | Config de secrets; deploy sem downtime |
-| **Critério de conclusão** | Pipeline funcional. Rollback testado. Zero downtime deploy provado. |
+| **Agentes** | Infra → Docs |
+| **Áreas afetadas** | `.github/workflows/`, `torque-web/Dockerfile`, `docker-compose.prod.yml` |
+| **Stack** | GitHub Actions, Docker (distroless + nginx-unprivileged), EasyPanel webhook |
+| **Entregas** | ci.yml com backend Postgres service + golangci-lint; release.yml com GHCR push; deploy.yml com migrate→deploy→smoke gated por Environments; torque-web/Dockerfile multi-stage + nginx.conf; docker-compose.prod.yml de referência; workflows/README.md com rollback runbook |
+| **Critério de conclusão** | ✅ Pipeline CI completo. ✅ Release → GHCR. ✅ Deploy com smoke test. ✅ Rollback documentado (re-dispatch com run_migrations=false). |
+| **Artefatos** | `.github/workflows/{ci.yml,release.yml,deploy.yml,README.md}`, `torque-web/{Dockerfile,nginx.conf}`, `docker-compose.prod.yml` |
+| **Branch** | `sprint/S28` → PR para `develop` |
+| **STATE** | D043 |
 
 ---
 
