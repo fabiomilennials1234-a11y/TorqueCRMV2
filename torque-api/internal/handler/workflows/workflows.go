@@ -64,6 +64,8 @@ func (h *Handler) Routes(r chi.Router) {
 	r.Post("/workflows/{id}/runs", h.enqueueRun)
 	r.Get("/workflows/{id}/runs", h.listRuns)
 	r.Post("/runs/{id}/cancel", h.cancelRun)
+	// S45 — per-run step trace for the executions UI + debug run.
+	r.Get("/runs/{id}/steps", h.listRunSteps)
 }
 
 // -------- DTOs -------------------------------------------------------
@@ -411,6 +413,43 @@ func (h *Handler) cancelRun(w http.ResponseWriter, r *http.Request) {
 		EntityID: &id, OccurredAt: time.Now().UTC(),
 	})
 	w.WriteHeader(http.StatusNoContent)
+}
+
+// S45 — per-run step trace. The executions UI renders this as a
+// timeline with per-step status badges.
+type runStepView struct {
+	ID           uuid.UUID       `json:"id"`
+	RunID        uuid.UUID       `json:"run_id"`
+	StepID       uuid.UUID       `json:"step_id"`
+	Status       string          `json:"status"`
+	Input        json.RawMessage `json:"input,omitempty"`
+	Output       json.RawMessage `json:"output,omitempty"`
+	ErrorPayload json.RawMessage `json:"error_payload,omitempty"`
+	StartedAt    *time.Time      `json:"started_at,omitempty"`
+	EndedAt      *time.Time      `json:"ended_at,omitempty"`
+	CreatedAt    time.Time       `json:"created_at"`
+}
+
+func (h *Handler) listRunSteps(w http.ResponseWriter, r *http.Request) {
+	orgID, _ := mw.OrgIDFrom(r.Context())
+	id, ok := parseID(w, r, "id")
+	if !ok {
+		return
+	}
+	steps, err := h.repo.ListRunSteps(r.Context(), orgID, id)
+	if err != nil {
+		httpx.WriteError(w, http.StatusInternalServerError, "INTERNAL", "could not list run steps")
+		return
+	}
+	out := make([]runStepView, len(steps))
+	for i, s := range steps {
+		out[i] = runStepView{
+			ID: s.ID, RunID: s.RunID, StepID: s.StepID, Status: s.Status,
+			Input: s.Input, Output: s.Output, ErrorPayload: s.ErrorPayload,
+			StartedAt: s.StartedAt, EndedAt: s.EndedAt, CreatedAt: s.CreatedAt,
+		}
+	}
+	httpx.WriteJSON(w, http.StatusOK, map[string]any{"data": out})
 }
 
 // -------- helpers ----------------------------------------------------
