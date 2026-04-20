@@ -80,6 +80,15 @@ type Config struct {
 	// on provider callbacks. Empty = webhook endpoint refuses every call
 	// (secure default — prod deploys MUST set this).
 	BillingWebhookSecret string
+
+	// --- AI / Copilot (S37 — F06) ---
+	// OpenRouter is the default LLM gateway (anthropic/openai/google in
+	// one API). Empty key = Copilot playground returns 503; prod sets
+	// this via env, never committed.
+	OpenRouterBaseURL string
+	OpenRouterAPIKey  string
+	OpenRouterReferer string
+	OpenRouterTitle   string
 }
 
 // Load reads the config from the environment. Returns an error if any required
@@ -136,6 +145,11 @@ func Load() (Config, error) {
 
 		BillingProvider:      getenv("BILLING_PROVIDER", "mock"),
 		BillingWebhookSecret: os.Getenv("BILLING_WEBHOOK_SECRET"),
+
+		OpenRouterBaseURL: getenv("OPENROUTER_BASE_URL", "https://openrouter.ai/api/v1"),
+		OpenRouterAPIKey:  os.Getenv("OPENROUTER_API_KEY"),
+		OpenRouterReferer: getenv("OPENROUTER_REFERER", "https://torque.app"),
+		OpenRouterTitle:   getenv("OPENROUTER_TITLE", "Torque CRM"),
 	}
 
 	if c.DatabaseURL == "" {

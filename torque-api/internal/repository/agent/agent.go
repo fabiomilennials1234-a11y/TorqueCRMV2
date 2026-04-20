@@ -178,6 +178,95 @@ func (r *Repository) ListAgents(ctx context.Context, orgID uuid.UUID) ([]Agent, 
 	return out, rows.Err()
 }
 
+// UpdateAgentInput is the patch shape for UpdateAgent. Only non-nil fields
+// are applied; status + kill_switch have dedicated methods to keep the
+// state transitions audit-loud.
+type UpdateAgentInput struct {
+	Name            *string
+	Description     *string
+	SystemPrompt    *string
+	Model           *string
+	Temperature     *float64
+	MaxOutputTokens *int
+	ToolsAllowlist  *[]string
+}
+
+// UpdateAgent applies a partial patch. Refuses zero-field patches with a
+// simple Get round-trip so callers see the current row either way.
+func (r *Repository) UpdateAgent(ctx context.Context, orgID, id uuid.UUID, in UpdateAgentInput) (Agent, error) {
+	sets := make([]string, 0, 7)
+	args := []any{orgID, id}
+	idx := 3
+	if in.Name != nil {
+		n := strings.TrimSpace(*in.Name)
+		if len(n) < 2 || len(n) > 120 {
+			return Agent{}, errors.New("name must be 2-120 chars")
+		}
+		sets = append(sets, fmt.Sprintf("name = $%d", idx))
+		args = append(args, n)
+		idx++
+	}
+	if in.Description != nil {
+		sets = append(sets, fmt.Sprintf("description = $%d", idx))
+		args = append(args, *in.Description)
+		idx++
+	}
+	if in.SystemPrompt != nil {
+		p := strings.TrimSpace(*in.SystemPrompt)
+		if len(p) < 10 || len(p) > 16000 {
+			return Agent{}, errors.New("system_prompt must be 10-16000 chars")
+		}
+		sets = append(sets, fmt.Sprintf("system_prompt = $%d", idx))
+		args = append(args, p)
+		idx++
+	}
+	if in.Model != nil {
+		m := strings.TrimSpace(*in.Model)
+		if len(m) < 2 || len(m) > 80 {
+			return Agent{}, errors.New("model must be 2-80 chars")
+		}
+		sets = append(sets, fmt.Sprintf("model = $%d", idx))
+		args = append(args, m)
+		idx++
+	}
+	if in.Temperature != nil {
+		if *in.Temperature < 0 || *in.Temperature > 2 {
+			return Agent{}, errors.New("temperature must be between 0 and 2")
+		}
+		sets = append(sets, fmt.Sprintf("temperature = $%d", idx))
+		args = append(args, *in.Temperature)
+		idx++
+	}
+	if in.MaxOutputTokens != nil {
+		if *in.MaxOutputTokens < 16 || *in.MaxOutputTokens > 8192 {
+			return Agent{}, errors.New("max_output_tokens must be between 16 and 8192")
+		}
+		sets = append(sets, fmt.Sprintf("max_output_tokens = $%d", idx))
+		args = append(args, *in.MaxOutputTokens)
+		idx++
+	}
+	if in.ToolsAllowlist != nil {
+		sets = append(sets, fmt.Sprintf("tools_allowlist = $%d", idx))
+		args = append(args, *in.ToolsAllowlist)
+		idx++
+	}
+	if len(sets) == 0 {
+		return r.GetAgent(ctx, orgID, id)
+	}
+	q := fmt.Sprintf(
+		`UPDATE agents SET %s WHERE organization_id = $1 AND id = $2`,
+		strings.Join(sets, ", "),
+	)
+	ct, err := r.pool.Exec(ctx, q, args...)
+	if err != nil {
+		return Agent{}, fmt.Errorf("update agent: %w", err)
+	}
+	if ct.RowsAffected() == 0 {
+		return Agent{}, ErrNotFound
+	}
+	return r.GetAgent(ctx, orgID, id)
+}
+
 // SetAgentStatus transitions the status (draft ↔ active, * → disabled).
 func (r *Repository) SetAgentStatus(ctx context.Context, orgID, id uuid.UUID, status string) error {
 	ct, err := r.pool.Exec(ctx,

@@ -72,6 +72,7 @@ import (
 	taskrepo "github.com/milennials/torque-api/internal/repository/task"
 	userrepo "github.com/milennials/torque-api/internal/repository/user"
 	workflowrepo "github.com/milennials/torque-api/internal/repository/workflow"
+	"github.com/milennials/torque-api/internal/service/ai"
 	"github.com/milennials/torque-api/internal/service/billing"
 	jwtsvc "github.com/milennials/torque-api/internal/service/jwt"
 	"github.com/milennials/torque-api/internal/service/permission"
@@ -383,7 +384,26 @@ func newRouter(
 				// migration 0010. RequireRole also lets master through.
 				t.Group(func(admin chi.Router) {
 					admin.Use(mw.RequireRole(domain.RoleAdmin))
-					agentshandler.New(agentrepo.New(pool), bus).Routes(admin)
+					// S37 — F06 Copilot: base handler + optional LLM provider
+					// for the /playground/message SSE stream + PATCH /agents/:id.
+					// Empty OPENROUTER_API_KEY leaves provider=nil and the
+					// playground endpoint returns 503 PROVIDER_UNAVAILABLE.
+					agentBase := agentshandler.New(agentrepo.New(pool), bus)
+					var aiProvider ai.Provider
+					if cfg.OpenRouterAPIKey != "" {
+						p, err := ai.NewOpenRouter(ai.Config{
+							BaseURL: cfg.OpenRouterBaseURL,
+							APIKey:  cfg.OpenRouterAPIKey,
+							Referer: cfg.OpenRouterReferer,
+							Title:   cfg.OpenRouterTitle,
+						})
+						if err != nil {
+							logger.Warn().Err(err).Msg("openrouter init failed — playground disabled")
+						} else {
+							aiProvider = p
+						}
+					}
+					agentshandler.NewPlayground(agentBase, aiProvider).Routes(admin)
 					proposalshandler.New(proposalrepo.New(pool), bus).Routes(admin)
 					workflowshandler.New(workflowrepo.New(pool), bus).Routes(admin)
 					campaignshandler.New(campaignrepo.New(pool), bus).Routes(admin)
