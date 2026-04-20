@@ -1,27 +1,46 @@
+import { Suspense, lazy } from 'react'
 import { createBrowserRouter, Navigate } from 'react-router-dom'
-import { AppShell } from '@/shell/AppShell'
+
 import { ProtectedRoute } from '@/components/ProtectedRoute'
 import { ManagerModeGate } from '@/components/ManagerModeGate'
-import { CockpitShell } from '@/features/cockpit/CockpitShell'
-import { CockpitView } from '@/features/cockpit/CockpitView'
-import { LoginPage } from '@/features/auth/LoginPage'
-import { DashboardPage } from '@/features/dashboard/DashboardPage'
-import { KanbanPage } from '@/features/pipeline/KanbanPage'
-import { InboxPage } from '@/features/inbox/InboxPage'
-import { WorkflowBuilderPage } from '@/features/workflows/WorkflowBuilderPage'
-import { CampaignsPage } from '@/features/campaigns/CampaignsPage'
-import { AgentsPage } from '@/features/copilot/AgentsPage'
-import { AnalyticsPage } from '@/features/analytics/AnalyticsPage'
-import { CheckoutPage } from '@/features/billing/CheckoutPage'
-import { MasterPage } from '@/features/master/MasterPage'
-import { OnboardingPage } from '@/features/onboarding/OnboardingPage'
 import { OnboardingGate } from '@/components/OnboardingGate'
-import { ProductsPage } from '@/features/products/ProductsPage'
-import { SettingsPage } from '@/features/settings/SettingsPage'
-import { NotFoundPage } from '@/features/errors/NotFoundPage'
-import { ForbiddenPage } from '@/features/errors/ForbiddenPage'
+import { RouteSkeleton } from '@/shell/RouteSkeleton'
 import { EmptyState } from '@/ui/empty-state'
+import { lazyRetry } from '@/lib/lazyRetry'
 import { Construction } from 'lucide-react'
+
+// ---------------------------------------------------------------------------
+// Lazy routes
+// ---------------------------------------------------------------------------
+//
+// All page-level components are dynamically imported through `lazyRetry` so
+// the initial bundle stays minimal and a stale chunk right after a deploy
+// retries with exponential backoff before surfacing to the user.
+//
+// The shells (`AppShell`, `CockpitShell`) are also lazy — they carry enough
+// sidebar + provider weight that splitting them saves ~40 KB on the login
+// path.
+// ---------------------------------------------------------------------------
+
+const AppShell = lazy(() => lazyRetry(() => import('@/shell/AppShell').then((m) => ({ default: m.AppShell }))))
+const CockpitShell = lazy(() => lazyRetry(() => import('@/features/cockpit/CockpitShell').then((m) => ({ default: m.CockpitShell }))))
+const CockpitView = lazy(() => lazyRetry(() => import('@/features/cockpit/CockpitView').then((m) => ({ default: m.CockpitView }))))
+
+const LoginPage = lazy(() => lazyRetry(() => import('@/features/auth/LoginPage').then((m) => ({ default: m.LoginPage }))))
+const DashboardPage = lazy(() => lazyRetry(() => import('@/features/dashboard/DashboardPage').then((m) => ({ default: m.DashboardPage }))))
+const KanbanPage = lazy(() => lazyRetry(() => import('@/features/pipeline/KanbanPage').then((m) => ({ default: m.KanbanPage }))))
+const InboxPage = lazy(() => lazyRetry(() => import('@/features/inbox/InboxPage').then((m) => ({ default: m.InboxPage }))))
+const WorkflowBuilderPage = lazy(() => lazyRetry(() => import('@/features/workflows/WorkflowBuilderPage').then((m) => ({ default: m.WorkflowBuilderPage }))))
+const CampaignsPage = lazy(() => lazyRetry(() => import('@/features/campaigns/CampaignsPage').then((m) => ({ default: m.CampaignsPage }))))
+const AgentsPage = lazy(() => lazyRetry(() => import('@/features/copilot/AgentsPage').then((m) => ({ default: m.AgentsPage }))))
+const AnalyticsPage = lazy(() => lazyRetry(() => import('@/features/analytics/AnalyticsPage').then((m) => ({ default: m.AnalyticsPage }))))
+const SettingsPage = lazy(() => lazyRetry(() => import('@/features/settings/SettingsPage').then((m) => ({ default: m.SettingsPage }))))
+const CheckoutPage = lazy(() => lazyRetry(() => import('@/features/billing/CheckoutPage').then((m) => ({ default: m.CheckoutPage }))))
+const MasterPage = lazy(() => lazyRetry(() => import('@/features/master/MasterPage').then((m) => ({ default: m.MasterPage }))))
+const OnboardingPage = lazy(() => lazyRetry(() => import('@/features/onboarding/OnboardingPage').then((m) => ({ default: m.OnboardingPage }))))
+const ProductsPage = lazy(() => lazyRetry(() => import('@/features/products/ProductsPage').then((m) => ({ default: m.ProductsPage }))))
+const NotFoundPage = lazy(() => lazyRetry(() => import('@/features/errors/NotFoundPage').then((m) => ({ default: m.NotFoundPage }))))
+const ForbiddenPage = lazy(() => lazyRetry(() => import('@/features/errors/ForbiddenPage').then((m) => ({ default: m.ForbiddenPage }))))
 
 // ---------------------------------------------------------------------------
 // Placeholder for routes under construction
@@ -39,6 +58,13 @@ function ComingSoonPage() {
   )
 }
 
+// Every lazy route is rendered inside a single `<Suspense>` at the
+// top of the authenticated tree, so the skeleton flashes once per
+// navigation instead of per-nested-route.
+function withSuspense(node: React.ReactNode) {
+  return <Suspense fallback={<RouteSkeleton />}>{node}</Suspense>
+}
+
 // ---------------------------------------------------------------------------
 // Router
 // ---------------------------------------------------------------------------
@@ -46,7 +72,7 @@ function ComingSoonPage() {
 export const router = createBrowserRouter([
   {
     path: '/login',
-    element: <LoginPage />,
+    element: withSuspense(<LoginPage />),
   },
   {
     path: '/',
@@ -55,7 +81,7 @@ export const router = createBrowserRouter([
       // Onboarding wizard — fora do AppShell, sem gate de modo.
       {
         path: 'onboarding',
-        element: <OnboardingPage />,
+        element: withSuspense(<OnboardingPage />),
       },
       // Modo Vendedor — layout próprio (sem AppShell)
       {
@@ -63,40 +89,42 @@ export const router = createBrowserRouter([
         element: <OnboardingGate />,
         children: [
           {
-            element: <CockpitShell />,
-            children: [{ index: true, element: <CockpitView /> }],
+            element: withSuspense(<CockpitShell />),
+            children: [{ index: true, element: withSuspense(<CockpitView />) }],
           },
         ],
       },
       // Modo Gerente — AppShell + gate de permissão + gate de onboarding
       {
         element: <OnboardingGate />,
-        children: [{
-        element: <ManagerModeGate />,
         children: [
           {
-            element: <AppShell />,
+            element: <ManagerModeGate />,
             children: [
-              { index: true, element: <DashboardPage /> },
-              { path: 'pipeline', element: <KanbanPage /> },
-              { path: 'inbox', element: <InboxPage /> },
-              { path: 'workflows', element: <WorkflowBuilderPage /> },
-              { path: 'campaigns', element: <CampaignsPage /> },
-              { path: 'copilot', element: <AgentsPage /> },
-              { path: 'analytics', element: <AnalyticsPage /> },
-              { path: 'settings', element: <SettingsPage /> },
-              { path: 'billing', element: <CheckoutPage /> },
-              { path: 'master', element: <MasterPage /> },
-              { path: 'help', element: <Navigate to="/settings" replace /> },
-              { path: 'follow-ups', element: <ComingSoonPage /> },
-              { path: 'team', element: <ComingSoonPage /> },
-              { path: 'products', element: <ProductsPage /> },
-              { path: 'forbidden', element: <ForbiddenPage /> },
-              { path: '*', element: <NotFoundPage /> },
+              {
+                element: withSuspense(<AppShell />),
+                children: [
+                  { index: true, element: withSuspense(<DashboardPage />) },
+                  { path: 'pipeline', element: withSuspense(<KanbanPage />) },
+                  { path: 'inbox', element: withSuspense(<InboxPage />) },
+                  { path: 'workflows', element: withSuspense(<WorkflowBuilderPage />) },
+                  { path: 'campaigns', element: withSuspense(<CampaignsPage />) },
+                  { path: 'copilot', element: withSuspense(<AgentsPage />) },
+                  { path: 'analytics', element: withSuspense(<AnalyticsPage />) },
+                  { path: 'settings', element: withSuspense(<SettingsPage />) },
+                  { path: 'billing', element: withSuspense(<CheckoutPage />) },
+                  { path: 'master', element: withSuspense(<MasterPage />) },
+                  { path: 'products', element: withSuspense(<ProductsPage />) },
+                  { path: 'help', element: <Navigate to="/settings" replace /> },
+                  { path: 'follow-ups', element: <ComingSoonPage /> },
+                  { path: 'team', element: <ComingSoonPage /> },
+                  { path: 'forbidden', element: withSuspense(<ForbiddenPage />) },
+                  { path: '*', element: withSuspense(<NotFoundPage />) },
+                ],
+              },
             ],
           },
         ],
-        }],
       },
     ],
   },
