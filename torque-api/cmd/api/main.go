@@ -173,7 +173,9 @@ func run() error {
 	// DAG; subscriber listens for `lead.created` and fans out one
 	// enqueue per active workflow whose trigger matches.
 	wfRepo := workflowrepo.New(pool)
-	dispatcher := workflowsvc.NewDispatcher(logger)
+	// S45 — NewDispatcherS45 wires the 4 S44 handlers + 3 new ones
+	// (create_task, call_agent, http). Total 7 action kinds registered.
+	dispatcher := workflowsvc.NewDispatcherS45(logger)
 	executor := workflowsvc.NewExecutor(wfRepo, dispatcher, logger)
 	wfRunner := workflowsvc.NewRunner(workflowsvc.DefaultRunnerConfig(), wfRepo, executor, logger)
 	wfRunner.Start(ctx)

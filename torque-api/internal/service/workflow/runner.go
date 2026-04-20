@@ -157,9 +157,15 @@ func NewBusSubscriber(bus *event.Bus, repo *workflowrepo.Repository, logger zero
 }
 
 // eventTriggerMap pins which trigger enum value corresponds to which
-// event bus type. Anything not in this map is ignored.
+// event bus type. Anything not in this map is ignored. S45 extended
+// this to cover stage changes (F01/F12 pipe moves publish
+// `lead.stage_changed`) and inbound messages (F04 inbox publishes
+// `message.received`). The schedule trigger fires via a cron-like
+// scheduler rather than the event bus, so it lives outside this map.
 var eventTriggerMap = map[string]string{
-	"lead.created": "lead_created",
+	"lead.created":        "lead_created",
+	"lead.stage_changed":  "lead_stage_changed",
+	"message.received":    "message_inbound",
 }
 
 // Start subscribes and begins consuming.

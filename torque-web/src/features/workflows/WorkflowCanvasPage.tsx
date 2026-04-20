@@ -325,6 +325,12 @@ function CanvasEditor({
           />
           <div className="ml-auto flex items-center gap-2">
             <Badge tone={workflow.status === 'active' ? 'success' : 'neutral'}>{workflow.status}</Badge>
+            <Link
+              to={`/workflows/${workflowId}/executions`}
+              className="text-xs text-accent underline"
+            >
+              Execuções
+            </Link>
             {workflow.status !== 'active' ? (
               <Button
                 type="button"
