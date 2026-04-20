@@ -27,6 +27,7 @@ import (
 	"github.com/milennials/torque-api/internal/event"
 	authhandler "github.com/milennials/torque-api/internal/handler/auth"
 	"github.com/milennials/torque-api/internal/handler/bootstrap"
+	confirmationshandler "github.com/milennials/torque-api/internal/handler/confirmations"
 	"github.com/milennials/torque-api/internal/handler/health"
 	leadshandler "github.com/milennials/torque-api/internal/handler/leads"
 	"github.com/milennials/torque-api/internal/handler/openapi"
@@ -35,6 +36,7 @@ import (
 	preferenceshandler "github.com/milennials/torque-api/internal/handler/preferences"
 	mw "github.com/milennials/torque-api/internal/httpx/middleware"
 	"github.com/milennials/torque-api/internal/observability/sentry"
+	confirmationrepo "github.com/milennials/torque-api/internal/repository/confirmation"
 	leadrepo "github.com/milennials/torque-api/internal/repository/lead"
 	operationrepo "github.com/milennials/torque-api/internal/repository/operation"
 	piperepo "github.com/milennials/torque-api/internal/repository/pipe"
@@ -309,6 +311,7 @@ func newRouter(
 				operationshandler.New(operations).Routes(t)
 				leadshandler.New(leadrepo.New(pool), bus).Routes(t)
 				pipeshandler.New(piperepo.New(pool), bus).Routes(t)
+				confirmationshandler.New(confirmationrepo.New(pool), bus).Routes(t)
 			})
 
 			// WebSocket upgrade — authenticated + session carries org_id.

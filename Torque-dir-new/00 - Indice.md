@@ -129,7 +129,7 @@ status: vivo
 
 ## Status atual
 
-**Etapa:** S00-S08 ✅. S09 ✅ F01 polish (LeadDetail + Toaster) (2026-04-19). Runtime pendente no host.
+**Etapa:** S00-S09 ✅. S10 ✅ F02 Pipe Confirmação (2026-04-19). Runtime pendente no host.
 
 **S00** — ESLint flat (a11y + hooks + ban `dangerouslySetInnerHTML`), TS strict, Prettier, Vitest (51 testes), CI, vocabulario canonico, `--clay-*` → `--card-*`/`.tactile-*`, pos-login navigation por `ui_mode`.
 

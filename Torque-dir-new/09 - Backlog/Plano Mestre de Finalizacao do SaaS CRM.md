@@ -672,7 +672,7 @@ O bloco da sprint em §8 muda de "prospectivo" para "entregue":
 
 ---
 
-### Sprint S10 — F02: Pipe Confirmação
+### Sprint S10 — F02: Pipe Confirmação ✅ ENTREGUE (2026-04-19)
 
 | Campo | Valor |
 |-------|-------|
