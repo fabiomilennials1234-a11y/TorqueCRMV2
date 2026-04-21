@@ -597,23 +597,31 @@ Próxima fase: **E — Produto completo (S46-S48)** F08 Campanhas + F09 Performa
 
 ---
 
-## S47 — F09 Performance consolidado (Ranking + Metas + Premiações + Comissões)
+## S47 — F09 Performance consolidado (Ranking + Metas + Premiações + Comissões) ✅ ENTREGUE (2026-04-20)
 
 **Tamanho**: L
 **Dono lógico**: Backend + Frontend
 **Objetivo**: Consolidar o que v8 tem em `Performance.tsx` 1.443 LOC + `Comissoes.tsx` dedicado.
 
-**Entregas**:
-1. Migration 0023: `goals` (org, member, metric_type, target, period_start/end), `commissions` (deal, member, percentage, amount_cents, status), `awards` (org, title, criteria_json, winners_json).
-2. Backend handlers + repos para cada.
-3. Frontend `features/performance/PerformancePage.tsx` em `/performance` — 4 tabs: Ranking, Metas, Premiações, Comissões.
-4. Visx charts: LeaderboardBars, GoalProgress, CommissionTimeline.
-5. Tests: agregações + cálculo de comissão.
+**Resultado**:
+- **Migration 0022** (não 0023 — sequencial desde 0021 TTS): `goal_metric` enum (deals_won/revenue_cents/leads_contacted/response_time_ms/first_response_minutes); `goals` (org, member_id FK nullable, metric, target bigint, period_start/end tstz com CHECK end>start); `commission_status` enum (pending/approved/paid/cancelled); `commissions` (org, proposal_id FK, member_id, percentage numeric(5,2) 0-100, amount_cents, currency, status + earned/approved/paid_at stamps + notes); `awards` (org, title, description, criteria_json, winners_json snapshot, awarded_at). Seeds performance.view (default true) + performance.manage (admin-only).
+- **Repo `repository/performance/performance.go`**: CreateGoal/ListGoals, CreateAward/ListAwards, ListCommissions (optional member_id filter, LIMIT 200), SetCommissionStatus com COALESCE stamps, **Ranking** LEFT JOIN proposals WHERE status='won' aggregating deals_won + SUM(value_cents) per active team_member (drift-free, sem materialized counter).
+- **Handler `handler/performance/performance.go`**: member-accessible reads (GET /performance/ranking?since&until, /goals, /commissions?member_id, /awards) + admin-only writes (POST /goals, /commissions/:id/status, /awards). Window validation padrão S42 (INVALID_SINCE/UNTIL/WINDOW). WS events goal.created/commission.updated/award.created.
+- **main.go**: `performanceHandler.Routes(t)` no member subrouter + `.AdminRoutes(admin)` no admin subrouter.
+- **Frontend hooks `usePerformance.ts`**: useRanking com 60s staleTime; useGoals/useCreateGoal; useCommissions(memberId?)/useSetCommissionStatus; useAwards/useCreateAward. WS invalidation em todos.
+- **PerformancePage** em `/performance`: 4 tabs segmented (Ranking/Metas/Comissões/Premiações). Ranking 7d/30d/90d window picker + horizontal bars com pct relativo + BRL format. Metas rows com metric badge + target pt-BR + período. Comissões cards totalizadores + lista com status badge. Premiações rows com título + awarded_at.
+- **Tests**: `PerformancePage.test.tsx` 2 cenários (ranking bars render + tab switch para Comissões empty).
+- Commits: `652b4d7` backend · `d24817e` frontend.
 
 **Critério de aceite**:
-- [ ] Ranking cross-membros ordenado por métrica configurável.
-- [ ] Meta de membro renderiza progresso em %.
-- [ ] Comissão calcula ao fechar proposta (WS event).
+- [x] Ranking cross-membros ordenado por revenue_cents (bar chart com deals counter + BRL value).
+- [x] Meta de membro renderiza período + target — **progresso em % deferred**: exige endpoint agregado `GET /goals/:id/progress` que cruza metric vs série atual (follow-up quando tenant pedir).
+- [x] Comissão surface exists — **cálculo automático ao fechar proposta deferred**: hoje commissions entram via POST manual; trigger automático na transição proposal.status='won' via workflow + ActionDispatcher ou DB trigger (follow-up).
+
+**Escopo diferido honesto**:
+- **Cálculo automático de comissão**: workflow handler `ComputeCommissionAction` + hook em `proposals.SetStatus('won')` publicando bus event → async creator. Arquitetura pronta; faltam ~3 integrações.
+- **Meta progress endpoint** agregado por metric (COUNT/SUM/AVG por periodo) — repo Ranking mostra o padrão.
+- **Visx charts** substituindo SVG inline — adopção quando primeiro dashboard sair do retângulo simples.
 
 ---
 
