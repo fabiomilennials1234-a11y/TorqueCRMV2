@@ -165,6 +165,31 @@ func (r *Repository) SetStatus(ctx context.Context, orgID, id uuid.UUID, status 
 	return nil
 }
 
+// SetExternal writes the (external_provider, external_id) tuple onto a
+// meeting row. Idempotent: re-setting the same pair is a no-op; a
+// different pair replaces. Used by the S49 GCal sync goroutine.
+func (r *Repository) SetExternal(ctx context.Context, orgID, id uuid.UUID, provider, externalID string) error {
+	if provider != "gcal" && provider != "outlook" {
+		return fmt.Errorf("invalid external_provider: %s", provider)
+	}
+	if externalID == "" {
+		return errors.New("external_id required")
+	}
+	ct, err := r.pool.Exec(ctx,
+		`UPDATE meetings
+		    SET external_provider = $3, external_id = $4
+		  WHERE organization_id = $1 AND id = $2`,
+		orgID, id, provider, externalID,
+	)
+	if err != nil {
+		return fmt.Errorf("set meeting external: %w", err)
+	}
+	if ct.RowsAffected() == 0 {
+		return ErrNotFound
+	}
+	return nil
+}
+
 func (r *Repository) Delete(ctx context.Context, orgID, id uuid.UUID) error {
 	ct, err := r.pool.Exec(ctx,
 		`DELETE FROM meetings WHERE organization_id = $1 AND id = $2`,

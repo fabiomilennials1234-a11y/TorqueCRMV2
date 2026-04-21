@@ -12,6 +12,7 @@ package main
 import (
 	"context"
 	"errors"
+	"fmt"
 	"net/http"
 	"os"
 	"os/signal"
@@ -34,6 +35,7 @@ import (
 	confirmationshandler "github.com/milennials/torque-api/internal/handler/confirmations"
 	"github.com/milennials/torque-api/internal/handler/health"
 	inboxhandler "github.com/milennials/torque-api/internal/handler/inbox"
+	integrationshandler "github.com/milennials/torque-api/internal/handler/integrations"
 	leadshandler "github.com/milennials/torque-api/internal/handler/leads"
 	masterhandler "github.com/milennials/torque-api/internal/handler/master"
 	meetingshandler "github.com/milennials/torque-api/internal/handler/meetings"
@@ -58,6 +60,7 @@ import (
 	campaignrepo "github.com/milennials/torque-api/internal/repository/campaign"
 	confirmationrepo "github.com/milennials/torque-api/internal/repository/confirmation"
 	inboxrepo "github.com/milennials/torque-api/internal/repository/inbox"
+	integrationrepo "github.com/milennials/torque-api/internal/repository/integration"
 	auditrepo "github.com/milennials/torque-api/internal/repository/audit"
 	leadrepo "github.com/milennials/torque-api/internal/repository/lead"
 	masterrepo "github.com/milennials/torque-api/internal/repository/master"
@@ -78,6 +81,9 @@ import (
 	workflowrepo "github.com/milennials/torque-api/internal/repository/workflow"
 	"github.com/milennials/torque-api/internal/service/ai"
 	"github.com/milennials/torque-api/internal/service/billing"
+	cryptosvc "github.com/milennials/torque-api/internal/service/crypto"
+	"github.com/milennials/torque-api/internal/service/integration/gcal"
+	"github.com/milennials/torque-api/internal/service/integration/tinyerp"
 	jwtsvc "github.com/milennials/torque-api/internal/service/jwt"
 	knowledgesvc "github.com/milennials/torque-api/internal/service/knowledge"
 	"github.com/milennials/torque-api/internal/service/permission"
@@ -320,6 +326,36 @@ func newRouter(
 	refresh := refreshrepo.New(pool)
 	permResolver := permission.New(users)
 
+	// --- S49 / Fase F.1 — integrations wiring ------------------------
+	cipher, err := cryptosvc.New(cfg.IntegrationEncKey)
+	if err != nil {
+		return nil, fmt.Errorf("integration cipher: %w", err)
+	}
+	credStore := integrationrepo.NewStore(pool, cipher)
+
+	// Google Calendar adapter — built unconditionally so Disconnect /
+	// callback error paths work even when OAuth is not configured. The
+	// /connect endpoint short-circuits with 503 when ClientID is empty.
+	gcalProvider := gcal.New(gcal.Config{
+		ClientID:     cfg.GoogleOAuthClientID,
+		ClientSecret: cfg.GoogleOAuthClientSecret,
+		RedirectURL:  cfg.GoogleOAuthRedirectURL,
+	}, credStore, nil, nil)
+
+	// TinyERP adapter — per-tenant API keys live in the credential
+	// store so no global key is needed at boot.
+	tinyProvider := tinyerp.New(tinyerp.Config{BaseURL: cfg.TinyERPBaseURL},
+		credStore, nil, nil)
+
+	integrationsHandler := integrationshandler.New(integrationshandler.Options{
+		Store:        credStore,
+		GCal:         gcalProvider,
+		Tiny:         tinyProvider,
+		StateSecret:  cfg.IntegrationStateSecret,
+		Logger:       logger,
+		FrontendBase: "", // same-origin redirects; configurable later
+	})
+
 	auth := authhandler.New(authhandler.Options{
 		Pool:         pool,
 		Users:        users,
@@ -408,7 +444,13 @@ func newRouter(
 				performanceHandler.Routes(t)
 
 				// S48 — F13 Agenda (meetings). CRUD member-accessible.
-				meetingshandler.New(meetingrepo.New(pool), bus).Routes(t)
+				// S49 — attach GCal + credential store so the handler
+				// can push/cancel events asynchronously.
+				meetingshandler.New(meetingrepo.New(pool), bus).
+					WithIntegrations(gcalProvider, credStore, logger).Routes(t)
+
+				// S49 — /integrations list (member-accessible).
+				integrationsHandler.MemberRoutes(t)
 				onboardinghandler.New(onboardingrepo.New(pool)).Routes(t)
 				billinghandler.NewRead(subRepo).Routes(t)
 				settingsRepo := settingsrepo.New(pool)
@@ -518,6 +560,12 @@ func newRouter(
 					billinghandler.NewAdmin(subRepo, provider, bus).Routes(admin)
 					settingshandler.NewAdmin(settingsRepo).Routes(admin)
 					templateshandler.NewAdmin(templateRepo).Routes(admin)
+
+					// S49 — /integrations admin surfaces (connect,
+					// disconnect, push-order). OAuth callback mounted
+					// separately below because it cannot carry a CSRF
+					// token on the full-page redirect from Google.
+					integrationsHandler.AdminRoutes(admin)
 				})
 
 				// --- Master-only surfaces (cross-org) -----------------
@@ -539,6 +587,20 @@ func newRouter(
 			// directly and does not need the chi-level scope.
 			wsHandler := ws.NewHandler(hub, logger, cfg.CORSOrigins)
 			priv.Handle("/ws", wsHandler)
+		})
+
+		// --- S49 OAuth callback (CSRF-exempt) -------------------------
+		// The browser arrives here via a full-page 302 from Google and
+		// cannot carry the X-CSRF-Token header a double-submit enforcer
+		// requires. The state HMAC (minted on /connect, verified here)
+		// fills the same anti-CSRF role with a stronger guarantee: it
+		// binds the flow to the originating org and expires after
+		// 10 minutes. Auth + TenantScope still run — only CSRF is
+		// skipped.
+		v1.Group(func(cb chi.Router) {
+			cb.Use(mw.RequireAuth)
+			cb.Use(mw.TenantScope)
+			integrationsHandler.CallbackRoute(cb)
 		})
 	})
 
