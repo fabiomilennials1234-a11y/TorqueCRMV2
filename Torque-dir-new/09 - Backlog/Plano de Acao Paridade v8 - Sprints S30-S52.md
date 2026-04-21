@@ -674,11 +674,13 @@ Próxima fase: **F — Integrações externas (S49-S50)** Google Calendar + Tiny
 
 # FASE F — Integrações externas
 
-## S49 — Google Calendar real + TinyERP foundation
+## S49 — Google Calendar real + TinyERP foundation — ✅ ENTREGUE (2026-04-20)
 
 **Tamanho**: L
 **Dono lógico**: Backend
 **Objetivo**: Providers do S27 ganham implementação real; Asaas continua mock até S52.
+
+**Status**: Entregue. Ver `STATE.md` D069. Deferreds explícitos: sync-products endpoint, confirmation F02→gcal wiring, IntegrationsSection rich UI → S50.
 
 **Entregas**:
 1. `service/integration/gcal/gcal.go` — implementa `CalendarProvider` de S27. OAuth 2.0 flow (handler `GET /integrations/google/connect` + callback). Tokens criptografados (AES-GCM) em `integration_credentials` (nova tabela migration 0024).
