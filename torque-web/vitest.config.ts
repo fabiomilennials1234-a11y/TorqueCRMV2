@@ -41,15 +41,18 @@ export default defineConfig({
       // regress; target 70/65/60/55 by S40. Mirrors v8's D007→D025
       // ratchet (started at 9.33%, climbed each sprint).
       thresholds: {
-        // Ratchet step 3 (S40, 2026-04-20): measured 62.71 / 60.22 / 57.23
-        // / 52.01 after Copilot triggers surface (F06.4). Floor sits just
-        // below current so sub-sprint regressions are blocked but test
-        // cadence doesn't need to match the exact measurement. Target
-        // by end of Fase C (S42): 65 / 62 / 58 / 53.
-        lines: 60,
-        statements: 60,
-        functions: 55,
-        branches: 50,
+        // Ratchet step 4 (remediation-C, 2026-04-20): after 15 novos test
+        // files (lib/ws + lib/utils + 4 hook extras + 5 pages novas)
+        // coverage medida lines 78.21 / stmts 75.02 / funcs 74.20 /
+        // branches 62.22. Floor sobe para 70 nos 3 primários e 60 em
+        // branches (menor porque else-paths defensivos inflam o
+        // denominator; o ganho real é nas linhas executadas). Target
+        // próximo: branches 70 quando pages de workflow canvas + inbox
+        // ganharem testes de user interaction.
+        lines: 70,
+        statements: 70,
+        functions: 70,
+        branches: 60,
       },
     },
   },
