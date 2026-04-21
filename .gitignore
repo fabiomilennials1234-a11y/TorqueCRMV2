@@ -5,6 +5,7 @@ node_modules/
 dist/
 dist-ssr/
 *.local
+*.tsbuildinfo
 
 # Environment
 .env
@@ -33,3 +34,4 @@ Torque-dir-new/.obsidian/workspace.json
 
 # Claude local settings (user-specific secrets)
 .claude/settings.local.json
+.claude/scheduled_tasks.lock
