@@ -36,6 +36,7 @@ import (
 	inboxhandler "github.com/milennials/torque-api/internal/handler/inbox"
 	leadshandler "github.com/milennials/torque-api/internal/handler/leads"
 	masterhandler "github.com/milennials/torque-api/internal/handler/master"
+	meetingshandler "github.com/milennials/torque-api/internal/handler/meetings"
 	membershandler "github.com/milennials/torque-api/internal/handler/members"
 	onboardinghandler "github.com/milennials/torque-api/internal/handler/onboarding"
 	"github.com/milennials/torque-api/internal/handler/openapi"
@@ -60,6 +61,7 @@ import (
 	auditrepo "github.com/milennials/torque-api/internal/repository/audit"
 	leadrepo "github.com/milennials/torque-api/internal/repository/lead"
 	masterrepo "github.com/milennials/torque-api/internal/repository/master"
+	meetingrepo "github.com/milennials/torque-api/internal/repository/meeting"
 	memberrepo "github.com/milennials/torque-api/internal/repository/member"
 	onboardingrepo "github.com/milennials/torque-api/internal/repository/onboarding"
 	operationrepo "github.com/milennials/torque-api/internal/repository/operation"
@@ -404,6 +406,9 @@ func newRouter(
 				// writes land on the admin group.
 				performanceHandler := performancehandler.New(performancerepo.New(pool), bus)
 				performanceHandler.Routes(t)
+
+				// S48 — F13 Agenda (meetings). CRUD member-accessible.
+				meetingshandler.New(meetingrepo.New(pool), bus).Routes(t)
 				onboardinghandler.New(onboardingrepo.New(pool)).Routes(t)
 				billinghandler.NewRead(subRepo).Routes(t)
 				settingsRepo := settingsrepo.New(pool)
