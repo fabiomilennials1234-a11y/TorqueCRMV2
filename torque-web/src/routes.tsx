@@ -40,6 +40,10 @@ const AgentPlaygroundPage = lazy(() => lazyRetry(() => import('@/features/copilo
 const AgentMetricsPage = lazy(() => lazyRetry(() => import('@/features/copilot/AgentMetricsPage').then((m) => ({ default: m.AgentMetricsPage }))))
 const AnalyticsPage = lazy(() => lazyRetry(() => import('@/features/analytics/AnalyticsPage').then((m) => ({ default: m.AnalyticsPage }))))
 const PerformancePage = lazy(() => lazyRetry(() => import('@/features/performance/PerformancePage').then((m) => ({ default: m.PerformancePage }))))
+const AgendaPage = lazy(() => lazyRetry(() => import('@/features/agenda/AgendaPage').then((m) => ({ default: m.AgendaPage }))))
+const UpsellPage = lazy(() => lazyRetry(() => import('@/features/upsell/UpsellPage').then((m) => ({ default: m.UpsellPage }))))
+const CustomPipePage = lazy(() => lazyRetry(() => import('@/features/pipes/CustomPipePage').then((m) => ({ default: m.CustomPipePage }))))
+const TVDashboardPage = lazy(() => lazyRetry(() => import('@/features/tv/TVDashboardPage').then((m) => ({ default: m.TVDashboardPage }))))
 const SettingsPage = lazy(() => lazyRetry(() => import('@/features/settings/SettingsPage').then((m) => ({ default: m.SettingsPage }))))
 const CheckoutPage = lazy(() => lazyRetry(() => import('@/features/billing/CheckoutPage').then((m) => ({ default: m.CheckoutPage }))))
 const MasterPage = lazy(() => lazyRetry(() => import('@/features/master/MasterPage').then((m) => ({ default: m.MasterPage }))))
@@ -89,6 +93,11 @@ export const router = createBrowserRouter([
         path: 'onboarding',
         element: withSuspense(<OnboardingPage />),
       },
+      // TV Dashboard — fullscreen fora do AppShell (totem da sala).
+      {
+        path: 'tv',
+        element: withSuspense(<TVDashboardPage />),
+      },
       // Modo Vendedor — layout próprio (sem AppShell)
       {
         path: 'cockpit',
@@ -123,6 +132,9 @@ export const router = createBrowserRouter([
                   { path: 'copilot/:id/metrics', element: withSuspense(<AgentMetricsPage />) },
                   { path: 'analytics', element: withSuspense(<AnalyticsPage />) },
                   { path: 'performance', element: withSuspense(<PerformancePage />) },
+                  { path: 'agenda', element: withSuspense(<AgendaPage />) },
+                  { path: 'upsell', element: withSuspense(<UpsellPage />) },
+                  { path: 'pipe/:id', element: withSuspense(<CustomPipePage />) },
                   { path: 'settings', element: withSuspense(<SettingsPage />) },
                   { path: 'billing', element: withSuspense(<CheckoutPage />) },
                   { path: 'master', element: withSuspense(<MasterPage />) },
