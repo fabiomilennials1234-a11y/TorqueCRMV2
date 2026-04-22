@@ -47,6 +47,29 @@ func TestMockERP(t *testing.T) {
 	}
 }
 
+func TestMockInsights(t *testing.T) {
+	m := &integration.MockInsights{}
+	// Missing account_id rejected.
+	if _, err := m.AdAccountInsights(context.Background(), integration.InsightsWindow{}); err == nil {
+		t.Fatal("missing account_id must error")
+	}
+	res, err := m.AdAccountInsights(context.Background(), integration.InsightsWindow{
+		AccountID: "act_123", DateRange: "last_7d",
+	})
+	if err != nil {
+		t.Fatalf("happy path: %v", err)
+	}
+	if res.SpendCents <= 0 || res.Leads <= 0 {
+		t.Fatalf("mock payload empty: %+v", res)
+	}
+	if len(res.Campaigns) == 0 {
+		t.Fatalf("mock campaigns empty")
+	}
+}
+
+// compile-time proof: MockInsights satisfies InsightsProvider.
+var _ integration.InsightsProvider = (*integration.MockInsights)(nil)
+
 func TestCircuitBreaker(t *testing.T) {
 	b := integration.NewCircuitBreaker(2, 50*time.Millisecond)
 

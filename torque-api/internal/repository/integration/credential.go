@@ -33,6 +33,7 @@ const (
 	ProviderGoogle  = "google"
 	ProviderTinyERP = "tinyerp"
 	ProviderMeta    = "meta"
+	ProviderSZChat  = "szchat"
 )
 
 // IsValidProvider reports whether p matches a provider accepted by the
@@ -40,7 +41,7 @@ const (
 // lives next to the schema it mirrors.
 func IsValidProvider(p string) bool {
 	switch p {
-	case ProviderGoogle, ProviderTinyERP, ProviderMeta:
+	case ProviderGoogle, ProviderTinyERP, ProviderMeta, ProviderSZChat:
 		return true
 	}
 	return false

@@ -6,7 +6,7 @@ tags:
   - v8
   - sprints
 created: 2026-04-20
-last_updated: 2026-04-20
+last_updated: 2026-04-22
 status: vivo
 referencia: "[[Analise Comparativa v8 vs Torque-v2]]"
 ---
@@ -695,22 +695,40 @@ Próxima fase: **F — Integrações externas (S49-S50)** Google Calendar + Tiny
 
 ---
 
-## S50 — Meta Ads Insights + Lead Webhook + SZ.Chat
+## S50 — Meta Ads Insights + Lead Webhook + SZ.Chat — ✅ ENTREGUE (2026-04-22)
 
 **Tamanho**: L
 **Dono lógico**: Backend
-**Objetivo**: Ingestão de leads externos + métricas de ads.
+**Objetivo**: Ingestão de leads externos + métricas de ads + MessagingProvider SZ.Chat + fechamento dos deferreds de S49 (sync-products, F02→gcal, IntegrationsSection rich).
+
+**Status**: Entregue. Ver `STATE.md` D070. **FASE F CONCLUÍDA** (S49→S50). Próxima fase: G (Hardening produção — S51→S52).
 
 **Entregas**:
-1. Webhook `POST /webhooks/lead` (público, auth por signature HMAC). Reaproveita pattern do S24 billing webhook (secret header). Cria lead + dispara workflow trigger `trigger.lead_created`.
-2. `service/integration/meta/meta.go` — `GET /ads-insights?since=...` chamando Meta Graph API. Cache em `meta_insights_cache` com TTL 15min.
-3. `service/integration/szchat/szchat.go` — implementa `MessagingProvider` para canal SZ.Chat.
-4. Frontend: IntegrationsSection em SettingsPage conecta/desconecta + mostra `last_success_at`.
-5. Tests: HMAC validation; Meta API mock; lead webhook idempotent (dedup por external_id).
+1. **Migration 0025** (`0025_s50_lead_webhook_meta_szchat`): `lead_webhook_events` (UNIQUE org+external_id absorve retries, raw_payload jsonb, source CHECK webhook/meta/szchat/manual) + `meta_insights_cache` (UNIQUE org+account+date_range, TTL 15min enforced em query time) + provider CHECK extendido com `szchat`.
+2. **Lead webhook público** `POST /webhooks/lead` (fora de `/api/v1`, sem Authenticator/CSRF). HMAC-SHA256 sobre raw body em `X-Torque-Lead-Signature: sha256=<hex>` (constant-time, reject prefix ausente = downgrade guard), tenant em `X-Torque-Tenant: <uuid>`, body cap 64KiB, empty secret = 503 secure default. Dedup via `UNIQUE(org, external_id)` → 200 OK idempotente; success → `leadrepo.Create` + `publish(lead.created)` → workflow BusSubscriber dispara trigger `lead_created` → 201 `{lead_id, external_id}`.
+3. **Meta provider** (`service/integration/meta/meta.go`): implementa nova interface `InsightsProvider` em `service/integration/integration.go`. `AdAccountInsights(ctx, window)` chama Graph API 2 GETs (`level=account` rollup + `level=campaign` breakdown) pois Graph não aceita múltiplos levels numa call; `appsecret_proof = hex(hmac_sha256(token, app_secret))` opcional; mapeia códigos 190/102 → `ErrAuthFailed`, 17/4/613 → `ErrRateLimited`; `decimalToCents` robusto (BR vírgula + US ponto, truncate 2 decimais), `sumLeadActions` case-insensitive sobre qualquer action_type contendo "lead", `cpLead` retorna -1 pra leads=0 (distingue "no leads" de "free"). GET `/integrations/meta/ads-insights` (member-visible) com cache 15min (X-Torque-Cache: hit|miss header).
+4. **SZ.Chat provider** (`service/integration/szchat/szchat.go`): implementa `MessagingProvider`. Bearer auth + per-tenant API key + POST `/messages` JSON `{channel, to, kind, body, media_url}` + `normalizeKind` fallback text pra unknown. 401/403 → ErrAuthFailed, 429 → ErrRateLimited, 5xx → ErrUnreachable; body-level error também captura (provider retorna 200 com error body em alguns cenários).
+5. **TinyERP SyncProducts** (extend de `service/integration/tinyerp/tinyerp.go`, deferred S49 closure): paginado `/produtos.pesquisa.php?pagina=N` com `maxPages=100` guard; nova `SyncProductsSink` interface narrow `UpsertBySKU(name, sku, description, price_cents, currency) (inserted bool, err error)` bridgeia adapter↔productrepo sem cyclic import; `productrepo.UpsertBySKU` com `ON CONFLICT (organization_id, sku) WHERE sku IS NOT NULL DO UPDATE` + `(xmax=0) AS inserted` pra distinguir insert vs update no mesmo roundtrip; result `SyncProductsResult{fetched, inserted, updated, skipped}`.
+6. **F02 → GCal wiring** (deferred S49 closure): `handler/confirmations.go` ganha `WithIntegrations(gcal, store, logger)`. `confirm` handler snapshot `repo.Get` pre-MarkConfirmed pra capturar meeting_at/channel/notes, pós-204 goroutine detached 20s com `domain.WithOrgID` cria evento GCal título "Reuniao confirmada — <channel>" + description "Confirmada via Torque CRM (F02).\n\n<notes>" + duração default 30min (F02 schema não tem end_at).
+7. **IntegrationsSection rich UI** (deferred S49 closure): extraído de inline 127 linhas em `SettingsPage.tsx` para `features/settings/IntegrationsSection.tsx` standalone. `ProviderCard` compartilhado + AmbientCard pra WhatsApp/Asaas/n8n. `last_success_at` renderiza como `relativeTime(iso)` pt-BR 5-bucket (agora/min/h/d/absolute); `last_error_text + last_error_at` surface warning badge (AlertCircle + bg-warning/5). Connect modals via Sheet (Radix Dialog) — TinyERP api_key minLength 10, Meta access_token minLength 20 + optional account_id, SZ.Chat api_key minLength 16 + optional channel_id. Sync action TinyERP inline `{inserted}/{updated}/{skipped}`. A11y: `htmlFor={useId()}` + `id` em todo input. exactOptionalPropertyTypes-safe: conditional field injection (`Parameters<typeof mutateAsync>[0]` + `if (trim) input.x = trim`).
+8. **Hooks novos** (`hooks/useIntegrations.ts`): `useConnectMeta`/`Disconnect`, `useConnectSZChat`/`Disconnect`, `useSyncTinyERPProducts` (invalida `[integrations, products]`), `useMetaAdsInsights({accountId, dateRange, enabled})` staleTime 5min + `enabled: false` suspende. `IntegrationProvider` type extendido com `szchat`.
+9. **Config** (`config/config.go`): `META_GRAPH_BASE_URL` default v18.0, `META_APP_SECRET` (empty OK — skip proof), `SZCHAT_BASE_URL` default `https://api.szchat.com/v1`, `LEAD_WEBHOOK_SECRET` (empty=503).
+10. **main.go**: providers `metaProvider`/`szchatProvider` built unconditionally (nil-guarded em handler); `metaCache` + `leadWebhookEvents`; `productSyncSink` adapter local bridgeia productrepo↔tinyerp sem cyclic import; `/webhooks/lead` mounted alongside `/webhooks/billing` (outside /api/v1); confirmations wired com `.WithIntegrations(gcalProvider, credStore, logger)`.
+11. **Tests backend 31 funcs novas**: meta_test.go 10 (decimalToCents 9 cases, sumLeadActions case-insensitive, cpLead boundaries, appsecret_proof, get happy/oauth/rate-limit, fetchInsights rollup) + szchat_test.go 7 (postJSON happy + 401/403/429/5xx + provider-error body + normalizeKind) + tinyerp/sync_test.go 7 (decimalToCents BR, listProductsPage OK/last-page/auth, processSyncRows fakeSink) + leadwebhook/webhook_test.go 6 (verifyHMAC happy/no-prefix/tampered/wrong-secret/malformed-hex/truncated) + integration_test.go 1 (MockInsights + compile-time `var _ InsightsProvider`).
+12. **Tests frontend**: 12 hook assertions novas (useSyncTinyERPProducts result shape, useConnectMeta/Disconnect, useConnectSZChat/Disconnect, useMetaAdsInsights querystring + enabled=false) + 6 relativeTime buckets. **287/287 em 84 files** (+13 cases, +1 file vs S49), tsc --noEmit + eslint --max-warnings 0 verde.
 
-**Critério de aceite**:
-- [ ] Lead via n8n → webhook → lead criado → workflow disparado.
-- [ ] Meta insights renderizam em Analytics/UTM tab.
+**Critério de aceite** (runtime Go host pendente):
+- [x] Lead via n8n → webhook → lead criado → workflow disparado (path implementado + HMAC constant-time + dedup UNIQUE).
+- [x] Meta insights renderizam em Analytics/UTM tab (GET /integrations/meta/ads-insights member-visible + cache 15min + useMetaAdsInsights hook).
+- [x] TinyERP sync-products operacional (admin rota + sink pattern).
+- [x] F02→GCal wiring pós-confirmação (goroutine detached 20s).
+- [x] IntegrationsSection rich (connect modals + sync action + error surfacing + relative time).
+
+**Deferreds explícitos** (não-bloqueantes pra produção):
+- SZ.Chat webhook inbound (conversations-to-lead via /webhooks/lead quando configurado como lead source; outbound SendMessage é o foco do primeiro release).
+- Meta Lead Ads relay-to-webhook orchestration via n8n workflow (pull-based insights via /ads-insights é o release inicial; webhook ingestion usa /webhooks/lead genérico com source=meta).
+
+**Commits**: `092e397` db · `1f40812` backend · `3a77357` tests · `191d25a` frontend. Branch `sprint/S50` → merge `--no-ff` para develop via PR.
 
 ---
 

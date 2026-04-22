@@ -116,6 +116,51 @@ type ERPProvider interface {
 	Health(ctx context.Context) error
 }
 
+// -------- Insights (Meta Ads) ---------------------------------------
+
+// InsightsWindow identifies the date range to fetch. DateRange is the
+// provider-native preset ("last_7d", "last_30d", "today"), which lets
+// us hit Graph API's built-in aggregation without date math. A
+// zero-valued Window uses "last_7d".
+type InsightsWindow struct {
+	AccountID string // Meta "act_<id>" — the advertiser account
+	DateRange string // e.g. "last_7d", "last_30d", "lifetime"
+}
+
+// AdAccountInsights is the provider-agnostic shape the frontend renders.
+// Every number is either non-negative or -1 ("unavailable"); we never
+// normalize to zero because zero is a legitimate value for a live ad.
+type AdAccountInsights struct {
+	AccountID   string         `json:"account_id"`
+	DateRange   string         `json:"date_range"`
+	Currency    string         `json:"currency,omitempty"`
+	SpendCents  int64          `json:"spend_cents"`
+	Impressions int64          `json:"impressions"`
+	Clicks      int64          `json:"clicks"`
+	Leads       int64          `json:"leads"`
+	CPLeadCents int64          `json:"cpl_cents"` // cost per lead; -1 when Leads == 0
+	Campaigns   []AdCampaign   `json:"campaigns,omitempty"`
+	FetchedAt   time.Time      `json:"fetched_at"`
+}
+
+// AdCampaign is the per-campaign slice inside the account-level roll-up.
+type AdCampaign struct {
+	CampaignID   string `json:"campaign_id"`
+	Name         string `json:"name"`
+	SpendCents   int64  `json:"spend_cents"`
+	Impressions  int64  `json:"impressions"`
+	Clicks       int64  `json:"clicks"`
+	Leads        int64  `json:"leads"`
+}
+
+// InsightsProvider abstracts over Meta Ads (and, potentially, Google
+// Ads down the road) — the read side of the marketing funnel.
+type InsightsProvider interface {
+	Name() string
+	AdAccountInsights(ctx context.Context, w InsightsWindow) (AdAccountInsights, error)
+	Health(ctx context.Context) error
+}
+
 // -------- mock implementations --------------------------------------
 
 // MockMessaging records every call in-memory; useful for dev + tests.
@@ -181,6 +226,34 @@ func (e *MockERP) CreateOrder(_ context.Context, in OrderInput) (OrderResult, er
 }
 
 func (*MockERP) Health(_ context.Context) error { return nil }
+
+// MockInsights returns a fixed synthetic payload useful for tests.
+type MockInsights struct {
+	Fetched atomic.Int64
+}
+
+func (*MockInsights) Name() string { return "mock" }
+
+// AdAccountInsights returns a deterministic small payload so tests can
+// assert on shape without needing a live Meta account.
+func (m *MockInsights) AdAccountInsights(_ context.Context, w InsightsWindow) (AdAccountInsights, error) {
+	if w.AccountID == "" {
+		return AdAccountInsights{}, fmt.Errorf("account_id required")
+	}
+	m.Fetched.Add(1)
+	return AdAccountInsights{
+		AccountID: w.AccountID, DateRange: w.DateRange, Currency: "BRL",
+		SpendCents: 10000, Impressions: 1000, Clicks: 50, Leads: 5,
+		CPLeadCents: 2000,
+		Campaigns: []AdCampaign{
+			{CampaignID: "c1", Name: "mock", SpendCents: 10000,
+				Impressions: 1000, Clicks: 50, Leads: 5},
+		},
+		FetchedAt: time.Now().UTC(),
+	}, nil
+}
+
+func (*MockInsights) Health(_ context.Context) error { return nil }
 
 // -------- circuit breaker -------------------------------------------
 

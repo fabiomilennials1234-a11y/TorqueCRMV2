@@ -30,6 +30,7 @@ import (
 	"crypto/subtle"
 	"encoding/base64"
 	"encoding/binary"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"net/http"
@@ -43,8 +44,11 @@ import (
 	"github.com/milennials/torque-api/internal/httpx"
 	mw "github.com/milennials/torque-api/internal/httpx/middleware"
 	integrationrepo "github.com/milennials/torque-api/internal/repository/integration"
+	metacacherepo "github.com/milennials/torque-api/internal/repository/metainsights"
 	"github.com/milennials/torque-api/internal/service/integration"
 	"github.com/milennials/torque-api/internal/service/integration/gcal"
+	"github.com/milennials/torque-api/internal/service/integration/meta"
+	"github.com/milennials/torque-api/internal/service/integration/szchat"
 	"github.com/milennials/torque-api/internal/service/integration/tinyerp"
 )
 
@@ -56,6 +60,10 @@ type Handler struct {
 	store       *integrationrepo.Store
 	gcal        *gcal.Provider
 	tiny        *tinyerp.Provider
+	meta        *meta.Provider
+	szchat      *szchat.Provider
+	metaCache   *metacacherepo.Repository
+	productSink tinyerp.SyncProductsSink
 	stateSecret []byte
 	logger      zerolog.Logger
 	// frontendBase is the origin the /connected / /error redirect lands on.
@@ -68,6 +76,10 @@ type Options struct {
 	Store        *integrationrepo.Store
 	GCal         *gcal.Provider
 	Tiny         *tinyerp.Provider
+	Meta         *meta.Provider
+	SZChat       *szchat.Provider
+	MetaCache    *metacacherepo.Repository
+	ProductSink  tinyerp.SyncProductsSink
 	StateSecret  []byte
 	Logger       zerolog.Logger
 	FrontendBase string
@@ -79,6 +91,10 @@ func New(o Options) *Handler {
 		store:        o.Store,
 		gcal:         o.GCal,
 		tiny:         o.Tiny,
+		meta:         o.Meta,
+		szchat:       o.SZChat,
+		metaCache:    o.MetaCache,
+		productSink:  o.ProductSink,
 		stateSecret:  o.StateSecret,
 		logger:       o.Logger,
 		frontendBase: strings.TrimRight(o.FrontendBase, "/"),
@@ -89,6 +105,8 @@ func New(o Options) *Handler {
 // Must sit inside the authenticated + TenantScope group.
 func (h *Handler) MemberRoutes(r chi.Router) {
 	r.Get("/integrations", h.list)
+	// Meta ads-insights is member-visible (marketing dashboard).
+	r.Get("/integrations/meta/ads-insights", h.metaAdsInsights)
 }
 
 // AdminRoutes mounts admin-only mutations + OAuth connect. Callback is
@@ -99,6 +117,13 @@ func (h *Handler) AdminRoutes(r chi.Router) {
 	r.Post("/integrations/tinyerp", h.tinyConnect)
 	r.Post("/integrations/tinyerp/disconnect", h.tinyDisconnect)
 	r.Post("/integrations/tinyerp/push-order", h.tinyPushOrder)
+	r.Post("/integrations/tinyerp/sync-products", h.tinySyncProducts)
+	// Meta Ads (system user token — no OAuth ceremony).
+	r.Post("/integrations/meta", h.metaConnect)
+	r.Post("/integrations/meta/disconnect", h.metaDisconnect)
+	// SZ.Chat (per-tenant API key).
+	r.Post("/integrations/szchat", h.szchatConnect)
+	r.Post("/integrations/szchat/disconnect", h.szchatDisconnect)
 }
 
 // CallbackRoute mounts the OAuth callback on a CSRF-exempt group. The
@@ -429,6 +454,208 @@ func (h *Handler) verifyState(raw string) (uuid.UUID, error) {
 		return uuid.Nil, errors.New("state from future")
 	}
 	return orgID, nil
+}
+
+// ---------------- S50: tinyerp sync-products -------------------------
+
+type tinySyncProductsView struct {
+	Fetched  int `json:"fetched"`
+	Inserted int `json:"inserted"`
+	Updated  int `json:"updated"`
+	Skipped  int `json:"skipped"`
+}
+
+func (h *Handler) tinySyncProducts(w http.ResponseWriter, r *http.Request) {
+	orgID, _ := mw.OrgIDFrom(r.Context())
+	if h.tiny == nil || h.productSink == nil {
+		httpx.WriteError(w, http.StatusServiceUnavailable, "TINYERP_DISABLED",
+			"tinyerp sync not configured")
+		return
+	}
+	res, err := h.tiny.SyncProducts(r.Context(), orgID, h.productSink)
+	if errors.Is(err, integrationrepo.ErrNotFound) {
+		httpx.WriteError(w, http.StatusPreconditionFailed, "TINYERP_NOT_CONNECTED",
+			"tinyerp credentials missing for this organization")
+		return
+	}
+	if errors.Is(err, integration.ErrAuthFailed) {
+		httpx.WriteError(w, http.StatusBadGateway, "TINYERP_AUTH", "tinyerp refused credentials")
+		return
+	}
+	if errors.Is(err, integration.ErrRateLimited) {
+		httpx.WriteError(w, http.StatusTooManyRequests, "TINYERP_RATE_LIMITED",
+			"tinyerp rate-limited the request")
+		return
+	}
+	if errors.Is(err, integration.ErrUnreachable) {
+		httpx.WriteError(w, http.StatusBadGateway, "TINYERP_UNREACHABLE", "tinyerp unreachable")
+		return
+	}
+	if err != nil {
+		h.logger.Error().Err(err).Str("org_id", orgID.String()).Msg("tinyerp sync-products failed")
+		httpx.WriteError(w, http.StatusBadGateway, "TINYERP_ERROR", err.Error())
+		return
+	}
+	httpx.WriteJSON(w, http.StatusOK, tinySyncProductsView{
+		Fetched: res.Fetched, Inserted: res.Inserted,
+		Updated: res.Updated, Skipped: res.Skipped,
+	})
+}
+
+// ---------------- S50: Meta Ads (connect / disconnect / insights) -----
+
+type metaConnectReq struct {
+	AccessToken string  `json:"access_token"`
+	AccountID   *string `json:"account_id,omitempty"`
+}
+
+func (h *Handler) metaConnect(w http.ResponseWriter, r *http.Request) {
+	orgID, _ := mw.OrgIDFrom(r.Context())
+	if h.meta == nil {
+		httpx.WriteError(w, http.StatusServiceUnavailable, "META_DISABLED",
+			"meta adapter not configured")
+		return
+	}
+	var body metaConnectReq
+	if err := httpx.DecodeJSON(r, &body); err != nil {
+		httpx.WriteError(w, http.StatusBadRequest, "INVALID_BODY", "could not parse")
+		return
+	}
+	if err := h.meta.StoreAPIKey(r.Context(), orgID, body.AccessToken, body.AccountID); err != nil {
+		httpx.WriteError(w, http.StatusBadRequest, "INVALID_TOKEN", err.Error())
+		return
+	}
+	w.WriteHeader(http.StatusNoContent)
+}
+
+func (h *Handler) metaDisconnect(w http.ResponseWriter, r *http.Request) {
+	orgID, _ := mw.OrgIDFrom(r.Context())
+	if err := h.store.Delete(r.Context(), orgID, integrationrepo.ProviderMeta); err != nil &&
+		!errors.Is(err, integrationrepo.ErrNotFound) {
+		httpx.WriteError(w, http.StatusInternalServerError, "INTERNAL", "disconnect failed")
+		return
+	}
+	w.WriteHeader(http.StatusNoContent)
+}
+
+func (h *Handler) metaAdsInsights(w http.ResponseWriter, r *http.Request) {
+	orgID, _ := mw.OrgIDFrom(r.Context())
+	if h.meta == nil {
+		httpx.WriteError(w, http.StatusServiceUnavailable, "META_DISABLED",
+			"meta adapter not configured")
+		return
+	}
+	accountID := strings.TrimSpace(r.URL.Query().Get("account_id"))
+	if accountID == "" {
+		// Fall back to the credential's external_account_id.
+		cred, err := h.store.Get(r.Context(), orgID, integrationrepo.ProviderMeta)
+		if errors.Is(err, integrationrepo.ErrNotFound) {
+			httpx.WriteError(w, http.StatusPreconditionFailed, "META_NOT_CONNECTED",
+				"meta credentials missing for this organization")
+			return
+		}
+		if err != nil {
+			httpx.WriteError(w, http.StatusInternalServerError, "INTERNAL", "could not load credential")
+			return
+		}
+		if cred.ExternalAccountID == nil || *cred.ExternalAccountID == "" {
+			httpx.WriteError(w, http.StatusBadRequest, "MISSING_ACCOUNT",
+				"account_id required (not stored on credential)")
+			return
+		}
+		accountID = *cred.ExternalAccountID
+	}
+	dateRange := strings.TrimSpace(r.URL.Query().Get("date_range"))
+	if dateRange == "" {
+		dateRange = "last_7d"
+	}
+
+	// Cache hit returns the prior payload verbatim.
+	if h.metaCache != nil {
+		entry, err := h.metaCache.Get(r.Context(), orgID, accountID, dateRange)
+		if err == nil {
+			w.Header().Set("Content-Type", "application/json")
+			w.Header().Set("X-Torque-Cache", "hit")
+			w.WriteHeader(http.StatusOK)
+			_, _ = w.Write(entry.Payload)
+			return
+		}
+	}
+
+	res, err := h.meta.AdAccountInsightsForOrg(r.Context(), orgID, integration.InsightsWindow{
+		AccountID: accountID, DateRange: dateRange,
+	})
+	if errors.Is(err, integrationrepo.ErrNotFound) {
+		httpx.WriteError(w, http.StatusPreconditionFailed, "META_NOT_CONNECTED",
+			"meta credentials missing for this organization")
+		return
+	}
+	if errors.Is(err, integration.ErrAuthFailed) {
+		httpx.WriteError(w, http.StatusBadGateway, "META_AUTH", "meta refused credentials")
+		return
+	}
+	if errors.Is(err, integration.ErrRateLimited) {
+		httpx.WriteError(w, http.StatusTooManyRequests, "META_RATE_LIMITED",
+			"meta rate-limited the request")
+		return
+	}
+	if errors.Is(err, integration.ErrUnreachable) {
+		httpx.WriteError(w, http.StatusBadGateway, "META_UNREACHABLE", "meta unreachable")
+		return
+	}
+	if err != nil {
+		h.logger.Error().Err(err).Str("org_id", orgID.String()).Msg("meta ads-insights failed")
+		httpx.WriteError(w, http.StatusBadGateway, "META_ERROR", err.Error())
+		return
+	}
+
+	buf, _ := json.Marshal(res)
+	if h.metaCache != nil {
+		if cerr := h.metaCache.Upsert(r.Context(), orgID, accountID, dateRange, buf); cerr != nil {
+			h.logger.Warn().Err(cerr).Str("org_id", orgID.String()).
+				Msg("meta insights cache upsert failed")
+		}
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-Torque-Cache", "miss")
+	w.WriteHeader(http.StatusOK)
+	_, _ = w.Write(buf)
+}
+
+// ---------------- S50: SZ.Chat (connect / disconnect) -----------------
+
+type szchatConnectReq struct {
+	APIKey    string  `json:"api_key"`
+	ChannelID *string `json:"channel_id,omitempty"`
+}
+
+func (h *Handler) szchatConnect(w http.ResponseWriter, r *http.Request) {
+	orgID, _ := mw.OrgIDFrom(r.Context())
+	if h.szchat == nil {
+		httpx.WriteError(w, http.StatusServiceUnavailable, "SZCHAT_DISABLED",
+			"szchat adapter not configured")
+		return
+	}
+	var body szchatConnectReq
+	if err := httpx.DecodeJSON(r, &body); err != nil {
+		httpx.WriteError(w, http.StatusBadRequest, "INVALID_BODY", "could not parse")
+		return
+	}
+	if err := h.szchat.StoreAPIKey(r.Context(), orgID, body.APIKey, body.ChannelID); err != nil {
+		httpx.WriteError(w, http.StatusBadRequest, "INVALID_API_KEY", err.Error())
+		return
+	}
+	w.WriteHeader(http.StatusNoContent)
+}
+
+func (h *Handler) szchatDisconnect(w http.ResponseWriter, r *http.Request) {
+	orgID, _ := mw.OrgIDFrom(r.Context())
+	if err := h.store.Delete(r.Context(), orgID, integrationrepo.ProviderSZChat); err != nil &&
+		!errors.Is(err, integrationrepo.ErrNotFound) {
+		httpx.WriteError(w, http.StatusInternalServerError, "INTERNAL", "disconnect failed")
+		return
+	}
+	w.WriteHeader(http.StatusNoContent)
 }
 
 // ---------------- settings redirect helper ---------------------------
