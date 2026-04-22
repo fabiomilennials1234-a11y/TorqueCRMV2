@@ -6,7 +6,7 @@ tags:
   - v8
   - sprints
 created: 2026-04-20
-last_updated: 2026-04-22 (S51)
+last_updated: 2026-04-22 (S52 — FASE G CONCLUÍDA, roadmap completo)
 status: vivo
 referencia: "[[Analise Comparativa v8 vs Torque-v2]]"
 ---
@@ -782,7 +782,41 @@ Próxima fase: **F — Integrações externas (S49-S50)** Google Calendar + Tiny
 
 ---
 
-## S52 — OpenAPI refresh final + cosign + gosec completo + pentest staging
+## S52 — OpenAPI refresh final + cosign + gosec completo + pentest staging — ✅ ENTREGUE (2026-04-22)
+
+**Status**: Entregue. Ver `STATE.md` D072. **FASE G CONCLUÍDA** (S51→S52). **ROADMAP S30-S52 COMPLETO** — 23 sprints, ~28 semanas, 7 fases. Gate Go-to-Production aberto (checklist §10 abaixo).
+
+**Entregas (código):**
+1. **release.yml**: `permissions: id-token: write` habilita Sigstore keyless OIDC; `sigstore/cosign-installer@v3` v2.4.1 pinado; build steps exportam digest via `id:`; novo step `Sign <api|web> image` roda `cosign sign --yes ghcr.io/<repo>@<sha256>` (por digest, imutável — tags podem ser sobrescritas pós-push).
+2. **deploy.yml**: novo job `verify` com `cosign verify --certificate-identity-regexp "^https://github.com/<repo>/.github/workflows/release.yml@refs/tags/<tag>$" --certificate-oidc-issuer https://token.actions.githubusercontent.com` pinado — fork compromised de release.yml não produz signature que passa no gate. migrate + deploy `needs: [verify]` + `if: needs.verify.result == 'success'`.
+3. **Makefile**: target `security` roda `go vet + gosec -severity=high -confidence=medium + govulncheck` localmente; comentário documenta one-shot install.
+4. **k6 load test** (`.specs/loadtest/api-baseline.k6.js`): `/quotas` + `/integrations` no dashboard batch; 10% Meta Ads insights (cached 200 ou 412); 5% POST /leads admission middleware cost; trends `quota_lookup_latency_ms` + `meta_insights_latency_ms`.
+5. **Pentest runbook** (`.specs/security/pentest-runbook-S52.md`, ~350 linhas) + **findings template** (`.specs/security/pentest-staging-template.md`): 10 checks executáveis cobrindo rate limiter burst, cross-tenant leak 404-not-403, JWT tampering 3 variantes, CSRF missing+mismatch, webhook replay, lead webhook HMAC (S50), quota enforcement 402 (S51), master impersonation audit-first (D062), WS origin, frontend XSS bundle. Findings vão em GitHub issues + `.specs/security/pentest-staging-<YYYY-MM-DD>.md` com dual sign-off security+QA.
+6. **OpenAPI spec refresh** (`torque-api/api/openapi.yaml`): version 0.1.0 → **0.52.0**, 341 → **1709 linhas**, ~13 → **~80 paths**. Tags novas (22): leads, pipes, confirmations, meetings, tasks, inbox, templates, campaigns, workflows, agents, billing, quotas, integrations, webhooks, analytics, performance, products, members, proposals, settings, onboarding, master. Hot-path schemas completos (Lead + LeadPage + LeadCreateRequest + LeadPatchRequest + Subscription + CheckoutRequest + Quota + IntegrationCredential + MetaAdAccountInsights + LeadWebhookPayload). Responses novas: InvalidBody 400, NotFound 404, QuotaExceeded 402 com body canônico e headers X-Quota-*. Public webhooks com HMAC-SHA256 + X-Torque-Tenant + 413 body-cap + 503 disabled documentados. SSE (text/event-stream) + audio/mpeg + OAuth 302 callback + CSRF-exempt state HMAC enforced todos spec'ados.
+
+**Critério de aceite** (runtime GitHub Actions + Go host):
+- [x] `release.yml` com id-token + cosign sign wired (aguarda primeiro tag v* pra executar).
+- [x] `deploy.yml` com cosign verify gate wired (aguarda dispatch pra executar).
+- [x] `gosec -severity=high` ativo em ci.yml (desde S32, documentado).
+- [x] `make security` localmente roda toolchain security completa.
+- [x] k6 script atualizado com endpoints S50/S51.
+- [x] Pentest runbook executável em staging com findings template dual sign-off.
+- [x] OpenAPI spec cobrindo todas as famílias S05-S51 com hot-path schemas.
+- [ ] **Pending operator**: executar cosign verify + pentest + k6 run real contra staging uma vez que ambiente esteja provisionado.
+
+**Deferreds pós-prod explícitos:**
+- Impersonation cookie-swap atômico com audit row (D044 A04 review, baixo risco — atual já refuses impersonation em audit fail).
+- `openapi-typescript` regen + `api.gen.ts` diff no frontend (incremental).
+- Deep request/response schemas nas ~50 paths que ficaram minimal (incremental).
+- k6 run real contra staging + pentest execution contra staging (operator task, requires environment).
+
+**Commits**: `85f2df9` infra+ops (cosign + deploy verify + make security + k6 + pentest runbook) · `30d9aa5` openapi.
+
+---
+
+### S52 — (replaced — spec histórica abaixo)
+
+**Escopo original planejado** (mantido pra auditoria do plano):
 
 **Tamanho**: M
 **Dono lógico**: Infra + QA
