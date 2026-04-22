@@ -28,6 +28,10 @@ const FRIENDLY_MESSAGES: Record<string, string> = {
   INVALID_BODY: 'Não foi possível processar a requisição.',
   NOT_FOUND: 'Não encontrado.',
   INTERNAL: 'Algo deu errado. Tente de novo; se persistir, fale com o suporte.',
+  // S51 — quota runtime.
+  QUOTA_EXCEEDED:
+    'Você atingiu o limite do seu plano para esse recurso. Atualize o plano ou compre add-ons em Configurações → Plano e faturamento.',
+  QUOTA_LOOKUP_FAILED: 'Não foi possível conferir o limite do plano. Tente de novo em instantes.',
 }
 
 export function friendlyMessage(err: unknown): string {
