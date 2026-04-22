@@ -40,6 +40,7 @@ import (
 	leadwebhookhandler "github.com/milennials/torque-api/internal/handler/leadwebhook"
 	leadshandler "github.com/milennials/torque-api/internal/handler/leads"
 	masterhandler "github.com/milennials/torque-api/internal/handler/master"
+	quotashandler "github.com/milennials/torque-api/internal/handler/quotas"
 	meetingshandler "github.com/milennials/torque-api/internal/handler/meetings"
 	membershandler "github.com/milennials/torque-api/internal/handler/members"
 	onboardinghandler "github.com/milennials/torque-api/internal/handler/onboarding"
@@ -76,6 +77,7 @@ import (
 	piperepo "github.com/milennials/torque-api/internal/repository/pipe"
 	productrepo "github.com/milennials/torque-api/internal/repository/product"
 	proposalrepo "github.com/milennials/torque-api/internal/repository/proposal"
+	quotarepo "github.com/milennials/torque-api/internal/repository/quota"
 	refreshrepo "github.com/milennials/torque-api/internal/repository/refresh"
 	settingsrepo "github.com/milennials/torque-api/internal/repository/settings"
 	subscriptionrepo "github.com/milennials/torque-api/internal/repository/subscription"
@@ -418,8 +420,12 @@ func newRouter(
 	// via shared secret headers (billing) or HMAC signature (lead).
 	subRepo := subscriptionrepo.New(pool)
 	leadRepoForWebhook := leadrepo.New(pool)
+	// S51 — quota repo powers RequireQuota middleware + GET /quotas
+	// observability + billing webhook seed of plan_quotas→org_quotas.
+	quotaRepo := quotarepo.New(pool)
 	r.Route("/webhooks", func(wh chi.Router) {
-		billinghandler.NewWebhook(subRepo, bus, cfg.BillingWebhookSecret).Routes(wh)
+		billinghandler.NewWebhook(subRepo, bus, cfg.BillingWebhookSecret).
+			WithQuotaRepo(quotaRepo).Routes(wh)
 		leadwebhookhandler.New(leadwebhookhandler.Options{
 			Leads:  leadRepoForWebhook,
 			Events: leadWebhookEvents,
@@ -456,7 +462,10 @@ func newRouter(
 				// endpoint in future sprints once member view keys settle.
 				preferenceshandler.New(users).Routes(t)
 				operationshandler.New(operations).Routes(t)
-				leadshandler.New(leadrepo.New(pool), bus).Routes(t)
+				// S51 — leads POST enforces the tenant quota via
+				// RequireQuota; other verbs stay unrestricted. Decrement
+				// on soft-delete lives in the handler.
+				leadshandler.New(leadrepo.New(pool), bus).WithQuota(quotaRepo).Routes(t)
 				pipeshandler.New(piperepo.New(pool), bus).Routes(t)
 				// S50 — confirmations now carry the GCal push on
 				// /confirm, matching the pattern set by meetings in
@@ -488,6 +497,11 @@ func newRouter(
 
 				// S49 — /integrations list (member-accessible).
 				integrationsHandler.MemberRoutes(t)
+
+				// S51 — /quotas observability (member-accessible read;
+				// master-only write lands in the master subgroup below).
+				quotasHandler := quotashandler.New(quotaRepo)
+				quotasHandler.MemberRoutes(t)
 				onboardinghandler.New(onboardingrepo.New(pool)).Routes(t)
 				billinghandler.NewRead(subRepo).Routes(t)
 				settingsRepo := settingsrepo.New(pool)
@@ -582,15 +596,25 @@ func newRouter(
 					performanceHandler.AdminRoutes(admin)
 
 					// Billing checkout/cancel (admin-only). Provider is
-					// pluggable; S24 wires the mock, Asaas lands after
-					// credentials + dual review.
+					// pluggable; S24 wired the mock, S51 activates
+					// Asaas when ASAAS_API_KEY is set (dual-review
+					// tripwire — empty key falls back to mock even
+					// when BILLING_PROVIDER=asaas).
 					var provider billing.Provider
 					switch cfg.BillingProvider {
 					case "asaas":
-						// Placeholder — real Asaas client lands in a
-						// follow-up sprint gated by credentials.
-						logger.Warn().Msg("asaas provider not yet implemented; falling back to mock")
-						provider = billing.NewMock()
+						asaasProv, aerr := billing.NewAsaas(billing.AsaasConfig{
+							APIKey:  cfg.AsaasAPIKey,
+							BaseURL: cfg.AsaasBaseURL,
+						}, nil)
+						if aerr != nil {
+							logger.Warn().Err(aerr).Msg("asaas provider not configured; falling back to mock")
+							provider = billing.NewMock()
+						} else {
+							logger.Info().Str("base_url", cfg.AsaasBaseURL).
+								Msg("asaas provider active")
+							provider = asaasProv
+						}
 					default:
 						provider = billing.NewMock()
 					}
@@ -616,6 +640,9 @@ func newRouter(
 						CookieSecure: cfg.CookieSecure,
 						CookieDomain: cfg.CookieDomain,
 					}).Routes(mst)
+					// S51 — PATCH /quotas/:resource (master-only admin
+					// adjustment + purchased_addons override).
+					quotasHandler.MasterRoutes(mst)
 				})
 			})
 

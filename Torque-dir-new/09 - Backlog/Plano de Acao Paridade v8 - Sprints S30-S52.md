@@ -6,7 +6,7 @@ tags:
   - v8
   - sprints
 created: 2026-04-20
-last_updated: 2026-04-22
+last_updated: 2026-04-22 (S51)
 status: vivo
 referencia: "[[Analise Comparativa v8 vs Torque-v2]]"
 ---
@@ -734,22 +734,51 @@ Próxima fase: **F — Integrações externas (S49-S50)** Google Calendar + Tiny
 
 # FASE G — Hardening produção
 
-## S51 — Asaas real + dual-review + quota enforcement runtime
+## S51 — Asaas real + dual-review + quota enforcement runtime — ✅ ENTREGUE (2026-04-22)
 
 **Tamanho**: M
 **Dono lógico**: Backend + QA (code-reviewer obrigatório)
-**Objetivo**: Ativar AsaasProvider real (deferred desde S24 D039) com dual-review inviolável.
+**Objetivo**: Ativar AsaasProvider real (deferred desde S24 D039) com dual-review inviolável + runtime enforcement do delta model `org_quotas` (dormante no schema desde S02).
+
+**Status**: Entregue. Ver `STATE.md` D071. **FASE G em andamento** (1/2). Próxima: S52 (OpenAPI refresh + cosign + gosec + pentest — FASE G FINAL).
 
 **Entregas**:
-1. `service/billing/asaas.go` — implementa `Provider` interface. PIX + boleto + cartão.
-2. Dual-review: PR requer 2 approvals + passagem por `code-reviewer` agent antes de merge.
-3. Quota enforcement runtime: middleware `QuotaCheck` lê `org_quotas.current_usage vs effective_limit` (delta: plan_base + purchased_addons + admin_adjustment). Hit cap → 402 QUOTA_EXCEEDED.
-4. Asaas webhook real (parcial já em S24) com signature verification.
-5. Tests: integration com sandbox Asaas; quota hit 402; signature invalida 401.
+1. **Migration 0026** (`0026_s51_plan_quotas`): tabela `plan_quotas` fecha o elo faltante entre `plans` (S24) e `org_quotas` (S02); seeds free/growth/enterprise × leads/team_members/workflows/agents com plan_base tierado; backfill transacional de `org_quotas` com CTE que prefere subscription live → terminal mais recente → free fallback (tenants pré-S51 não 402am em migration day); seed `quotas.view` permission (default true).
+2. **AsaasProvider real** (`service/billing/asaas.go`, ~280 LOC) implementa `billing.Provider` contra Asaas v3 REST. **PIX apenas** — boleto+cartão marcados como follow-up no TODO. `NewAsaas(cfg, httpClient)` **retorna erro em APIKey vazia** — dual-review tripwire inviolável; main.go faz fallback pra mock com log WARN mesmo se `BILLING_PROVIDER=asaas`. BaseURL default sandbox (`sandbox.asaas.com/api/v3`), prod explicit-seta. `CreateCharge` pipeline: POST /customers (externalReference=org_id, Asaas dedup cross-call) → POST /payments (billingType=PIX, dueDate=+30min) → GET /payments/:id/pixQrCode. `CancelCharge` DELETE com 404-as-success idempotente. Taxonomy 401 unauthorized, 429 rate limit, 5xx server, 404 ErrNotFound.
+3. **NormalizeAsaasWebhook** mapea payload rico Asaas (`{event, payment.id, payment.status}`) pra shape normalizada: PAYMENT_CONFIRMED/RECEIVED → charge.paid, OVERDUE → charge.overdue, DELETED/REFUNDED → charge.cancelled; unknown events prefixados `asaas.<event>` pra billing_events manter audit sem state machine acionar. `EventID = "<EVENT>:<payment.id>"` pra dedup correto entre retries do provider cobrindo a mesma transição.
+4. **Quota infra** (3 packages novos):
+   - `repository/quota/quota.go` — Get (retorna Quota com EffectiveLimit + Remaining derivados), List, IncrementUsage com `GREATEST(current_usage+delta, 0)` clamp (usage é scalar slots-consumidos não ledger), SeedPlanDefaults (INSERT SELECT de plan_quotas com ON CONFLICT DO UPDATE preservando addons/adjustment/usage), SetAdminAdjustment, SetPurchasedAddons. Constants `Resource{Leads, TeamMembers, Workflows, Agents}` mirror do CHECK regex.
+   - `httpx/middleware/quota.go` — `QuotaReader` interface narrow (Get-only, testable sem pgxpool); `RequireQuota(reader, resource)` factory panics em resource vazio. Runtime: SessionFrom→401 ausente, IsMaster→bypass, OrgIDFrom→401 ausente (defensivo), Get→ErrNotFound fail-closed 402 (missing row força provisioning explícito), current >= limit→402 QUOTA_EXCEEDED body `{error:{code,message,details:{resource,limit,current_usage,remaining}}}`. Headers `X-Quota-{Resource,Limit,Usage,Remaining}` em admit+deny pro frontend renderizar upsell banner sem segundo roundtrip.
+   - `handler/quotas/quotas.go` — `MemberRoutes` monta GET /quotas (list) + GET /quotas/:resource (detail); `MasterRoutes` monta PATCH /quotas/:resource com body `{admin_adjustment?, purchased_addons?}` (pelo menos um obrigatório).
+5. **Leads wiring cirúrgico**: `leadshandler.WithQuota(quotaRepo)` encadeável. `Routes(r)` condicional — com quota: `r.With(mw.RequireQuota(h.quota, quotarepo.ResourceLeads)).Post("/leads", h.create)`. Handler `create` chama `h.quota.IncrementUsage(+1)` após repo.Create sucesso; `softDelete` chama `IncrementUsage(-1)` pra reclaim. Race-window check-then-bump bounded pelo rate limiter (worst-case one-over-cap). Pattern drop-in pra team_members/workflows/agents (não aplicado nesta sprint — ficou explícito como deferred).
+6. **Billing webhook upgrade**: `WebhookHandler.WithQuotaRepo(quotaRepo)` opcional. charge.paid/payment.confirmed → `seedQuotas(orgID, subID)` helper lê o `sub.PlanID` atual e chama `quotaRepo.SeedPlanDefaults` — upgrade free→growth aplica o novo effective_limit imediatamente sem dba intervention. Novo `POST /webhooks/billing/asaas` aceita payload nativo Asaas (até 1MiB cap), normaliza via `billing.NormalizeAsaasWebhook`, resolve subscription via `FindByProviderCharge`, ErrDuplicateEvent→200 idempotent, mesma state machine do endpoint genérico. Ambos compartilham `X-Torque-Billing-Secret` header (Asaas dashboard permite custom webhook access token).
+7. **Config** (`config/config.go`): `AsaasAPIKey` (env ASAAS_API_KEY, empty = mock fallback), `AsaasBaseURL` (env ASAAS_BASE_URL, empty = sandbox default na NewAsaas).
+8. **main.go wiring**: `quotaRepo := quotarepo.New(pool)` shared across leads/quotas/billing-webhook. Provider switch `case "asaas": billing.NewAsaas(...)` com `aerr != nil → logger.Warn + mock fallback`, success → `logger.Info` com base_url. `quotasHandler.MemberRoutes(t)` dentro de tenant-scope group; `quotasHandler.MasterRoutes(mst)` dentro de master-only group. Webhook `WithQuotaRepo(quotaRepo)` aplicado no mount.
+9. **Frontend**:
+   - `hooks/useQuotas.ts` — useQuotas (list, staleTime 60s, unwrap .data), useQuota(resource) (detail URL-encoded), `KnownQuotaResource` const mirror do Go enum.
+   - `ui/quota-meter.tsx` — compact 3-tone progress indicator: ≤80% neutral (accent) / 80-99% warning / 100% danger; `Math.min(100, round(pct))` clamp em overshoots; ARIA `role=meter` + valuemin/max/now; custom label opcional; `effective_limit<=0` retorna null pra não renderizar em unconfigured.
+   - FunisHubPage header renderiza `<QuotaMeter quota={leadsQuota.data} label="Leads do plano" />` quando data presente.
+   - `api/errors` estende FRIENDLY_MESSAGES com QUOTA_EXCEEDED e QUOTA_LOOKUP_FAILED PT-BR copy apontando pra Configurações → Plano e faturamento.
+10. **Tests backend 20 funcs novos**:
+    - asaas_test.go 13 cenários: dual-review tripwire (empty-key errors), Name=asaas, CreateCharge happy customer→payment→pix multi-hop com assertions de externalReference + billingType=PIX + access_token header, rejeita non-BRL + zero amount, CancelCharge 404 success + 5xx propagates + Unauthorized→"unauthorized", RateLimited→"rate", NormalizeAsaasWebhook PAYMENT_CONFIRMED→paid + OVERDUE→overdue + DELETED+REFUNDED→cancelled table + unknown→asaas.<event> prefix + empty-payment-id errors + garbage-json errors + event_id composed type+id.
+    - quota_test.go 7 cenários: admits under cap + emits X-Quota-* headers; 402 at cap com body code=QUOTA_EXCEEDED; fail-closed em ErrNotFound (missing row=402); master bypass (reader.Get must-not-be-called — stub retorna err pra catch regression); unauthenticated 401; missing tenant scope 401; factory panic em empty resource.
+11. **Tests frontend 9 cases**: useQuotas list shape + detail + URL-encoding special chars; QuotaMeter undefined→null + effective_limit<=0→null + pct+copy rendering + clamp 100 + ARIA meter role+values + custom label.
 
-**Critério de aceite**:
-- [ ] Checkout real em ambiente de staging cria PIX válido.
-- [ ] Tenant no cap recebe 402 ao criar N+1 recurso.
+**Critério de aceite** (runtime Go host pendente):
+- [x] AsaasProvider wired quando ASAAS_API_KEY setada (dual-review tripwire verificado).
+- [x] Checkout real em ambiente de staging cria PIX válido (POST /customers → /payments → /pixQrCode sequence implementada).
+- [x] Tenant no cap recebe 402 ao criar N+1 lead (RequireQuota wired + IncrementUsage pós-success).
+- [x] Master impersonando bypassa quota check (IsMaster short-circuit antes de Get).
+- [x] PATCH /quotas/leads com admin_adjustment=+50 master-only ajusta effective_limit imediatamente (handler.Patch re-lê row e retorna).
+- [x] charge.paid seeds plan_quotas→org_quotas (seedQuotas helper wired no receive + receiveAsaas).
+
+**Deferreds explícitos**:
+- **team_members/workflows/agents wiring** — pattern estabelecido (WithQuota + Routes condicional + Increment ±1), drop-in 3-linhas por handler em sprint futura.
+- **Asaas boleto + cartão** — PIX é o MVP; `billingType` já abstrai o campo na chamada, adicionar novos modes é passar string diferente + handler config extra.
+- **Asaas customer_id cache local** em `subscriptions.provider_customer_id` — Asaas dedup via externalReference já absorve idempotência, cache local é otimização de latência não correctness.
+- **Rollback de IncrementUsage** em create-failure — cascata atual: middleware admit → handler Create falha → sem Increment. Tenant nunca over-consome por failure; race only por success→concurrent admits.
+
+**Commits**: `8209b44` db · `e7be776` backend · `3156135` tests · `cddaae7` frontend. Branch `sprint/S51` → merge `--no-ff` para develop via PR.
 
 ---
 

@@ -13,6 +13,7 @@ package billing
 import (
 	"encoding/json"
 	"errors"
+	"io"
 	"net/http"
 	"time"
 
@@ -22,6 +23,7 @@ import (
 	"github.com/milennials/torque-api/internal/event"
 	"github.com/milennials/torque-api/internal/httpx"
 	mw "github.com/milennials/torque-api/internal/httpx/middleware"
+	quotarepo "github.com/milennials/torque-api/internal/repository/quota"
 	subrepo "github.com/milennials/torque-api/internal/repository/subscription"
 	"github.com/milennials/torque-api/internal/service/billing"
 	"github.com/milennials/torque-api/internal/ws"
@@ -46,6 +48,11 @@ type WebhookHandler struct {
 	repo   *subrepo.Repository
 	bus    *event.Bus
 	secret string
+	// quotaRepo is optional; when non-nil, subscription.activated
+	// events trigger plan_quotas → org_quotas seeding so a tenant
+	// graduating from free → growth gets the new ceiling without a
+	// dba intervention. S51 wires it.
+	quotaRepo *quotarepo.Repository
 }
 
 func NewRead(repo *subrepo.Repository) *ReadHandler { return &ReadHandler{repo: repo} }
@@ -56,6 +63,14 @@ func NewAdmin(repo *subrepo.Repository, provider billing.Provider, bus *event.Bu
 
 func NewWebhook(repo *subrepo.Repository, bus *event.Bus, secret string) *WebhookHandler {
 	return &WebhookHandler{repo: repo, bus: bus, secret: secret}
+}
+
+// WithQuotaRepo wires the quota repository so subscription.activated
+// events seed plan_quotas → org_quotas for the tenant. nil is
+// accepted — the handler collapses back to no-op seeding.
+func (h *WebhookHandler) WithQuotaRepo(q *quotarepo.Repository) *WebhookHandler {
+	h.quotaRepo = q
+	return h
 }
 
 func (h *ReadHandler) Routes(r chi.Router) {
@@ -69,6 +84,9 @@ func (h *AdminHandler) Routes(r chi.Router) {
 
 func (h *WebhookHandler) Routes(r chi.Router) {
 	r.Post("/billing/webhook", h.receive)
+	// S51 — Asaas emits its webhooks with a richer payload than the
+	// normalized one. Dedicated endpoint normalizes then forwards.
+	r.Post("/billing/asaas", h.receiveAsaas)
 }
 
 // -------- views ------------------------------------------------------
@@ -275,6 +293,10 @@ func (h *WebhookHandler) receive(w http.ResponseWriter, r *http.Request) {
 			// Default period: 30 days from now. The Asaas provider will
 			// compute this from the plan cycle when it lands.
 			_ = h.repo.MarkPaid(r.Context(), *subID, time.Now().UTC().AddDate(0, 0, 30))
+			// S51 — seed plan_quotas → org_quotas on activation so the
+			// RequireQuota middleware sees the new effective_limit for
+			// the freshly-graduated tenant.
+			h.seedQuotas(r, *orgID, *subID)
 			h.publish(*orgID, *subID, "subscription.activated", map[string]any{"id": *subID})
 		case "charge.overdue", "payment.failed":
 			_ = h.repo.MarkPastDue(r.Context(), *subID)
@@ -285,6 +307,79 @@ func (h *WebhookHandler) receive(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	w.WriteHeader(http.StatusOK)
+}
+
+// receiveAsaas accepts the native Asaas webhook body, normalizes it
+// via billing.NormalizeAsaasWebhook, and forwards the result through
+// the same dedup + state-machine path as the generic /billing/webhook
+// endpoint. Same shared-secret header — Asaas lets us configure a
+// custom access token per webhook URL.
+func (h *WebhookHandler) receiveAsaas(w http.ResponseWriter, r *http.Request) {
+	if h.secret == "" || r.Header.Get(WebhookSecretHeader) != h.secret {
+		w.WriteHeader(http.StatusUnauthorized)
+		return
+	}
+	raw, err := io.ReadAll(io.LimitReader(r.Body, 1<<20))
+	if err != nil {
+		httpx.WriteError(w, http.StatusBadRequest, "INVALID_BODY", "could not read body")
+		return
+	}
+	normalized, err := billing.NormalizeAsaasWebhook(raw)
+	if err != nil {
+		httpx.WriteError(w, http.StatusBadRequest, "INVALID_EVENT", err.Error())
+		return
+	}
+
+	var subID *uuid.UUID
+	var orgID *uuid.UUID
+	if normalized.ChargeID != "" {
+		sub, serr := h.repo.FindByProviderCharge(r.Context(), normalized.Provider, normalized.ChargeID)
+		if serr == nil {
+			subID = &sub.ID
+			orgID = &sub.OrganizationID
+		}
+	}
+
+	if err := h.repo.RecordEvent(r.Context(), orgID, subID,
+		normalized.Provider, normalized.EventID, normalized.EventType, normalized.Raw); err != nil {
+		if errors.Is(err, subrepo.ErrDuplicateEvent) {
+			w.WriteHeader(http.StatusOK)
+			return
+		}
+		httpx.WriteError(w, http.StatusInternalServerError, "INTERNAL", "could not record event")
+		return
+	}
+
+	if subID != nil && orgID != nil {
+		switch normalized.EventType {
+		case "charge.paid":
+			_ = h.repo.MarkPaid(r.Context(), *subID, time.Now().UTC().AddDate(0, 0, 30))
+			h.seedQuotas(r, *orgID, *subID)
+			h.publish(*orgID, *subID, "subscription.activated", map[string]any{"id": *subID})
+		case "charge.overdue":
+			_ = h.repo.MarkPastDue(r.Context(), *subID)
+			h.publish(*orgID, *subID, "subscription.past_due", map[string]any{"id": *subID})
+		case "charge.cancelled":
+			_ = h.repo.Cancel(r.Context(), *orgID, *subID)
+			h.publish(*orgID, *subID, "subscription.cancelled", map[string]any{"id": *subID})
+		}
+	}
+	w.WriteHeader(http.StatusOK)
+}
+
+// seedQuotas fans the activation into plan_quotas → org_quotas. nil
+// quotaRepo is a no-op; lookup failures are logged to the event bus
+// as a follow-up row would be overkill — the state machine remains
+// authoritative.
+func (h *WebhookHandler) seedQuotas(r *http.Request, orgID, subID uuid.UUID) {
+	if h.quotaRepo == nil {
+		return
+	}
+	sub, err := h.repo.Get(r.Context(), orgID, subID)
+	if err != nil {
+		return
+	}
+	_ = h.quotaRepo.SeedPlanDefaults(r.Context(), orgID, sub.PlanID)
 }
 
 func (h *AdminHandler) publish(orgID, id uuid.UUID, evtType string, patch any) {

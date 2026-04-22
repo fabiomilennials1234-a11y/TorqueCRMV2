@@ -9,11 +9,14 @@ import { ArrowRight, Layers, Star } from 'lucide-react'
 
 import { QueryBoundary } from '@/components/QueryBoundary'
 import { usePipes } from '@/hooks/usePipes'
+import { useQuota } from '@/hooks/useQuotas'
 import { Card } from '@/ui/card'
 import { Pill } from '@/ui/pill'
+import { QuotaMeter } from '@/ui/quota-meter'
 
 export function FunisHubPage() {
   const pipes = usePipes()
+  const leadsQuota = useQuota('leads')
 
   return (
     <div className="px-8 py-10">
@@ -29,6 +32,11 @@ export function FunisHubPage() {
           Cada funil é um pipeline independente: WhatsApp para qualificar, confirmação para reuniões,
           propostas para fechamento. Mova leads entre etapas e o histórico fica registrado.
         </p>
+        {leadsQuota.data && (
+          <div className="mt-4 max-w-xs">
+            <QuotaMeter quota={leadsQuota.data} label="Leads do plano" />
+          </div>
+        )}
       </header>
 
       <QueryBoundary
