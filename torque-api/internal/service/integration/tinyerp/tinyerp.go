@@ -20,6 +20,7 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"strconv"
 	"strings"
 	"time"
 
@@ -141,6 +142,198 @@ func (p *Provider) Health(ctx context.Context) error {
 	// exposed through the integrations list endpoint (last_success_at,
 	// last_error_*). Returning nil keeps /health green in dev.
 	return nil
+}
+
+// SyncProductsResult summarizes a sync pass.
+type SyncProductsResult struct {
+	Fetched  int `json:"fetched"`  // total rows fetched from TinyERP
+	Inserted int `json:"inserted"` // new local rows created
+	Updated  int `json:"updated"`  // existing rows patched
+	Skipped  int `json:"skipped"`  // rows without SKU or malformed
+}
+
+// SyncProductsSink is the write-side dependency that lets the
+// TinyERP adapter upsert into the product repository without depending
+// on the concrete repository package. Callers (main.go wiring) adapt
+// a *productrepo.Repository to this interface.
+type SyncProductsSink interface {
+	UpsertBySKU(ctx context.Context, orgID uuid.UUID, name, sku string,
+		description *string, priceCents int64, currency string) (inserted bool, err error)
+}
+
+// SyncProducts pulls the tenant's TinyERP product catalog and upserts
+// each row into the local products table keyed by SKU. Runs paginated
+// via `produtos.pesquisa.php?pagina=N` and stops when TinyERP returns
+// an empty page.
+func (p *Provider) SyncProducts(ctx context.Context, orgID uuid.UUID, sink SyncProductsSink) (SyncProductsResult, error) {
+	cred, err := p.store.Get(ctx, orgID, integrationrepo.ProviderTinyERP)
+	if err != nil {
+		return SyncProductsResult{}, err
+	}
+	var out SyncProductsResult
+	page := 1
+	// Guard against runaway pagination — TinyERP has ~500 rows/page,
+	// 100 pages = 50k products which is far above any realistic
+	// tenant catalog. A buggy provider response will not stall the
+	// sync goroutine forever.
+	const maxPages = 100
+	for page <= maxPages {
+		rows, more, perr := p.listProductsPage(ctx, cred.AccessToken, page)
+		if perr != nil {
+			p.recordError(ctx, orgID, perr)
+			return out, perr
+		}
+		for _, row := range rows {
+			out.Fetched++
+			if strings.TrimSpace(row.Codigo) == "" {
+				out.Skipped++
+				continue
+			}
+			var descPtr *string
+			if d := strings.TrimSpace(row.DescricaoComplementar); d != "" {
+				descPtr = &d
+			}
+			inserted, uerr := sink.UpsertBySKU(ctx, orgID,
+				row.Nome, row.Codigo, descPtr,
+				decimalToCents(row.Preco), "BRL",
+			)
+			if uerr != nil {
+				out.Skipped++
+				continue
+			}
+			if inserted {
+				out.Inserted++
+			} else {
+				out.Updated++
+			}
+		}
+		if !more {
+			break
+		}
+		page++
+	}
+	_ = p.store.MarkSuccess(ctx, orgID, integrationrepo.ProviderTinyERP)
+	return out, nil
+}
+
+// productosEnvelope is the /produtos.pesquisa.php response shape.
+//
+//	{"retorno":{"status":"OK","pagina":1,"numero_paginas":5,
+//	  "produtos":[{"produto":{"id":...,"codigo":"A1","nome":"...","preco":"...","descricao_complementar":"..."}}]}}
+type productosEnvelope struct {
+	Retorno struct {
+		Status        string          `json:"status"`
+		CodigoErro    int             `json:"codigo_erro"`
+		Erros         json.RawMessage `json:"erros,omitempty"`
+		Pagina        int             `json:"pagina"`
+		NumeroPaginas int             `json:"numero_paginas"`
+		Produtos      []productoRow   `json:"produtos"`
+	} `json:"retorno"`
+}
+
+type productoRow struct {
+	Produto productoInner `json:"produto"`
+}
+
+type productoInner struct {
+	ID                    string `json:"id"`
+	Codigo                string `json:"codigo"`
+	Nome                  string `json:"nome"`
+	Preco                 string `json:"preco"`
+	DescricaoComplementar string `json:"descricao_complementar,omitempty"`
+}
+
+// listProductsPage pulls one page. Returns (rows, hasMore, error).
+func (p *Provider) listProductsPage(ctx context.Context, token string, page int) ([]productoInner, bool, error) {
+	form := url.Values{}
+	form.Set("token", token)
+	form.Set("formato", "json")
+	form.Set("pagina", strconv.Itoa(page))
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost,
+		p.cfg.BaseURL+"/produtos.pesquisa.php",
+		strings.NewReader(form.Encode()))
+	if err != nil {
+		return nil, false, fmt.Errorf("tinyerp: build request: %w", err)
+	}
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+
+	resp, err := p.http.Do(req)
+	if err != nil {
+		return nil, false, integration.ErrUnreachable
+	}
+	defer resp.Body.Close()
+	raw, _ := io.ReadAll(io.LimitReader(resp.Body, bodyCap))
+
+	switch {
+	case resp.StatusCode >= 200 && resp.StatusCode < 300:
+		// fall through
+	case resp.StatusCode == http.StatusTooManyRequests:
+		return nil, false, integration.ErrRateLimited
+	case resp.StatusCode >= 500:
+		return nil, false, integration.ErrUnreachable
+	default:
+		return nil, false, fmt.Errorf("tinyerp: http %d: %s",
+			resp.StatusCode, truncate(string(raw), 200))
+	}
+
+	var env productosEnvelope
+	if err := json.Unmarshal(raw, &env); err != nil {
+		return nil, false, fmt.Errorf("tinyerp: decode list envelope: %w", err)
+	}
+	if env.Retorno.Status == "Erro" {
+		switch env.Retorno.CodigoErro {
+		case codigoErroAuth:
+			return nil, false, integration.ErrAuthFailed
+		case codigoErroRateLimit:
+			return nil, false, integration.ErrRateLimited
+		default:
+			return nil, false, fmt.Errorf("tinyerp: codigo_erro=%d: %s",
+				env.Retorno.CodigoErro, truncate(string(env.Retorno.Erros), 200))
+		}
+	}
+	rows := make([]productoInner, 0, len(env.Retorno.Produtos))
+	for _, r := range env.Retorno.Produtos {
+		rows = append(rows, r.Produto)
+	}
+	more := env.Retorno.Pagina > 0 && env.Retorno.NumeroPaginas > env.Retorno.Pagina
+	return rows, more, nil
+}
+
+// decimalToCents parses TinyERP's "12.34" preco field to int64 cents.
+func decimalToCents(s string) int64 {
+	s = strings.ReplaceAll(strings.TrimSpace(s), ",", ".")
+	if s == "" {
+		return 0
+	}
+	neg := strings.HasPrefix(s, "-")
+	if neg {
+		s = s[1:]
+	}
+	parts := strings.SplitN(s, ".", 2)
+	whole, err := strconv.ParseInt(parts[0], 10, 64)
+	if err != nil {
+		return 0
+	}
+	var cents int64
+	if len(parts) == 2 {
+		fragment := parts[1]
+		if len(fragment) > 2 {
+			fragment = fragment[:2]
+		}
+		if len(fragment) == 1 {
+			fragment += "0"
+		}
+		c, err := strconv.ParseInt(fragment, 10, 64)
+		if err == nil {
+			cents = c
+		}
+	}
+	total := whole*100 + cents
+	if neg {
+		total = -total
+	}
+	return total
 }
 
 // ---------------- internals -----------------------------------------

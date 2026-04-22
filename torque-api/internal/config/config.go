@@ -132,6 +132,29 @@ type Config struct {
 	// TinyERP — only BaseURL is needed at boot; per-tenant API keys are
 	// stored encrypted in integration_credentials.
 	TinyERPBaseURL string
+
+	// --- S50 / Fase F.2 — Meta Ads + SZ.Chat + Lead Webhook ---------
+	// MetaGraphBaseURL is the Graph API endpoint; defaults to the
+	// public v18 release. Overridable for point-in-time tests + for
+	// pinning an older API version if Meta breaks field compat.
+	MetaGraphBaseURL string
+	// MetaAppSecret is used to HMAC-sign the `appsecret_proof` we
+	// pass to Graph API calls. Empty is accepted — Graph falls back
+	// to plain token auth, but Meta strongly recommends the proof
+	// even for read endpoints.
+	MetaAppSecret string
+
+	// SZChatBaseURL is the SZ.Chat messaging API endpoint. Defaults
+	// to the public prod URL; per-tenant API keys live in the
+	// integration_credentials store.
+	SZChatBaseURL string
+
+	// LeadWebhookSecret is the shared HMAC key for the public
+	// /webhooks/lead endpoint. Empty = webhook refuses every call
+	// (secure default — prod MUST set it). The payload signature is
+	// HMAC-SHA256 over the raw body; the signer sends it in
+	// `X-Torque-Lead-Signature: sha256=<hex>`.
+	LeadWebhookSecret string
 }
 
 // Load reads the config from the environment. Returns an error if any required
@@ -209,6 +232,12 @@ func Load() (Config, error) {
 		GoogleOAuthRedirectURL:  os.Getenv("GOOGLE_OAUTH_REDIRECT_URL"),
 
 		TinyERPBaseURL: getenv("TINYERP_BASE_URL", "https://api.tiny.com.br/api2"),
+
+		MetaGraphBaseURL: getenv("META_GRAPH_BASE_URL", "https://graph.facebook.com/v18.0"),
+		MetaAppSecret:    os.Getenv("META_APP_SECRET"),
+		SZChatBaseURL:    getenv("SZCHAT_BASE_URL", "https://api.szchat.com/v1"),
+
+		LeadWebhookSecret: os.Getenv("LEAD_WEBHOOK_SECRET"),
 	}
 
 	if c.DatabaseURL == "" {

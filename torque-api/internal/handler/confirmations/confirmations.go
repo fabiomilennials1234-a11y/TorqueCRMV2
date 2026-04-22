@@ -11,6 +11,7 @@
 package confirmations
 
 import (
+	"context"
 	"errors"
 	"net/http"
 	"strconv"
@@ -18,23 +19,41 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
+	"github.com/rs/zerolog"
 
+	"github.com/milennials/torque-api/internal/domain"
 	"github.com/milennials/torque-api/internal/event"
 	"github.com/milennials/torque-api/internal/httpx"
 	mw "github.com/milennials/torque-api/internal/httpx/middleware"
 	confirmationrepo "github.com/milennials/torque-api/internal/repository/confirmation"
+	integrationrepo "github.com/milennials/torque-api/internal/repository/integration"
+	integrationpkg "github.com/milennials/torque-api/internal/service/integration"
+	"github.com/milennials/torque-api/internal/service/integration/gcal"
 	"github.com/milennials/torque-api/internal/ws"
 )
 
 // Handler groups the F02 endpoints.
 type Handler struct {
-	repo *confirmationrepo.Repository
-	bus  *event.Bus
+	repo   *confirmationrepo.Repository
+	bus    *event.Bus
+	gcal   *gcal.Provider
+	credit *integrationrepo.Store
+	logger zerolog.Logger
 }
 
 // New binds the handler.
 func New(repo *confirmationrepo.Repository, bus *event.Bus) *Handler {
-	return &Handler{repo: repo, bus: bus}
+	return &Handler{repo: repo, bus: bus, logger: zerolog.Nop()}
+}
+
+// WithIntegrations attaches the GCal adapter + credential store. nil is
+// accepted — the handler collapses back to local-only behavior. Added
+// in S50 to close the F02 → Google Calendar sync gap deferred from S49.
+func (h *Handler) WithIntegrations(g *gcal.Provider, store *integrationrepo.Store, logger zerolog.Logger) *Handler {
+	h.gcal = g
+	h.credit = store
+	h.logger = logger
+	return h
 }
 
 // Routes mounts the endpoints on a tenant-scoped subrouter.
@@ -129,6 +148,14 @@ func (h *Handler) confirm(w http.ResponseWriter, r *http.Request) {
 		httpx.WriteError(w, http.StatusBadRequest, "INVALID_ID", "entry id must be a uuid")
 		return
 	}
+	// Snapshot BEFORE we flip confirmed_at so the GCal sync has the
+	// meeting window + lead id handy for the event body. Absence is
+	// fine — the handler still marks the confirmation, the sync
+	// short-circuits.
+	var snapshot *confirmationrepo.Confirmation
+	if c, gerr := h.repo.Get(r.Context(), orgID, entryID); gerr == nil {
+		snapshot = &c
+	}
 	if err := h.repo.MarkConfirmed(r.Context(), orgID, entryID); err != nil {
 		if errors.Is(err, confirmationrepo.ErrNotFound) {
 			httpx.WriteError(w, http.StatusNotFound, "NOT_FOUND", "confirmation not found")
@@ -141,7 +168,60 @@ func (h *Handler) confirm(w http.ResponseWriter, r *http.Request) {
 		Type: "confirmation.confirmed", TenantID: orgID, EntityType: "confirmation",
 		EntityID: &entryID, OccurredAt: time.Now().UTC(),
 	})
+	// S50 — best-effort GCal sync. Detached from the request lifetime
+	// so the 204 response does not depend on Google's availability.
+	h.maybePushToGCal(orgID, snapshot)
 	w.WriteHeader(http.StatusNoContent)
+}
+
+// maybePushToGCal spawns a goroutine that creates a Google Calendar
+// event mirroring the confirmed meeting. Silent when no gcal
+// integration is wired, no google credential exists, or the
+// confirmation snapshot is missing required fields.
+func (h *Handler) maybePushToGCal(orgID uuid.UUID, snap *confirmationrepo.Confirmation) {
+	if h.gcal == nil || h.credit == nil || snap == nil {
+		return
+	}
+	if snap.MeetingAt.IsZero() {
+		return
+	}
+	probeCtx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	defer cancel()
+	if _, err := h.credit.Get(probeCtx, orgID, integrationrepo.ProviderGoogle); err != nil {
+		// No credential — silently skip.
+		return
+	}
+
+	title := "Reuniao confirmada"
+	if snap.MeetingChannel != nil && *snap.MeetingChannel != "" {
+		title = "Reuniao confirmada — " + *snap.MeetingChannel
+	}
+	description := "Confirmada via Torque CRM (F02)."
+	if snap.MeetingNotes != nil && *snap.MeetingNotes != "" {
+		description += "\n\n" + *snap.MeetingNotes
+	}
+	// Default duration — 30 minutes. The F02 schema does not carry an
+	// explicit end time (the confirmation is about the start moment).
+	endAt := snap.MeetingAt.Add(30 * time.Minute)
+
+	go func() {
+		ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
+		defer cancel()
+		ctx = domain.WithOrgID(ctx, orgID)
+
+		_, err := h.gcal.CreateMeetingForOrg(ctx, orgID, integrationpkg.MeetingInput{
+			Title:       title,
+			Description: description,
+			StartAt:     snap.MeetingAt,
+			EndAt:       endAt,
+		})
+		if err != nil {
+			h.logger.Warn().Err(err).
+				Str("org_id", orgID.String()).
+				Str("pipe_entry_id", snap.PipeEntryID.String()).
+				Msg("gcal confirmation sync failed")
+		}
+	}()
 }
 
 func (h *Handler) noShow(w http.ResponseWriter, r *http.Request) {

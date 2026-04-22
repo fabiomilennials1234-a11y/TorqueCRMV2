@@ -21,6 +21,7 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/cors"
+	"github.com/google/uuid"
 	"github.com/rs/zerolog"
 
 	"github.com/milennials/torque-api/internal/config"
@@ -36,6 +37,7 @@ import (
 	"github.com/milennials/torque-api/internal/handler/health"
 	inboxhandler "github.com/milennials/torque-api/internal/handler/inbox"
 	integrationshandler "github.com/milennials/torque-api/internal/handler/integrations"
+	leadwebhookhandler "github.com/milennials/torque-api/internal/handler/leadwebhook"
 	leadshandler "github.com/milennials/torque-api/internal/handler/leads"
 	masterhandler "github.com/milennials/torque-api/internal/handler/master"
 	meetingshandler "github.com/milennials/torque-api/internal/handler/meetings"
@@ -61,6 +63,8 @@ import (
 	confirmationrepo "github.com/milennials/torque-api/internal/repository/confirmation"
 	inboxrepo "github.com/milennials/torque-api/internal/repository/inbox"
 	integrationrepo "github.com/milennials/torque-api/internal/repository/integration"
+	leadwebhookrepo "github.com/milennials/torque-api/internal/repository/leadwebhook"
+	metacacherepo "github.com/milennials/torque-api/internal/repository/metainsights"
 	auditrepo "github.com/milennials/torque-api/internal/repository/audit"
 	leadrepo "github.com/milennials/torque-api/internal/repository/lead"
 	masterrepo "github.com/milennials/torque-api/internal/repository/master"
@@ -83,6 +87,8 @@ import (
 	"github.com/milennials/torque-api/internal/service/billing"
 	cryptosvc "github.com/milennials/torque-api/internal/service/crypto"
 	"github.com/milennials/torque-api/internal/service/integration/gcal"
+	"github.com/milennials/torque-api/internal/service/integration/meta"
+	"github.com/milennials/torque-api/internal/service/integration/szchat"
 	"github.com/milennials/torque-api/internal/service/integration/tinyerp"
 	jwtsvc "github.com/milennials/torque-api/internal/service/jwt"
 	knowledgesvc "github.com/milennials/torque-api/internal/service/knowledge"
@@ -347,10 +353,29 @@ func newRouter(
 	tinyProvider := tinyerp.New(tinyerp.Config{BaseURL: cfg.TinyERPBaseURL},
 		credStore, nil, nil)
 
+	// --- S50 / Fase F.2 — Meta + SZ.Chat + lead webhook wiring -------
+	metaProvider := meta.New(meta.Config{
+		BaseURL:   cfg.MetaGraphBaseURL,
+		AppSecret: cfg.MetaAppSecret,
+	}, credStore, nil, nil)
+
+	szchatProvider := szchat.New(szchat.Config{BaseURL: cfg.SZChatBaseURL},
+		credStore, nil, nil)
+
+	metaCache := metacacherepo.New(pool)
+	leadWebhookEvents := leadwebhookrepo.New(pool)
+
+	productRepoForSync := productrepo.New(pool)
+	productSink := productSyncSink{repo: productRepoForSync}
+
 	integrationsHandler := integrationshandler.New(integrationshandler.Options{
 		Store:        credStore,
 		GCal:         gcalProvider,
 		Tiny:         tinyProvider,
+		Meta:         metaProvider,
+		SZChat:       szchatProvider,
+		MetaCache:    metaCache,
+		ProductSink:  productSink,
 		StateSecret:  cfg.IntegrationStateSecret,
 		Logger:       logger,
 		FrontendBase: "", // same-origin redirects; configurable later
@@ -388,12 +413,20 @@ func newRouter(
 	}
 	specHandler.Routes(r)
 
-	// --- Public billing webhook ----------------------------------------
-	// Sits OUTSIDE /api/v1 so it doesn't require a session; auth is via
-	// the X-Torque-Billing-Secret header.
+	// --- Public webhooks -----------------------------------------------
+	// Sit OUTSIDE /api/v1 so they don't require a session; auth is
+	// via shared secret headers (billing) or HMAC signature (lead).
 	subRepo := subscriptionrepo.New(pool)
+	leadRepoForWebhook := leadrepo.New(pool)
 	r.Route("/webhooks", func(wh chi.Router) {
 		billinghandler.NewWebhook(subRepo, bus, cfg.BillingWebhookSecret).Routes(wh)
+		leadwebhookhandler.New(leadwebhookhandler.Options{
+			Leads:  leadRepoForWebhook,
+			Events: leadWebhookEvents,
+			Bus:    bus,
+			Secret: cfg.LeadWebhookSecret,
+			Logger: logger,
+		}).Routes(wh)
 	})
 
 	// --- API v1: auth entry points (pre-session) -----------------------
@@ -425,7 +458,11 @@ func newRouter(
 				operationshandler.New(operations).Routes(t)
 				leadshandler.New(leadrepo.New(pool), bus).Routes(t)
 				pipeshandler.New(piperepo.New(pool), bus).Routes(t)
-				confirmationshandler.New(confirmationrepo.New(pool), bus).Routes(t)
+				// S50 — confirmations now carry the GCal push on
+				// /confirm, matching the pattern set by meetings in
+				// S49.
+				confirmationshandler.New(confirmationrepo.New(pool), bus).
+					WithIntegrations(gcalProvider, credStore, logger).Routes(t)
 				inboxhandler.New(inboxrepo.New(pool), bus).
 					WithAudit(auditrepo.New(pool)).Routes(t)
 				tasksahandler.New(taskrepo.New(pool), bus).Routes(t)
@@ -605,4 +642,22 @@ func newRouter(
 	})
 
 	return r, nil
+}
+
+// productSyncSink adapts *productrepo.Repository to the narrow
+// tinyerp.SyncProductsSink interface. Living here keeps the provider
+// package free of a direct repo import.
+type productSyncSink struct {
+	repo *productrepo.Repository
+}
+
+func (s productSyncSink) UpsertBySKU(
+	ctx context.Context, orgID uuid.UUID,
+	name, sku string, description *string, priceCents int64, currency string,
+) (bool, error) {
+	_, inserted, err := s.repo.UpsertBySKU(ctx, orgID, productrepo.UpsertBySKUInput{
+		Name: name, SKU: sku, Description: description,
+		PriceCents: priceCents, Currency: currency,
+	})
+	return inserted, err
 }

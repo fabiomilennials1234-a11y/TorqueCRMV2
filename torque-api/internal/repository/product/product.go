@@ -300,6 +300,80 @@ func (r *Repository) Update(ctx context.Context, orgID, id uuid.UUID, in UpdateI
 	return r.Get(ctx, orgID, id)
 }
 
+// UpsertBySKUInput is the write-side shape for the S50 TinyERP sync
+// path. SKU is required — a product with no SKU cannot be safely
+// reconciled across sync calls because we would duplicate it on every
+// run.
+type UpsertBySKUInput struct {
+	Name        string
+	Description *string
+	SKU         string
+	PriceCents  int64
+	Currency    string
+	Metadata    []byte
+}
+
+// UpsertBySKU inserts or updates a product keyed by (organization_id,
+// sku). Returns the resulting row + a bool indicating whether it was
+// newly inserted (true) or updated in place (false). Used by the
+// TinyERP SyncProducts flow.
+func (r *Repository) UpsertBySKU(ctx context.Context, orgID uuid.UUID, in UpsertBySKUInput) (domain.Product, bool, error) {
+	trimmed := strings.TrimSpace(in.Name)
+	if len(trimmed) < 2 || len(trimmed) > 160 {
+		return domain.Product{}, false, ErrInvalidName
+	}
+	sku := strings.TrimSpace(in.SKU)
+	if sku == "" {
+		return domain.Product{}, false, errors.New("sku is required for upsert-by-sku")
+	}
+	if in.PriceCents < 0 || in.PriceCents > MaxPriceCents {
+		return domain.Product{}, false, ErrInvalidPrice
+	}
+	currency := strings.ToUpper(strings.TrimSpace(in.Currency))
+	if currency == "" {
+		currency = "BRL"
+	}
+	if len(currency) != 3 {
+		return domain.Product{}, false, ErrInvalidCurrency
+	}
+	metadata := in.Metadata
+	if len(metadata) == 0 {
+		metadata = []byte(`{}`)
+	}
+
+	const q = `
+		INSERT INTO products
+		  (organization_id, name, description, sku, price_cents, currency, metadata)
+		VALUES ($1, $2, $3, $4, $5, $6, $7)
+		ON CONFLICT (organization_id, sku)
+		  WHERE sku IS NOT NULL
+		DO UPDATE SET
+		  name         = EXCLUDED.name,
+		  description  = EXCLUDED.description,
+		  price_cents  = EXCLUDED.price_cents,
+		  currency     = EXCLUDED.currency,
+		  metadata     = EXCLUDED.metadata
+		RETURNING id, is_active, created_at, updated_at,
+		         (xmax = 0) AS inserted
+	`
+	var p domain.Product
+	var inserted bool
+	err := r.pool.QueryRow(ctx, q,
+		orgID, trimmed, in.Description, sku, in.PriceCents, currency, metadata,
+	).Scan(&p.ID, &p.IsActive, &p.CreatedAt, &p.UpdatedAt, &inserted)
+	if err != nil {
+		return domain.Product{}, false, fmt.Errorf("upsert product by sku: %w", err)
+	}
+	p.OrganizationID = orgID
+	p.Name = trimmed
+	p.Description = in.Description
+	p.SKU = &sku
+	p.PriceCents = in.PriceCents
+	p.Currency = currency
+	p.Metadata = metadata
+	return p, inserted, nil
+}
+
 // Archive is a soft-delete: flips is_active=false. Actual row is kept so
 // existing proposals that reference the product keep their line items
 // intact.
