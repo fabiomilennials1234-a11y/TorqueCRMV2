@@ -40,6 +40,13 @@ lint: ## golangci-lint run (install with: go install github.com/golangci/golangc
 tidy: ## go mod tidy
 	go mod tidy
 
+# ---- Security (S52) --------------------------------------------------------
+.PHONY: security
+security: ## Run local security scan (vet + gosec + govulncheck). Install: go install github.com/securego/gosec/v2/cmd/gosec@latest && go install golang.org/x/vuln/cmd/govulncheck@latest
+	go vet ./...
+	gosec -severity=high -confidence=medium ./...
+	govulncheck ./...
+
 # ---- Migrations -------------------------------------------------------------
 .PHONY: migrate-up
 migrate-up: ## Apply all pending migrations
