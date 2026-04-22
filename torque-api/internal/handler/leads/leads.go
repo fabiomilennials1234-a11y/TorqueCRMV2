@@ -26,13 +26,15 @@ import (
 	"github.com/milennials/torque-api/internal/httpx"
 	mw "github.com/milennials/torque-api/internal/httpx/middleware"
 	leadrepo "github.com/milennials/torque-api/internal/repository/lead"
+	quotarepo "github.com/milennials/torque-api/internal/repository/quota"
 	"github.com/milennials/torque-api/internal/ws"
 )
 
 // Handler groups the /leads endpoints.
 type Handler struct {
-	repo *leadrepo.Repository
-	bus  *event.Bus
+	repo  *leadrepo.Repository
+	bus   *event.Bus
+	quota *quotarepo.Repository
 }
 
 // New returns a new handler.
@@ -40,10 +42,24 @@ func New(repo *leadrepo.Repository, bus *event.Bus) *Handler {
 	return &Handler{repo: repo, bus: bus}
 }
 
+// WithQuota attaches the quota repository so POST /leads enforces the
+// org's leads cap (S51). nil is accepted — the handler collapses back
+// to unbounded creation (matches pre-S51 behavior for test fixtures
+// that don't seed plan_quotas).
+func (h *Handler) WithQuota(q *quotarepo.Repository) *Handler {
+	h.quota = q
+	return h
+}
+
 // Routes mounts the endpoints. Compose on a tenant-scoped authenticated subrouter.
 func (h *Handler) Routes(r chi.Router) {
 	r.Get("/leads", h.list)
-	r.Post("/leads", h.create)
+	// S51 — POST /leads sits behind the quota gate when wired.
+	if h.quota != nil {
+		r.With(mw.RequireQuota(h.quota, quotarepo.ResourceLeads)).Post("/leads", h.create)
+	} else {
+		r.Post("/leads", h.create)
+	}
 	r.Get("/leads/{id}", h.get)
 	r.Patch("/leads/{id}", h.update)
 	r.Delete("/leads/{id}", h.softDelete)
@@ -155,6 +171,14 @@ func (h *Handler) create(w http.ResponseWriter, r *http.Request) {
 		httpx.WriteError(w, http.StatusBadRequest, "INVALID_LEAD", err.Error())
 		return
 	}
+	// S51 — increment usage AFTER the create succeeds. Handler failure
+	// paths above do not increment. The middleware admitted us under
+	// effective_limit; the tiny window between check and bump can only
+	// over-count when a tenant fires concurrent creates, which the
+	// rate limiter bounds.
+	if h.quota != nil {
+		_, _ = h.quota.IncrementUsage(r.Context(), orgID, quotarepo.ResourceLeads, 1)
+	}
 	h.publish(l, "lead.created")
 	w.Header().Set("Location", "/api/v1/leads/"+l.ID.String())
 	httpx.WriteJSON(w, http.StatusCreated, toView(l))
@@ -224,6 +248,12 @@ func (h *Handler) softDelete(w http.ResponseWriter, r *http.Request) {
 		}
 		httpx.WriteError(w, http.StatusInternalServerError, "INTERNAL", "could not delete lead")
 		return
+	}
+	// S51 — decrement usage so the tenant reclaims the slot. Fine to
+	// fire-and-forget; a drift-free usage recount job is the canonical
+	// authority when we ever suspect divergence.
+	if h.quota != nil {
+		_, _ = h.quota.IncrementUsage(r.Context(), orgID, quotarepo.ResourceLeads, -1)
 	}
 	h.bus.Publish(ws.Event{
 		Type: "lead.deleted", TenantID: orgID, EntityType: "lead",

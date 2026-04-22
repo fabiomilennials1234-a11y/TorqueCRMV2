@@ -74,14 +74,22 @@ type Config struct {
 	// gate security-sensitive features behind a bootstrap flag.
 	FeatureFlags map[string]bool
 
-	// --- Billing (S24) ---
+	// --- Billing (S24 + S51) ---
 	// BillingProvider selects the concrete integration. S24 ships "mock";
-	// "asaas" wiring lands once credentials + dual review are in place.
+	// S51 activates "asaas" when credentials are wired.
 	BillingProvider      string
 	// BillingWebhookSecret must match the X-Torque-Billing-Secret header
 	// on provider callbacks. Empty = webhook endpoint refuses every call
 	// (secure default — prod deploys MUST set this).
 	BillingWebhookSecret string
+
+	// AsaasAPIKey authenticates every call to api.asaas.com. Empty
+	// falls back to the mock provider even when BILLING_PROVIDER=asaas
+	// (dual-review tripwire — prod MUST explicitly set both env vars).
+	AsaasAPIKey string
+	// AsaasBaseURL selects sandbox vs prod. Defaults to sandbox in
+	// absence; prod deploys explicitly set to https://api.asaas.com/v3.
+	AsaasBaseURL string
 
 	// --- AI / Copilot (S37 — F06) ---
 	// OpenRouter is the default LLM gateway (anthropic/openai/google in
@@ -211,6 +219,8 @@ func Load() (Config, error) {
 
 		BillingProvider:      getenv("BILLING_PROVIDER", "mock"),
 		BillingWebhookSecret: os.Getenv("BILLING_WEBHOOK_SECRET"),
+		AsaasAPIKey:          os.Getenv("ASAAS_API_KEY"),
+		AsaasBaseURL:         os.Getenv("ASAAS_BASE_URL"),
 
 		OpenRouterBaseURL: getenv("OPENROUTER_BASE_URL", "https://openrouter.ai/api/v1"),
 		OpenRouterAPIKey:  os.Getenv("OPENROUTER_API_KEY"),
