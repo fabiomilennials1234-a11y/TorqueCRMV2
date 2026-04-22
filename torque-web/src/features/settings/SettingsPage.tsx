@@ -1,4 +1,5 @@
-import { useId, useMemo, useState } from 'react'
+import { useEffect, useId, useMemo, useState } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import {
   Building2,
   Users,
@@ -33,6 +34,12 @@ import {
   useOrganization,
   useUpdateOrganization,
 } from '@/hooks/useOrgSettings'
+import {
+  googleConnectURL,
+  useIntegrations,
+  useDisconnectGoogle,
+  type IntegrationCredential,
+} from '@/hooks/useIntegrations'
 import { cn } from '@/lib/utils'
 
 type SectionKey =
@@ -66,8 +73,28 @@ const sections: { key: SectionKey; label: string; icon: LucideIcon; description:
   { key: 'notifications', label: 'Notificações', icon: Bell, description: 'Canais e silêncios' },
 ]
 
+const SECTION_KEYS: SectionKey[] = [
+  'org',
+  'team',
+  'roles',
+  'integrations',
+  'billing',
+  'webhooks',
+  'security',
+  'notifications',
+]
+
+function coerceTab(v: string | null): SectionKey {
+  return SECTION_KEYS.includes(v as SectionKey) ? (v as SectionKey) : 'team'
+}
+
 export function SettingsPage() {
-  const [active, setActive] = useState<SectionKey>('team')
+  const [params] = useSearchParams()
+  const [active, setActive] = useState<SectionKey>(() => coerceTab(params.get('tab')))
+  useEffect(() => {
+    const next = coerceTab(params.get('tab'))
+    setActive(next)
+  }, [params])
 
   return (
     <div className="mx-auto max-w-[1400px] px-8">
@@ -490,24 +517,88 @@ function initials(name: string): string {
 }
 
 function IntegrationsSection() {
-  const integrations = [
+  const { data: credentials } = useIntegrations()
+  const disconnectGoogle = useDisconnectGoogle()
+
+  const byProvider = (p: string): IntegrationCredential | undefined =>
+    credentials?.find((c: IntegrationCredential) => c.provider === p)
+
+  const google = byProvider('google')
+  const tinyerp = byProvider('tinyerp')
+
+  const items: Array<{
+    key: string
+    name: string
+    desc: string
+    logo: string
+    connected: boolean
+    account?: string | null | undefined
+    lastSuccessAt?: string | null | undefined
+    onConnect?: () => void
+    onDisconnect?: () => void
+    comingSoon?: boolean
+  }> = [
     {
-      name: 'WhatsApp · Evolution API',
-      desc: 'Canal conversacional principal',
-      status: 'connected',
-      logo: 'WA',
+      key: 'google',
+      name: 'Google Calendar',
+      desc: 'Agenda de reuniões sincronizadas (OAuth 2.0)',
+      logo: 'G',
+      connected: google?.connected ?? false,
+      account: google?.external_account_id,
+      lastSuccessAt: google?.last_success_at,
+      onConnect: () => {
+        window.location.href = googleConnectURL()
+      },
+      onDisconnect: () => {
+        disconnectGoogle.mutate(undefined)
+      },
     },
-    { name: 'Meta Ads', desc: 'Ingestão de leads Lead Ads', status: 'connected', logo: 'M' },
-    { name: 'Asaas', desc: 'Cobrança e assinaturas', status: 'connected', logo: 'A' },
-    { name: 'Google Calendar', desc: 'Agenda de reuniões', status: 'connected', logo: 'G' },
-    { name: 'TinyERP', desc: 'Catálogo de produtos e pedidos', status: 'disconnected', logo: 'T' },
-    { name: 'n8n (auto-hospedado)', desc: 'Orquestrador externo', status: 'action', logo: 'n8' },
+    {
+      key: 'tinyerp',
+      name: 'TinyERP',
+      desc: 'Catálogo de produtos e pedidos',
+      logo: 'T',
+      connected: tinyerp?.connected ?? false,
+      account: tinyerp?.external_account_id,
+      lastSuccessAt: tinyerp?.last_success_at,
+      comingSoon: true,
+    },
+    {
+      key: 'whatsapp',
+      name: 'WhatsApp · Evolution API',
+      desc: 'Canal conversacional principal (configurado por canal)',
+      logo: 'WA',
+      connected: true,
+    },
+    {
+      key: 'meta',
+      name: 'Meta Ads',
+      desc: 'Ingestão de leads Lead Ads',
+      logo: 'M',
+      connected: false,
+      comingSoon: true,
+    },
+    {
+      key: 'asaas',
+      name: 'Asaas',
+      desc: 'Cobrança e assinaturas',
+      logo: 'A',
+      connected: true,
+    },
+    {
+      key: 'n8n',
+      name: 'n8n (auto-hospedado)',
+      desc: 'Orquestrador externo',
+      logo: 'n8',
+      connected: true,
+    },
   ]
+
   return (
     <div className="grid gap-3 sm:grid-cols-2">
-      {integrations.map((i) => (
+      {items.map((i) => (
         <div
-          key={i.name}
+          key={i.key}
           className="flex items-start gap-3 rounded-lg bg-surface p-4 shadow-elev-1 transition-shadow hover:shadow-elev-2"
         >
           <div className="font-metric flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-elevated text-xs text-ink-muted shadow-hairline">
@@ -516,18 +607,35 @@ function IntegrationsSection() {
           <div className="min-w-0 flex-1">
             <div className="text-sm font-medium text-ink">{i.name}</div>
             <div className="text-xs text-ink-muted">{i.desc}</div>
+            {i.account && (
+              <div className="mt-1 truncate font-mono text-[11px] text-ink-subtle">{i.account}</div>
+            )}
             <div className="mt-2 flex items-center gap-2">
-              {i.status === 'connected' && (
+              {i.connected ? (
                 <Badge tone="success">
                   <Check className="h-2.5 w-2.5" />
                   conectado
                 </Badge>
+              ) : i.comingSoon ? (
+                <Badge tone="neutral">em breve</Badge>
+              ) : (
+                <Badge tone="neutral">desconectado</Badge>
               )}
-              {i.status === 'disconnected' && <Badge tone="neutral">desconectado</Badge>}
-              {i.status === 'action' && <Badge tone="warning">requer atenção</Badge>}
-              <Button variant="ghost" size="xs">
-                {i.status === 'connected' ? 'Gerenciar' : 'Conectar'}
-              </Button>
+              {i.onConnect && !i.connected && (
+                <Button variant="ghost" size="xs" onClick={i.onConnect}>
+                  Conectar
+                </Button>
+              )}
+              {i.onDisconnect && i.connected && (
+                <Button
+                  variant="ghost"
+                  size="xs"
+                  onClick={i.onDisconnect}
+                  disabled={disconnectGoogle.isPending}
+                >
+                  Desconectar
+                </Button>
+              )}
             </div>
           </div>
         </div>

@@ -7,11 +7,13 @@
 package config
 
 import (
+	"encoding/base64"
 	"errors"
 	"fmt"
 	"os"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 )
 
@@ -108,6 +110,28 @@ type Config struct {
 	ElevenLabsBaseURL string
 	ElevenLabsAPIKey  string
 	ElevenLabsModelID string
+
+	// --- Integrations (S49 — F.1) ---
+	// IntegrationEncKey is a base64-encoded 32-byte AES-256 key used to
+	// seal every integration_credentials row. Required outside dev; in
+	// dev a deterministic fallback is logged once at WARN so local
+	// roundtrips work without forcing the operator to set a key.
+	IntegrationEncKey string
+	// IntegrationStateSecret signs the OAuth `state` param HMAC. Falls
+	// back to JWT_SECRET when empty — same blast radius, one fewer
+	// env var to wrangle in dev.
+	IntegrationStateSecret []byte
+
+	// Google OAuth (all optional — when any is empty, the GCal provider
+	// is built but /connect 503s). The redirect URL must exactly match
+	// the one configured in the Google Cloud console.
+	GoogleOAuthClientID     string
+	GoogleOAuthClientSecret string
+	GoogleOAuthRedirectURL  string
+
+	// TinyERP — only BaseURL is needed at boot; per-tenant API keys are
+	// stored encrypted in integration_credentials.
+	TinyERPBaseURL string
 }
 
 // Load reads the config from the environment. Returns an error if any required
@@ -177,6 +201,14 @@ func Load() (Config, error) {
 		ElevenLabsBaseURL: getenv("ELEVENLABS_BASE_URL", "https://api.elevenlabs.io"),
 		ElevenLabsAPIKey:  os.Getenv("ELEVENLABS_API_KEY"),
 		ElevenLabsModelID: getenv("ELEVENLABS_MODEL_ID", "eleven_multilingual_v2"),
+
+		IntegrationEncKey: os.Getenv("INTEGRATION_ENCRYPTION_KEY"),
+
+		GoogleOAuthClientID:     os.Getenv("GOOGLE_OAUTH_CLIENT_ID"),
+		GoogleOAuthClientSecret: os.Getenv("GOOGLE_OAUTH_CLIENT_SECRET"),
+		GoogleOAuthRedirectURL:  os.Getenv("GOOGLE_OAUTH_REDIRECT_URL"),
+
+		TinyERPBaseURL: getenv("TINYERP_BASE_URL", "https://api.tiny.com.br/api2"),
 	}
 
 	if c.DatabaseURL == "" {
@@ -206,7 +238,59 @@ func Load() (Config, error) {
 		c.CookieSecure = true
 	}
 
+	// S49 — integration encryption key. Required in non-dev; fatal boot when
+	// missing. In dev we fall back to a deterministic key logged once at WARN
+	// via a sync.Once (see integrationDevKeyOnce below). NEVER log the key.
+	if c.IntegrationEncKey == "" {
+		if c.Env == "dev" {
+			c.IntegrationEncKey = devFallbackIntegrationKey()
+			integrationDevKeyOnce.Do(func() {
+				// Intentional stderr write — we do not have a logger here.
+				// Surfacing via stderr keeps dev loud without leaking the
+				// key into whatever log pipeline the operator is running.
+				_, _ = os.Stderr.WriteString(
+					"WARN: INTEGRATION_ENCRYPTION_KEY unset in dev; " +
+						"using deterministic fallback. DO NOT ship this to prod.\n")
+			})
+		} else {
+			return Config{}, errors.New(
+				"INTEGRATION_ENCRYPTION_KEY is required outside dev (32-byte base64)")
+		}
+	}
+
+	// S49 — state secret for OAuth `state` HMAC. Falls back to JWT_SECRET.
+	if raw := os.Getenv("INTEGRATION_STATE_SECRET"); raw != "" {
+		c.IntegrationStateSecret = []byte(raw)
+	} else {
+		c.IntegrationStateSecret = c.JWTSecret
+	}
+
 	return c, nil
+}
+
+// integrationDevKeyOnce protects the dev-fallback WARN so it only fires once
+// per process lifetime even if Load() is somehow invoked multiple times (tests).
+var integrationDevKeyOnce sync.Once
+
+// devFallbackIntegrationKey returns a stable base64-encoded 32-byte key for
+// dev-only use. The bytes are deliberately non-zero so a naive leak sticks
+// out in a memory dump, and the key is NOT random — dev seeds must survive a
+// restart to decrypt pre-existing rows.
+//
+// DO NOT copy this value into any non-dev environment. The string is public
+// in source; anything encrypted under it is effectively plaintext.
+func devFallbackIntegrationKey() string {
+	// "torque-dev-do-not-use-in-prod-key" padded to 32 bytes.
+	const devSeed = "torque-dev-do-not-use-in-prod-32"
+	if len(devSeed) != 32 {
+		panic("devSeed must be 32 bytes")
+	}
+	return base64StdEncodingEncodeToString([]byte(devSeed))
+}
+
+// base64StdEncodingEncodeToString wraps encoding/base64 for the dev-key helper.
+func base64StdEncodingEncodeToString(b []byte) string {
+	return base64.StdEncoding.EncodeToString(b)
 }
 
 func getenvBool(key string, fallback bool) bool {
