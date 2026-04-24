@@ -38,7 +38,10 @@ export const options = {
 
 const dashboardLatency = new Trend('dashboard_latency_ms', true)
 const leadListLatency = new Trend('lead_list_latency_ms', true)
+const quotaLookupLatency = new Trend('quota_lookup_latency_ms', true)
+const metaInsightsLatency = new Trend('meta_insights_latency_ms', true)
 const authRate = new Rate('auth_ok')
+const quotaOKRate = new Rate('quota_lookup_ok')
 
 function authHeaders() {
   const h = { 'Content-Type': 'application/json' }
@@ -70,20 +73,62 @@ export default function () {
     return
   }
 
-  // 3. Dashboard-equivalent mix: health + leads list + pipes
+  // 3. Dashboard-equivalent mix: health + leads list + pipes + quotas + integrations
+  //    S52 — added /quotas (S51) and /integrations (S49) to the hot-path batch
+  //    so the load profile reflects what the frontend dashboard actually
+  //    fetches on Plano e Faturamento + Integrações tabs.
   const dashboardStart = Date.now()
   const batch = http.batch([
     { method: 'GET', url: url('/api/v1/leads?page_size=25'), headers, tags: { name: 'leads_list' } },
     { method: 'GET', url: url('/api/v1/pipes'), headers, tags: { name: 'pipes_list' } },
     { method: 'GET', url: url('/api/v1/analytics/leads?since=2026-03-01T00:00:00Z'), headers, tags: { name: 'analytics_leads' } },
+    { method: 'GET', url: url('/api/v1/quotas'), headers, tags: { name: 'quotas_list' } },
+    { method: 'GET', url: url('/api/v1/integrations'), headers, tags: { name: 'integrations_list' } },
   ])
   dashboardLatency.add(Date.now() - dashboardStart)
   leadListLatency.add(batch[0].timings.duration)
+  quotaLookupLatency.add(batch[3].timings.duration)
 
   check(batch[0], { 'leads 200': (r) => r.status === 200 })
   check(batch[1], { 'pipes 200': (r) => r.status === 200 })
+  check(batch[2], { 'analytics 200': (r) => r.status === 200 })
+  check(batch[3], { 'quotas 200': (r) => r.status === 200 })
+  check(batch[4], { 'integrations 200': (r) => r.status === 200 })
+  quotaOKRate.add(batch[3].status === 200)
 
-  // 4. 5% mix: write path (create a task on self) — skips if CSRF absent
+  // 4. 10% mix: Meta Ads insights (cache-hit path — S50 backend serves
+  //    from meta_insights_cache; we want the p95 for the cached read).
+  if (Math.random() < 0.1) {
+    const insightsStart = Date.now()
+    const insights = http.get(
+      url('/api/v1/integrations/meta/ads-insights?date_range=last_7d'),
+      { headers, tags: { name: 'meta_insights' } }
+    )
+    metaInsightsLatency.add(Date.now() - insightsStart)
+    // 200 (cached) or 412 (not connected) are both expected success
+    // shapes; other statuses are regressions.
+    check(insights, {
+      'meta insights ok or not connected': (r) => r.status === 200 || r.status === 412,
+    })
+  }
+
+  // 5. 5% mix: quota-protected write path (POST /leads). The middleware
+  //    runs a DB roundtrip before the handler — we're measuring the
+  //    cost of admission, not the lead repo insert itself.
+  //    Skips when CSRF absent (unauthenticated runs).
+  if (CSRF && Math.random() < 0.05) {
+    http.post(
+      url('/api/v1/leads'),
+      JSON.stringify({
+        name: 'Lead k6 ' + Math.floor(Math.random() * 1e9),
+        phone: '+5511999990000',
+      }),
+      { headers, tags: { name: 'lead_create_quota' } }
+    )
+  }
+
+  // 6. 5% mix: create a task on self (pre-S50 baseline retained so
+  //    we can diff p95 against pre-hardening runs).
   if (CSRF && Math.random() < 0.05) {
     http.post(
       url('/api/v1/tasks'),

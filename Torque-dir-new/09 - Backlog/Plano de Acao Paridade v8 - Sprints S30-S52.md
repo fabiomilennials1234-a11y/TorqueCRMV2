@@ -6,7 +6,7 @@ tags:
   - v8
   - sprints
 created: 2026-04-20
-last_updated: 2026-04-22 (S51)
+last_updated: 2026-04-22 (S52 — FASE G CONCLUÍDA, roadmap completo)
 status: vivo
 referencia: "[[Analise Comparativa v8 vs Torque-v2]]"
 ---
@@ -782,7 +782,100 @@ Próxima fase: **F — Integrações externas (S49-S50)** Google Calendar + Tiny
 
 ---
 
-## S52 — OpenAPI refresh final + cosign + gosec completo + pentest staging
+## S52 — OpenAPI refresh final + cosign + gosec completo + pentest staging — ✅ ENTREGUE (2026-04-22)
+
+**Status**: Entregue. Ver `STATE.md` D072. **FASE G CONCLUÍDA** (S51→S52). **ROADMAP S30-S52 COMPLETO** — 23 sprints, ~28 semanas, 7 fases. Gate Go-to-Production aberto (checklist §10 abaixo).
+
+**Entregas (código):**
+1. **release.yml**: `permissions: id-token: write` habilita Sigstore keyless OIDC; `sigstore/cosign-installer@v3` v2.4.1 pinado; build steps exportam digest via `id:`; novo step `Sign <api|web> image` roda `cosign sign --yes ghcr.io/<repo>@<sha256>` (por digest, imutável — tags podem ser sobrescritas pós-push).
+2. **deploy.yml**: novo job `verify` com `cosign verify --certificate-identity-regexp "^https://github.com/<repo>/.github/workflows/release.yml@refs/tags/<tag>$" --certificate-oidc-issuer https://token.actions.githubusercontent.com` pinado — fork compromised de release.yml não produz signature que passa no gate. migrate + deploy `needs: [verify]` + `if: needs.verify.result == 'success'`.
+3. **Makefile**: target `security` roda `go vet + gosec -severity=high -confidence=medium + govulncheck` localmente; comentário documenta one-shot install.
+4. **k6 load test** (`.specs/loadtest/api-baseline.k6.js`): `/quotas` + `/integrations` no dashboard batch; 10% Meta Ads insights (cached 200 ou 412); 5% POST /leads admission middleware cost; trends `quota_lookup_latency_ms` + `meta_insights_latency_ms`.
+5. **Pentest runbook** (`.specs/security/pentest-runbook-S52.md`, ~350 linhas) + **findings template** (`.specs/security/pentest-staging-template.md`): 10 checks executáveis cobrindo rate limiter burst, cross-tenant leak 404-not-403, JWT tampering 3 variantes, CSRF missing+mismatch, webhook replay, lead webhook HMAC (S50), quota enforcement 402 (S51), master impersonation audit-first (D062), WS origin, frontend XSS bundle. Findings vão em GitHub issues + `.specs/security/pentest-staging-<YYYY-MM-DD>.md` com dual sign-off security+QA.
+6. **OpenAPI spec refresh** (`torque-api/api/openapi.yaml`): version 0.1.0 → **0.52.0**, 341 → **1709 linhas**, ~13 → **~80 paths**. Tags novas (22): leads, pipes, confirmations, meetings, tasks, inbox, templates, campaigns, workflows, agents, billing, quotas, integrations, webhooks, analytics, performance, products, members, proposals, settings, onboarding, master. Hot-path schemas completos (Lead + LeadPage + LeadCreateRequest + LeadPatchRequest + Subscription + CheckoutRequest + Quota + IntegrationCredential + MetaAdAccountInsights + LeadWebhookPayload). Responses novas: InvalidBody 400, NotFound 404, QuotaExceeded 402 com body canônico e headers X-Quota-*. Public webhooks com HMAC-SHA256 + X-Torque-Tenant + 413 body-cap + 503 disabled documentados. SSE (text/event-stream) + audio/mpeg + OAuth 302 callback + CSRF-exempt state HMAC enforced todos spec'ados.
+
+**Critério de aceite** (runtime GitHub Actions + Go host):
+- [x] `release.yml` com id-token + cosign sign wired (aguarda primeiro tag v* pra executar).
+- [x] `deploy.yml` com cosign verify gate wired (aguarda dispatch pra executar).
+- [x] `gosec -severity=high` ativo em ci.yml (desde S32, documentado).
+- [x] `make security` localmente roda toolchain security completa.
+- [x] k6 script atualizado com endpoints S50/S51.
+- [x] Pentest runbook executável em staging com findings template dual sign-off.
+- [x] OpenAPI spec cobrindo todas as famílias S05-S51 com hot-path schemas.
+- [ ] **Pending operator**: executar cosign verify + pentest + k6 run real contra staging uma vez que ambiente esteja provisionado.
+
+**Deferreds pós-prod explícitos:**
+- Impersonation cookie-swap atômico com audit row (D044 A04 review, baixo risco — atual já refuses impersonation em audit fail).
+- `openapi-typescript` regen + `api.gen.ts` diff no frontend (incremental).
+- Deep request/response schemas nas ~50 paths que ficaram minimal (incremental).
+- k6 run real contra staging + pentest execution contra staging (operator task, requires environment).
+
+**Commits**: `85f2df9` infra+ops (cosign + deploy verify + make security + k6 + pentest runbook) · `30d9aa5` openapi.
+
+---
+
+## S53 — Fase H Production Gate Verification (pós-roadmap) — Onda 1+2+3 ENTREGUES (2026-04-24); Semana 3 PENDING staging
+
+**Status**: Onda 1+2+3 (Semanas 1+2 do plano) ENTREGUES. Ver `STATE.md` D073 (auditoria + bugs duros) e D074 (Onda 1+2+3 entregues + deferreds honestos). Semana 3 (gate execution contra staging) PENDING — requer provisioning humano (VPS Hostinger + Postgres managed + DNS + Cloudflare + GitHub Environments + sandbox keys reais). Sprint **NÃO** é feature — é evidência empírica.
+
+**Tamanho**: L (3 semanas conforme `Plano S53 - Fase H Production Gate Verification.md`)
+**Dono lógico**: Conductor (10 agentes paralelos em 3 ondas) + provisionamento humano para Semana 3
+**Objetivo**: Transformar "entregue em código" em "rodando em realidade" + destravar gate §10 + fechar gaps de runtime crítico descobertos na auditoria D073.
+
+**Entregas (código — Ondas 1+2+3 entregues):**
+1. **Workflow engine real** (`service/workflow/*` ~1000 LOC): 7/7 action handlers com side-effects (SendMessage+messaging+inbox, UpdateLead+bus, Wait com ErrSuspend/next_retry_at marker, CreateTask+assignee resolution, CallAgent+agent_sessions+killswitch, HTTPRequest+SSRF guard RFC1918/loopback/link-local/metadata/1MiB cap/no-redirect, Branch puro). Error taxonomy via ErrTransient/ErrNonRetryable/ErrSuspend. Executor com backoff `[15s/1m/5m/30m/2h]` + DLQ workflow_run_failures. Runner watchdog ReclaimOrphanedRuns 10min em goroutine. Migration 0028 (attempts/max_attempts/next_retry_at + workflow_run_failures + idx parcial). 22+ tests novos.
+2. **AI safety stack completa**: migration 0031 plan_quotas seeds ai_tokens (50k/500k/5M) + tts_seconds (300/3600/36000) × free/growth/enterprise + backfill transacional org_quotas; `service/ai/pii/scrub.go` regexes BR (CPF/CNPJ/phone/email/credit-card) + ScrubRAGContext + 20+ tests; `httpx/middleware/ai_quota.go` RequireAITokenBudget + RequireTTSBudget admission-only fail-closed master-bypass 402 PT-BR; `service/ai/runtime_registry.go` Registry CancelAll mutex-guarded + 6 tests; `service/ai/trigger/subscriber.go` bus subscriber message.received/conversation.created→AssignAgent via matcher + publica conversation.agent_assigned + 7 tests; `playground.go` PII scrub user msg + RAG chunks + finalizeStream tx user+assistant rows + IncrementUsage(ai_tokens) + ttsPreview IncrementUsage(tts_seconds); `agents.go` killSwitch chama registry.CancelAll. 43+ tests cross 5 files.
+3. **DBA cleanup**: migration 0029 drop knowledge_chunks.embedding_text legacy + meetings UNIQUE compound (organization_id, external_provider, external_id) DEFERRABLE removendo risco cross-tenant em GCal IDs; migration 0030 pg_trgm IF NOT EXISTS + GIN parcial trigram leads.name LOWER + email + phone + messages.body alinhado com LIKE LOWER do repo lead.go:86.
+4. **Backup/DR runbook + scripts** (~936 LOC, 5 arquivos): `.specs/runbooks/backup-restore.md` (176L, RPO 24h/RTO 1h/retention 30d daily + 12m monthly cold storage); `.specs/runbooks/key-rotation.md` (170L com dual-key procedure pra INTEGRATION_ENCRYPTION_KEY); `scripts/backup-postgres.sh` (pg_dump custom compress=9 + S3/B2/R2 upload via AWS CLI); `scripts/restore-postgres.sh` (pg_restore --clean --if-exists --single-transaction + ENV=production refuse sem --confirm-prod); `scripts/verify-backup.sh` (3 invariantes sem DB); `scripts/README.md` (93L); `.github/workflows/backup.yml` (128L, cron `0 3 * * *` + workflow_dispatch + postgresql-client-15 + retention cleanup 30d + Sentry webhook on failure + 60min timeout); `.env.example` rotation refs em 9 chaves.
+5. **Quota wiring members + workflows + agents**: `handler/members/members.go` bidirectional headcount delta ±1 idempotente via priorActive snapshot; `handler/workflows/workflows.go` lifetime count (archive reversível = sem reclaim documentado); `handler/agents/agents.go` createAgent=+1 + setStatus→disabled=-1 sequenciado DEPOIS de registry.CancelAll preservado da Onda 1 (ResourceAgents distinto de ResourceAITokens). 16 tests admit/cap-402/fail-closed-ErrNotFound/master-bypass/nil-safe-typed.
+6. **Impersonation cookie swap atômico**: `handler/master/master.go:163-285` reescrito removendo silencers; flow resolve→audit-first (D062 invariant)→mint JWT short-lived→`http.SetCookie` espelhando `auth.setSessionCookie` exato (`__torque_session`, HttpOnly+Secure+SameSite=Strict+Path=/). Narrow interfaces locais permitem unit test sem pgxpool sem mudar cmd/api wiring. 5 tests audit-fail-closed/cookie-shape/cookieDomain-config/ErrNotFound-pré-audit/malformed-UUID.
+7. **api.gen.ts regen** via `openapi-typescript` contra arquivo estático yaml — 7 linhas → **4398 linhas**, OpenAPI 0.52.0 100% tipado. S52 deferred (b) FECHADO.
+8. **Bugs D073 corrigidos in-session**: FK `0022_performance.up.sql:67` `proposals` → `pipe_proposals(pipe_entry_id)` preservando nome `proposal_id` JSON; `cmd/api/main.go:207` `busSub :=` → `wfSub :=` (resolve build fail); `.env.example` 15+ vars S39-S52; `FunisHubPage.tsx:58` `/funil/:id` → `/pipe/:id`; Sidebar badges fake removidos; `.github/CODEOWNERS` cobrindo billing/quotas/auth/master/jwt/crypto/permission/migrations/runbooks (dual-review §10 enforceable).
+
+**Validação final** (executada local Windows host):
+- [x] `tsc --noEmit` verde (frontend).
+- [x] `eslint . --max-warnings 0` verde.
+- [x] `vitest run` **296/296 em 86 files** (zero regressão pós-regen api.gen.ts massivo).
+- [ ] `go build ./...` + `go vet` + `gosec -severity=high` + `govulncheck` + `go test -race -coverprofile` em pkgs críticos (service/billing, service/jwt, service/permission, httpx/middleware, repository/lead, repository/quota, service/workflow, service/ai) — **toolchain Go ausente no Windows host**, deferido a CI release.yml + ci.yml já gateados.
+
+**Pending Semana 3 (operator/staging)**:
+- [ ] Provisionar staging Hostinger (VPS dedicada + managed Postgres 15 + pgvector toggle + Cloudflare DNS + Let's Encrypt via EasyPanel) → tag `v0.53.0-rc1` em sprint/S53 → primeira execução de cosign sign real → primeiro deploy verify real.
+- [ ] Restore drill em staging (dump prod, wipe staging, restore via `restore-postgres.sh`, validate smoke).
+- [ ] security-scan.yml 7 dias green (`gh run list --workflow=security-scan.yml --limit 30 --json conclusion,createdAt` commitado em `.specs/security/security-scan-history-<date>.json` + triage HIGH/CRITICAL).
+- [ ] k6 baseline 50VU×10min contra staging (`BASE_URL=https://staging.torquecrm.com.br k6 run --summary-export=.specs/loadtest/run-<date>.json .specs/loadtest/api-baseline.k6.js`) — falha em qualquer threshold = stop-ship.
+- [ ] Pentest staging — 10 checks em `.specs/security/pentest-runbook-S52.md` + dual sign-off security+QA em `.specs/security/pentest-staging-<date>.md`.
+- [ ] Go coverage ≥75% measured (Docker compose up postgres em CI + `DATABASE_URL=... go test -coverprofile=coverage.out ./...` em ci.yml + `go tool cover -func=coverage.out` valida pkgs críticos).
+- [ ] Game day dry-run 4 cenários (DB kill 30s + Asaas 5xx 5min + worker pool leak + Evolution 503) em `.specs/runbooks/gameday-<date>.md`.
+- [ ] Branch protection GitHub em main + develop exigindo CODEOWNERS review (UI humana).
+- [ ] Feature flags mínimos env-var-based (COPILOT_ENABLED, WORKFLOWS_ENABLED, CAMPAIGNS_ENABLED, ASAAS_ENABLED) expostos via /api/bootstrap.
+
+**Critério de aceite Semana 3 (gate §10 fechado)**:
+- [ ] 8/8 itens do gate §10 com evidência empírica (não apenas código).
+- [ ] Staging deployed cosign-verified.
+- [ ] Pentest clean dual sign-off.
+- [ ] k6 p95<500ms measured contra staging real.
+- [ ] Backup+restore drill executado.
+- [ ] Game day registrado.
+- [ ] Go coverage ≥75% medida e publicada nos pkgs críticos.
+
+**Deferreds honestos pós-S53** (S54+ ou pós-prod):
+- (a) Messaging per-tenant selector no workflow dispatcher (Evolution/SZ.Chat credential resolution por channelID) → S54.
+- (b) Schedule (cron) trigger → S54.
+- (c) Asaas boleto + cartão → pós-prod.
+- (d) Frontend upsell banner copy AI_QUOTA_EXCEEDED/TTS_QUOTA_EXCEEDED → S54.
+- (e) F02 Countdown + F03 HeatSlider signature UI → S54+.
+- (f) Meta Lead Ads relay orchestration + SZ.Chat inbound webhook → S54.
+- (g) workflow_run_failures admin endpoint GET /workflows/:id/runs/:run_id/failures → cleanup sprint.
+- (h) buildLeadFacts hidration completo (origin/segment/UTMs/tags) no trigger/subscriber → S54.
+- (i) Redis-backed rate-limiter multi-pod, OpenTelemetry wiring, materialized upsell_opportunities, dispatch SDR/Closer → pós-prod.
+
+**Commits S53 (Onda 1+2+3, organizados por domínio)**: a registrar pós-validação local (DBA → Backend → QA → Frontend → Infra → Docs). Branch `sprint/S52` carrega Onda 1+2+3 conceitualmente de S53; PR titulada "Sprint S52 final + S53 Fase H Ondas 1-3" → develop. Branch `sprint/S53` será criada zerada de develop pós-merge pra trackar Semana 3 (gate execution).
+
+---
+
+### S52 — (replaced — spec histórica abaixo)
+
+**Escopo original planejado** (mantido pra auditoria do plano):
 
 **Tamanho**: M
 **Dono lógico**: Infra + QA

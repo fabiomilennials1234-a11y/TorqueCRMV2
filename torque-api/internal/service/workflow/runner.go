@@ -21,13 +21,19 @@ type RunnerConfig struct {
 	PollInterval time.Duration
 	// PollJitter prevents thundering-herd when multiple replicas poll.
 	PollJitter time.Duration
+	// WatchdogInterval is how often the orphan reclaimer runs.
+	WatchdogInterval time.Duration
+	// StaleAfter is the running-row age threshold for orphan reclaim.
+	StaleAfter time.Duration
 }
 
 // DefaultRunnerConfig returns sane values for a single-replica dev box.
 func DefaultRunnerConfig() RunnerConfig {
 	return RunnerConfig{
-		PollInterval: 2 * time.Second,
-		PollJitter:   500 * time.Millisecond,
+		PollInterval:     2 * time.Second,
+		PollJitter:       500 * time.Millisecond,
+		WatchdogInterval: 2 * time.Minute,
+		StaleAfter:       10 * time.Minute,
 	}
 }
 
@@ -35,10 +41,15 @@ func DefaultRunnerConfig() RunnerConfig {
 // workflow_run rows and hands them to the Executor. One runner per
 // process; scale horizontally by adding more replicas (SKIP LOCKED in
 // ClaimPendingRun keeps them from fighting).
+//
+// Two goroutines share the runner:
+//   - claim loop: picks the next eligible pending run and executes it.
+//   - watchdog loop: reclaims `running` rows whose process died mid-run.
 type Runner struct {
 	cfg      RunnerConfig
 	repo     *workflowrepo.Repository
 	executor *Executor
+	bus      *event.Bus
 	logger   zerolog.Logger
 
 	stop chan struct{}
@@ -46,31 +57,51 @@ type Runner struct {
 	wg   sync.WaitGroup
 }
 
-// NewRunner wires deps.
+// NewRunner wires deps. bus is optional; when non-nil, the watchdog
+// publishes `workflow_run.orphaned` events so ops dashboards light up
+// on stuck runs.
 func NewRunner(cfg RunnerConfig, repo *workflowrepo.Repository, executor *Executor, logger zerolog.Logger) *Runner {
+	return NewRunnerWithBus(cfg, repo, executor, nil, logger)
+}
+
+// NewRunnerWithBus is the full constructor.
+func NewRunnerWithBus(cfg RunnerConfig, repo *workflowrepo.Repository, executor *Executor, bus *event.Bus, logger zerolog.Logger) *Runner {
 	if cfg.PollInterval <= 0 {
-		cfg = DefaultRunnerConfig()
+		cfg.PollInterval = 2 * time.Second
+	}
+	if cfg.PollJitter < 0 {
+		cfg.PollJitter = 0
+	}
+	if cfg.WatchdogInterval <= 0 {
+		cfg.WatchdogInterval = 2 * time.Minute
+	}
+	if cfg.StaleAfter <= 0 {
+		cfg.StaleAfter = 10 * time.Minute
 	}
 	return &Runner{
 		cfg:      cfg,
 		repo:     repo,
 		executor: executor,
+		bus:      bus,
 		logger:   logger.With().Str("component", "workflow_runner").Logger(),
 		stop:     make(chan struct{}),
 	}
 }
 
-// Start launches the dispatcher goroutine.
+// Start launches both goroutines.
 func (r *Runner) Start(ctx context.Context) {
-	r.wg.Add(1)
+	r.wg.Add(2)
 	go func() {
 		defer r.wg.Done()
 		r.loop(ctx)
 	}()
+	go func() {
+		defer r.wg.Done()
+		r.watchdog(ctx)
+	}()
 }
 
-// Shutdown signals stop + waits for the goroutine to exit, capped at
-// ctx deadline.
+// Shutdown signals stop + waits for both goroutines to exit.
 func (r *Runner) Shutdown(ctx context.Context) error {
 	r.once.Do(func() { close(r.stop) })
 	done := make(chan struct{})
@@ -114,6 +145,75 @@ func (r *Runner) loop(ctx context.Context) {
 	}
 }
 
+// watchdog runs every WatchdogInterval and reclaims orphaned runs.
+// An "orphaned" run is one in `running` status whose started_at is
+// older than StaleAfter — typically the process died between
+// AppendRunStep and CompleteRunStep, or the runCtx timed out without
+// a graceful MarkRunFailed.
+func (r *Runner) watchdog(ctx context.Context) {
+	// Small offset on first tick so a boot storm doesn't slam the DB.
+	initial := r.cfg.WatchdogInterval / 2
+	if initial > 30*time.Second {
+		initial = 30 * time.Second
+	}
+	t := time.NewTimer(initial)
+	defer t.Stop()
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case <-r.stop:
+			return
+		case <-t.C:
+		}
+		r.reclaimOnce(ctx)
+		t.Reset(r.cfg.WatchdogInterval)
+	}
+}
+
+func (r *Runner) reclaimOnce(ctx context.Context) {
+	qCtx, cancel := context.WithTimeout(ctx, 10*time.Second)
+	defer cancel()
+	orphaned, err := r.repo.ReclaimOrphanedRuns(qCtx, r.cfg.StaleAfter)
+	if err != nil {
+		r.logger.Error().Err(err).Msg("watchdog reclaim failed")
+		return
+	}
+	if len(orphaned) == 0 {
+		return
+	}
+	r.logger.Warn().
+		Int("reclaimed", len(orphaned)).
+		Dur("stale_after", r.cfg.StaleAfter).
+		Msg("workflow watchdog reclaimed orphaned runs")
+	for _, o := range orphaned {
+		// DLQ row so the trail shows WHY the run died.
+		attempt := o.Attempts + 1
+		if attempt < 1 {
+			attempt = 1
+		}
+		_, _ = r.repo.InsertRunFailure(qCtx, workflowrepo.RunFailure{
+			OrganizationID: o.OrganizationID,
+			RunID:          o.ID,
+			WorkflowID:     o.WorkflowID,
+			StepID:         o.CurrentStepID,
+			Attempt:        attempt,
+			ErrorCode:      "ORPHANED",
+			ErrorMessage:   "watchdog reclaimed run exceeding stale threshold",
+		})
+		if r.bus != nil {
+			rid := o.ID
+			r.bus.Publish(ws.Event{
+				Type:       "workflow_run.orphaned",
+				TenantID:   o.OrganizationID,
+				EntityType: "workflow_run",
+				EntityID:   &rid,
+				OccurredAt: time.Now().UTC(),
+			})
+		}
+	}
+}
+
 func (r *Runner) sleep(ctx context.Context) {
 	d := r.cfg.PollInterval
 	if r.cfg.PollJitter > 0 {
@@ -132,18 +232,16 @@ func (r *Runner) sleep(ctx context.Context) {
 
 // BusSubscriber listens on the tenant event bus and enqueues a
 // workflow_run for every active workflow whose trigger matches the
-// event kind. Today it handles `lead.created` → `lead_created`
-// trigger. S45 will extend the map to cover
-// `lead.stage_changed` + `message.received`.
+// event kind.
 type BusSubscriber struct {
 	bus    *event.Bus
 	repo   *workflowrepo.Repository
 	logger zerolog.Logger
 
-	stop   chan struct{}
-	unsub  func()
-	wg     sync.WaitGroup
-	once   sync.Once
+	stop  chan struct{}
+	unsub func()
+	wg    sync.WaitGroup
+	once  sync.Once
 }
 
 // NewBusSubscriber wires deps.
@@ -157,15 +255,12 @@ func NewBusSubscriber(bus *event.Bus, repo *workflowrepo.Repository, logger zero
 }
 
 // eventTriggerMap pins which trigger enum value corresponds to which
-// event bus type. Anything not in this map is ignored. S45 extended
-// this to cover stage changes (F01/F12 pipe moves publish
-// `lead.stage_changed`) and inbound messages (F04 inbox publishes
-// `message.received`). The schedule trigger fires via a cron-like
-// scheduler rather than the event bus, so it lives outside this map.
+// event bus type. `schedule` trigger is cron-driven and lives outside
+// this map.
 var eventTriggerMap = map[string]string{
-	"lead.created":        "lead_created",
-	"lead.stage_changed":  "lead_stage_changed",
-	"message.received":    "message_inbound",
+	"lead.created":       "lead_created",
+	"lead.stage_changed": "lead_stage_changed",
+	"message.received":   "message_inbound",
 }
 
 // Start subscribes and begins consuming.
@@ -227,7 +322,7 @@ func (s *BusSubscriber) handle(ctx context.Context, evt ws.Event) {
 		_, enqErr := s.repo.EnqueueRun(enqueueCtx, workflowrepo.EnqueueRunInput{
 			OrganizationID: evt.TenantID,
 			WorkflowID:     wf.ID,
-			LeadID:         evt.EntityID, // lead.created uses lead id as entity
+			LeadID:         evt.EntityID,
 			TriggerSource:  evt.Type,
 		})
 		ec()
@@ -240,5 +335,5 @@ func (s *BusSubscriber) handle(ctx context.Context, evt ws.Event) {
 	}
 }
 
-// keep rand reachable in all builds (otherwise unused import warn).
+// keep rand reachable in all builds.
 var _ = rand.Int63n

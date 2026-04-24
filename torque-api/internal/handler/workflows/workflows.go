@@ -34,22 +34,56 @@ import (
 	"github.com/milennials/torque-api/internal/event"
 	"github.com/milennials/torque-api/internal/httpx"
 	mw "github.com/milennials/torque-api/internal/httpx/middleware"
+	quotarepo "github.com/milennials/torque-api/internal/repository/quota"
 	workflowrepo "github.com/milennials/torque-api/internal/repository/workflow"
 	"github.com/milennials/torque-api/internal/ws"
 )
 
+// quotaGate is the narrow contract the handler needs from the quota
+// repository. Kept local so tests can drop a fake in without a pgxpool;
+// the production `*quotarepo.Repository` satisfies it implicitly.
+type quotaGate interface {
+	mw.QuotaReader
+	IncrementUsage(ctx context.Context, orgID uuid.UUID, resource string, delta int) (int, error)
+}
+
 type Handler struct {
-	repo *workflowrepo.Repository
-	bus  *event.Bus
+	repo  *workflowrepo.Repository
+	bus   *event.Bus
+	quota quotaGate
 }
 
 func New(repo *workflowrepo.Repository, bus *event.Bus) *Handler {
 	return &Handler{repo: repo, bus: bus}
 }
 
+// WithQuota attaches the quota repository so POST /workflows enforces
+// the org's workflows cap (S52). nil is accepted — the handler collapses
+// back to unbounded creation (matches pre-S52 behavior for test fixtures
+// that don't seed plan_quotas).
+//
+// Usage is tracked as a monotonic lifetime counter: archive does NOT
+// reclaim a slot because SetStatus permits archived → active (restore),
+// so an archived workflow still "occupies" a workflow definition the
+// tenant owns. Reclaim would require a hard-delete path, which the F07
+// model intentionally does not expose.
+func (h *Handler) WithQuota(q *quotarepo.Repository) *Handler {
+	if q == nil {
+		h.quota = nil
+		return h
+	}
+	h.quota = q
+	return h
+}
+
 func (h *Handler) Routes(r chi.Router) {
 	r.Get("/workflows", h.list)
-	r.Post("/workflows", h.create)
+	// S52 — POST /workflows sits behind the quota gate when wired.
+	if h.quota != nil {
+		r.With(mw.RequireQuota(h.quota, quotarepo.ResourceWorkflows)).Post("/workflows", h.create)
+	} else {
+		r.Post("/workflows", h.create)
+	}
 	r.Get("/workflows/{id}", h.get)
 	r.Post("/workflows/{id}/publish", h.publish)
 	r.Post("/workflows/{id}/pause", h.pause)
@@ -149,6 +183,13 @@ func (h *Handler) create(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		httpx.WriteError(w, http.StatusBadRequest, "INVALID_WORKFLOW", err.Error())
 		return
+	}
+	// S52 — increment usage AFTER the create succeeds. Handler failure
+	// paths above do not increment. Archive is reversible (see WithQuota
+	// note), so there is no decrement side — the counter grows with the
+	// tenant's lifetime workflow count.
+	if h.quota != nil {
+		_, _ = h.quota.IncrementUsage(r.Context(), orgID, quotarepo.ResourceWorkflows, 1)
 	}
 	h.publishEvent(orgID, wf.ID, "workflow.created", toWorkflowView(wf))
 	httpx.WriteJSON(w, http.StatusCreated, toWorkflowView(wf))

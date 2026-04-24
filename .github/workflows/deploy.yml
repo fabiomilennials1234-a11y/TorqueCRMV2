@@ -26,12 +26,61 @@ concurrency:
   group: deploy-${{ inputs.environment }}
   cancel-in-progress: false
 
+permissions:
+  contents: read
+  packages: read
+  # S52 — id-token allows cosign verify to cross-check the signed
+  # image against Sigstore's transparency log.
+  id-token: write
+
 jobs:
+  # S52 — verify the cosign signature before we touch migrations or
+  # EasyPanel. An unsigned image (or one whose signature does not
+  # match the expected workflow identity) aborts the deploy — nothing
+  # downstream runs.
+  verify:
+    name: Verify image signature
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.environment }}
+    outputs:
+      verified: ${{ steps.verify.outputs.verified }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install cosign
+        uses: sigstore/cosign-installer@v3
+        with:
+          cosign-release: 'v2.4.1'
+
+      - name: Verify API image signature
+        id: verify
+        env:
+          IMAGE_TAG: ${{ inputs.image_tag }}
+        run: |
+          set -euo pipefail
+          # Keyless verification: the image must carry a Sigstore
+          # signature issued by the GitHub Actions workflow that
+          # produced it. We pin the expected workflow ref so a
+          # compromised fork of release.yml cannot produce a
+          # signature that passes this gate.
+          EXPECTED_IDENTITY="https://github.com/${{ github.repository }}/.github/workflows/release.yml@refs/tags/${IMAGE_TAG}"
+          cosign verify \
+            --certificate-identity-regexp "^${EXPECTED_IDENTITY}$" \
+            --certificate-oidc-issuer "https://token.actions.githubusercontent.com" \
+            ghcr.io/${{ github.repository }}/torque-api:${IMAGE_TAG}
+          cosign verify \
+            --certificate-identity-regexp "^${EXPECTED_IDENTITY}$" \
+            --certificate-oidc-issuer "https://token.actions.githubusercontent.com" \
+            ghcr.io/${{ github.repository }}/torque-web:${IMAGE_TAG}
+          echo "verified=true" >> "$GITHUB_OUTPUT"
+
   migrate:
     name: Run migrations (${{ inputs.environment }})
     if: inputs.run_migrations
     runs-on: ubuntu-latest
     environment: ${{ inputs.environment }}
+    # S52 — block migrations until cosign verify passes.
+    needs: [verify]
     steps:
       - uses: actions/checkout@v4
         with:
@@ -53,8 +102,9 @@ jobs:
     name: Deploy to ${{ inputs.environment }}
     runs-on: ubuntu-latest
     environment: ${{ inputs.environment }}
-    needs: [migrate]
-    if: always() && (needs.migrate.result == 'success' || needs.migrate.result == 'skipped')
+    # S52 — verify must pass; migrate must succeed or be skipped.
+    needs: [verify, migrate]
+    if: always() && needs.verify.result == 'success' && (needs.migrate.result == 'success' || needs.migrate.result == 'skipped')
     steps:
       - uses: actions/checkout@v4
 

@@ -1,0 +1,128 @@
+name: Backup — Postgres
+
+# Scheduled daily Postgres dump to S3-compatible object storage.
+# See .specs/runbooks/backup-restore.md for RPO/RTO targets, ownership, and
+# the pre-first-run provisioning checklist.
+
+on:
+  schedule:
+    # 03:00 UTC = 00:00 BRT — lowest-activity window for a BR-focused SaaS.
+    - cron: '0 3 * * *'
+  workflow_dispatch:
+    inputs:
+      s3_prefix:
+        description: "S3 key prefix (e.g. daily/, pre-migration/v1.2.3/). Trailing slash auto-added."
+        type: string
+        required: false
+        default: 'daily/'
+
+concurrency:
+  group: backup-postgres
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  backup-postgres:
+    name: pg_dump + S3 upload
+    runs-on: ubuntu-latest
+    # Daily dumps of a small CRM DB finish in minutes. A 60-minute ceiling
+    # catches hung network I/O without letting a runaway pg_dump burn budget.
+    timeout-minutes: 60
+
+    env:
+      DATABASE_URL:          ${{ secrets.DATABASE_URL_PROD }}
+      S3_BUCKET:             ${{ secrets.BACKUP_S3_BUCKET }}
+      S3_PREFIX:             ${{ inputs.s3_prefix || 'daily/' }}
+      AWS_ACCESS_KEY_ID:     ${{ secrets.AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      AWS_REGION:            ${{ secrets.AWS_REGION }}
+      # Retention horizon in days. Bump here + update the runbook together.
+      RETENTION_DAYS:        '30'
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Preflight — required secrets present
+        run: |
+          set -euo pipefail
+          missing=0
+          for var in DATABASE_URL S3_BUCKET AWS_ACCESS_KEY_ID AWS_SECRET_ACCESS_KEY; do
+            if [[ -z "${!var:-}" ]]; then
+              echo "::error::secret ${var} is not configured"
+              missing=1
+            fi
+          done
+          if [[ "$missing" -eq 1 ]]; then
+            echo "provision secrets per .specs/runbooks/backup-restore.md before enabling this workflow"
+            exit 1
+          fi
+
+      # Install the client matching the managed Hostinger Postgres major version.
+      # pg_dump across major versions is a documented footgun — pin 15 until
+      # the managed offering upgrades.
+      - name: Install postgresql-client-15
+        run: |
+          set -euo pipefail
+          sudo sh -c 'echo "deb http://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main" > /etc/apt/sources.list.d/pgdg.list'
+          curl -fsSL https://www.postgresql.org/media/keys/ACCC4CF8.asc | sudo gpg --dearmor -o /usr/share/keyrings/postgresql.gpg
+          sudo sh -c 'echo "deb [signed-by=/usr/share/keyrings/postgresql.gpg] http://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main" > /etc/apt/sources.list.d/pgdg.list'
+          sudo apt-get update -qq
+          sudo apt-get install -y postgresql-client-15
+          pg_dump --version
+
+      - name: Install AWS CLI v2
+        run: |
+          set -euo pipefail
+          if command -v aws >/dev/null 2>&1; then
+            aws --version
+            exit 0
+          fi
+          curl -fsSL "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o /tmp/awscliv2.zip
+          unzip -q /tmp/awscliv2.zip -d /tmp
+          sudo /tmp/aws/install --update
+          aws --version
+
+      - name: Make scripts executable
+        run: chmod +x scripts/*.sh
+
+      - name: Run backup-postgres.sh
+        run: ./scripts/backup-postgres.sh
+
+      - name: Retention sweep — delete daily dumps older than ${{ env.RETENTION_DAYS }} days
+        # Only prune the daily prefix. Pre-migration and monthly cold-tier
+        # prefixes are managed out-of-band (cold-tier lifecycle policy).
+        if: env.S3_PREFIX == 'daily/'
+        run: |
+          set -euo pipefail
+          CUTOFF="$(date -u -d "${RETENTION_DAYS} days ago" +%Y-%m-%dT%H:%M:%SZ)"
+          echo "::group::pruning objects older than ${CUTOFF}"
+          aws s3api list-objects-v2 \
+            --bucket "$S3_BUCKET" \
+            --prefix "daily/" \
+            --query "Contents[?LastModified<='${CUTOFF}'].[Key]" \
+            --output text \
+            | tr '\t' '\n' \
+            | grep -v '^None$' \
+            | while read -r key; do
+                if [[ -n "$key" ]]; then
+                  echo "deleting s3://${S3_BUCKET}/${key}"
+                  aws s3 rm "s3://${S3_BUCKET}/${key}"
+                fi
+              done
+          echo "::endgroup::"
+
+      - name: Notify Sentry on failure
+        if: failure() && env.SENTRY_WEBHOOK != ''
+        env:
+          SENTRY_WEBHOOK: ${{ secrets.SENTRY_WEBHOOK }}
+        run: |
+          set -euo pipefail
+          payload=$(printf '{"message":"backup-postgres failed","level":"error","extra":{"workflow":"%s","run_id":"%s","run_url":"%s"}}' \
+            "${GITHUB_WORKFLOW}" "${GITHUB_RUN_ID}" "${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}")
+          curl -fsSL -X POST -H 'Content-Type: application/json' \
+            --data "$payload" \
+            "$SENTRY_WEBHOOK" \
+            || echo "::warning::Sentry notification failed (non-fatal)"

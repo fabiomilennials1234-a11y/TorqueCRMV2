@@ -30,6 +30,16 @@ const (
 	ResourceTeamMembers  = "team_members"
 	ResourceWorkflows    = "workflows"
 	ResourceAgents       = "agents"
+	// ResourceAITokens meters total LLM tokens (input+output) per billing
+	// period. Increment is variable-cost and only known AFTER the stream
+	// closes (provider reports usage on the terminal frame), so the
+	// ai_quota middleware gates admission ONLY — the handler increments
+	// post-stream once the actual token count is in hand.
+	ResourceAITokens = "ai_tokens"
+	// ResourceTTSSeconds meters synthesized-audio seconds per billing
+	// period. Increment is cheap-to-estimate client-side (len(chars)/15
+	// is a tight upper bound for the 11labs models we use).
+	ResourceTTSSeconds = "tts_seconds"
 )
 
 // ErrNotFound is the sentinel for a missing (org, resource) row.

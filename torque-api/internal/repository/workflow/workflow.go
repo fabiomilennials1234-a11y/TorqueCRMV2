@@ -60,6 +60,12 @@ type Run struct {
 	StartedAt      *time.Time
 	EndedAt        *time.Time
 	CreatedAt      time.Time
+	// Retry/DLQ bookkeeping (migration 0028). Attempts counts handler
+	// executions; MaxAttempts caps retries before DLQ; NextRetryAt is
+	// the scheduled reclaim time (also used by wait-step suspension).
+	Attempts     int
+	MaxAttempts  int
+	NextRetryAt  *time.Time
 }
 
 type Repository struct {
@@ -382,7 +388,8 @@ func (r *Repository) ListRuns(ctx context.Context, orgID, workflowID uuid.UUID, 
 	const q = `
 		SELECT id, organization_id, workflow_id, lead_id, trigger_source,
 		       status::text, current_step_id, input, result, error_payload,
-		       started_at, ended_at, created_at
+		       started_at, ended_at, created_at,
+		       attempts, max_attempts, next_retry_at
 		  FROM workflow_runs
 		 WHERE organization_id = $1 AND workflow_id = $2
 		 ORDER BY created_at DESC
@@ -400,6 +407,7 @@ func (r *Repository) ListRuns(ctx context.Context, orgID, workflowID uuid.UUID, 
 			&rn.ID, &rn.OrganizationID, &rn.WorkflowID, &rn.LeadID, &rn.TriggerSource,
 			&rn.Status, &rn.CurrentStepID, &rn.Input, &rn.Result, &rn.ErrorPayload,
 			&rn.StartedAt, &rn.EndedAt, &rn.CreatedAt,
+			&rn.Attempts, &rn.MaxAttempts, &rn.NextRetryAt,
 		); err != nil {
 			return nil, err
 		}

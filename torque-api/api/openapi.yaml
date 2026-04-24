@@ -1,11 +1,19 @@
 openapi: 3.1.0
 info:
   title: Torque API
-  version: 0.1.0
+  version: 0.52.0
   description: |
     Torque CRM backend. Conventions (ADR-001): wire uses snake_case; frontend
     transforms to camelCase. Session is carried in httpOnly cookies; never
     ship a Bearer token.
+
+    **S52 refresh.** Covers endpoint families shipped through S51 —
+    leads, pipes, confirmations, meetings, tasks, inbox, templates,
+    campaigns, workflows, agents (+ playground/metrics/knowledge/TTS),
+    billing, quotas, integrations (Google/TinyERP/Meta/SZChat), public
+    webhooks (billing + lead), analytics, performance, master. Shapes
+    are intentionally compact — the wire details live in the respective
+    handler files; this spec is the map, not the manual.
   contact:
     name: Torque engineering
   license:
@@ -28,6 +36,50 @@ tags:
     description: Authenticated-user-scoped endpoints.
   - name: operations
     description: Async jobs (ADR-006; 202 Accepted + poll + WS push).
+  - name: leads
+    description: F01 lead CRUD + cursor pagination (ADR-004).
+  - name: pipes
+    description: F01 kanban pipes, stages, entries, moves.
+  - name: confirmations
+    description: F02 confirmation flow (meetings, no-show).
+  - name: meetings
+    description: F13 agenda + optional GCal sync (S49).
+  - name: tasks
+    description: Follow-up tasks (F05).
+  - name: inbox
+    description: F04 inbox (conversations, messages, takeover).
+  - name: templates
+    description: Message templates for the inbox composer.
+  - name: campaigns
+    description: F08 campaigns (dispatch, recipients, lifecycle).
+  - name: workflows
+    description: F07 workflow builder + executions.
+  - name: agents
+    description: F06 Copilot agents + playground + knowledge + TTS + triggers.
+  - name: billing
+    description: F14 subscriptions, checkout, cancel, webhook.
+  - name: quotas
+    description: S51 quota observability + master adjustments.
+  - name: integrations
+    description: External providers (Google Calendar, TinyERP, Meta Ads, SZ.Chat).
+  - name: webhooks
+    description: Public webhook endpoints (billing + lead ingestion).
+  - name: analytics
+    description: Funnel + attribution + leads analytics.
+  - name: performance
+    description: F09 rankings, goals, commissions, awards.
+  - name: products
+    description: F11 product catalog for proposals.
+  - name: members
+    description: F10 team members + role + permissions.
+  - name: proposals
+    description: F03 proposals (money flow).
+  - name: settings
+    description: Org + member settings surfaces.
+  - name: onboarding
+    description: F13 onboarding wizard.
+  - name: master
+    description: Cross-org master admin (impersonation, system health).
 
 paths:
   /healthz:
@@ -209,6 +261,1138 @@ paths:
         "101": { description: Switching Protocols }
         "401": { $ref: "#/components/responses/Unauthenticated" }
 
+  # ---------- Leads (F01) -------------------------------------------
+  /api/v1/leads:
+    get:
+      tags: [leads]
+      operationId: listLeads
+      summary: List leads (cursor-paginated)
+      security: [{ cookieAuth: [] }]
+      parameters:
+        - { name: cursor, in: query, schema: { type: string } }
+        - { name: page_size, in: query, schema: { type: integer, minimum: 1, maximum: 100 } }
+        - { name: responsible_id, in: query, schema: { type: string, format: uuid } }
+        - { name: search, in: query, schema: { type: string } }
+      responses:
+        "200":
+          description: Cursor-paginated envelope
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/LeadPage" }
+        "401": { $ref: "#/components/responses/Unauthenticated" }
+    post:
+      tags: [leads]
+      operationId: createLead
+      summary: Create a lead (quota-enforced — S51)
+      security: [{ cookieAuth: [] }]
+      parameters:
+        - $ref: "#/components/parameters/CSRFHeader"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/LeadCreateRequest" }
+      responses:
+        "201":
+          description: Lead created
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Lead" }
+        "400": { $ref: "#/components/responses/InvalidBody" }
+        "402": { $ref: "#/components/responses/QuotaExceeded" }
+        "401": { $ref: "#/components/responses/Unauthenticated" }
+
+  /api/v1/leads/{id}:
+    parameters:
+      - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+    get:
+      tags: [leads]
+      operationId: getLead
+      summary: Fetch a lead
+      security: [{ cookieAuth: [] }]
+      responses:
+        "200":
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Lead" }
+          description: OK
+        "404": { $ref: "#/components/responses/NotFound" }
+    patch:
+      tags: [leads]
+      operationId: updateLead
+      summary: Partial update of a lead
+      security: [{ cookieAuth: [] }]
+      parameters:
+        - $ref: "#/components/parameters/CSRFHeader"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/LeadPatchRequest" }
+      responses:
+        "200":
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Lead" }
+          description: OK
+    delete:
+      tags: [leads]
+      operationId: softDeleteLead
+      summary: Soft-delete a lead (decrements quota usage)
+      security: [{ cookieAuth: [] }]
+      parameters:
+        - $ref: "#/components/parameters/CSRFHeader"
+      responses:
+        "204": { description: Deleted }
+        "404": { $ref: "#/components/responses/NotFound" }
+
+  # ---------- Pipes (F01) -------------------------------------------
+  /api/v1/pipes:
+    get:
+      tags: [pipes]
+      operationId: listPipes
+      summary: List pipes
+      security: [{ cookieAuth: [] }]
+      responses:
+        "200": { description: OK }
+
+  /api/v1/pipes/{id}:
+    parameters:
+      - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+    get:
+      tags: [pipes]
+      operationId: getPipe
+      summary: Pipe detail
+      security: [{ cookieAuth: [] }]
+      responses:
+        "200": { description: OK }
+
+  /api/v1/pipes/{id}/stages:
+    parameters:
+      - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+    get:
+      tags: [pipes]
+      operationId: listPipeStages
+      summary: Stages of a pipe (ordered by position)
+      security: [{ cookieAuth: [] }]
+      responses:
+        "200": { description: OK }
+
+  /api/v1/pipes/{id}/entries:
+    parameters:
+      - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+    get:
+      tags: [pipes]
+      operationId: listPipeEntries
+      summary: Active entries for a pipe
+      security: [{ cookieAuth: [] }]
+      responses:
+        "200": { description: OK }
+    post:
+      tags: [pipes]
+      operationId: createPipeEntry
+      summary: Add a lead into a pipe stage
+      security: [{ cookieAuth: [] }]
+      parameters:
+        - $ref: "#/components/parameters/CSRFHeader"
+      responses:
+        "201": { description: Entry created }
+
+  /api/v1/pipes/{id}/entries/{entryId}/move:
+    parameters:
+      - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      - { name: entryId, in: path, required: true, schema: { type: string, format: uuid } }
+    post:
+      tags: [pipes]
+      operationId: movePipeEntry
+      summary: Move entry to a different stage (atomic Serializable tx)
+      security: [{ cookieAuth: [] }]
+      parameters:
+        - $ref: "#/components/parameters/CSRFHeader"
+      responses:
+        "204": { description: Moved }
+        "409":
+          description: Stage mismatch (stage does not belong to pipe)
+
+  # ---------- Confirmations (F02) -----------------------------------
+  /api/v1/confirmations/{entryId}:
+    parameters:
+      - { name: entryId, in: path, required: true, schema: { type: string, format: uuid } }
+    get:
+      tags: [confirmations]
+      operationId: getConfirmation
+      summary: Fetch confirmation for a pipe entry
+      security: [{ cookieAuth: [] }]
+      responses:
+        "200": { description: OK }
+        "404": { $ref: "#/components/responses/NotFound" }
+    put:
+      tags: [confirmations]
+      operationId: upsertConfirmation
+      summary: Upsert meeting metadata for a confirmation entry
+      security: [{ cookieAuth: [] }]
+      parameters:
+        - $ref: "#/components/parameters/CSRFHeader"
+      responses:
+        "200": { description: Upserted }
+
+  /api/v1/confirmations/{entryId}/confirm:
+    parameters:
+      - { name: entryId, in: path, required: true, schema: { type: string, format: uuid } }
+    post:
+      tags: [confirmations]
+      operationId: markConfirmed
+      summary: Mark confirmed (S50 — best-effort GCal event creation)
+      security: [{ cookieAuth: [] }]
+      parameters:
+        - $ref: "#/components/parameters/CSRFHeader"
+      responses:
+        "204": { description: Confirmed }
+
+  /api/v1/confirmations/{entryId}/no-show:
+    parameters:
+      - { name: entryId, in: path, required: true, schema: { type: string, format: uuid } }
+    post:
+      tags: [confirmations]
+      operationId: markNoShow
+      summary: Mark no-show with reason
+      security: [{ cookieAuth: [] }]
+      parameters:
+        - $ref: "#/components/parameters/CSRFHeader"
+      responses:
+        "204": { description: Marked no-show }
+
+  /api/v1/confirmations/overdue:
+    get:
+      tags: [confirmations]
+      operationId: listOverdueConfirmations
+      summary: Unconfirmed meetings past due
+      security: [{ cookieAuth: [] }]
+      responses:
+        "200": { description: OK }
+
+  # ---------- Meetings (F13) ----------------------------------------
+  /api/v1/meetings:
+    get:
+      tags: [meetings]
+      operationId: listMeetings
+      summary: List meetings in a window (default [-7d, +30d])
+      security: [{ cookieAuth: [] }]
+      parameters:
+        - { name: from, in: query, schema: { type: string, format: date-time } }
+        - { name: to,   in: query, schema: { type: string, format: date-time } }
+      responses:
+        "200": { description: OK }
+    post:
+      tags: [meetings]
+      operationId: createMeeting
+      summary: Create meeting (optionally pushed to Google Calendar — S49)
+      security: [{ cookieAuth: [] }]
+      parameters:
+        - $ref: "#/components/parameters/CSRFHeader"
+      responses:
+        "201": { description: Created }
+
+  /api/v1/meetings/{id}:
+    parameters:
+      - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+    get:
+      tags: [meetings]
+      operationId: getMeeting
+      summary: Meeting detail
+      security: [{ cookieAuth: [] }]
+      responses:
+        "200": { description: OK }
+    delete:
+      tags: [meetings]
+      operationId: deleteMeeting
+      summary: Delete meeting (mirrors GCal cancel if linked)
+      security: [{ cookieAuth: [] }]
+      parameters:
+        - $ref: "#/components/parameters/CSRFHeader"
+      responses:
+        "204": { description: Deleted }
+
+  /api/v1/meetings/{id}/status:
+    parameters:
+      - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+    post:
+      tags: [meetings]
+      operationId: setMeetingStatus
+      summary: Transition status (scheduled|completed|cancelled|no_show)
+      security: [{ cookieAuth: [] }]
+      parameters:
+        - $ref: "#/components/parameters/CSRFHeader"
+      responses:
+        "204": { description: Updated }
+
+  # ---------- Tasks (F05) -------------------------------------------
+  /api/v1/tasks:
+    get:
+      tags: [tasks]
+      operationId: listTasks
+      summary: List tasks
+      security: [{ cookieAuth: [] }]
+      responses:
+        "200": { description: OK }
+    post:
+      tags: [tasks]
+      operationId: createTask
+      summary: Create task
+      security: [{ cookieAuth: [] }]
+      parameters:
+        - $ref: "#/components/parameters/CSRFHeader"
+      responses:
+        "201": { description: Created }
+
+  /api/v1/tasks/{id}:
+    parameters:
+      - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+    patch:
+      tags: [tasks]
+      operationId: updateTask
+      summary: Update task
+      security: [{ cookieAuth: [] }]
+      parameters:
+        - $ref: "#/components/parameters/CSRFHeader"
+      responses:
+        "200": { description: Updated }
+    delete:
+      tags: [tasks]
+      operationId: deleteTask
+      summary: Delete task
+      security: [{ cookieAuth: [] }]
+      parameters:
+        - $ref: "#/components/parameters/CSRFHeader"
+      responses:
+        "204": { description: Deleted }
+
+  # ---------- Inbox (F04) -------------------------------------------
+  /api/v1/conversations:
+    get:
+      tags: [inbox]
+      operationId: listConversations
+      summary: List conversations
+      security: [{ cookieAuth: [] }]
+      responses:
+        "200": { description: OK }
+
+  /api/v1/conversations/{id}/messages:
+    parameters:
+      - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+    get:
+      tags: [inbox]
+      operationId: listMessages
+      summary: Messages in a conversation (infinite scroll)
+      security: [{ cookieAuth: [] }]
+      responses:
+        "200": { description: OK }
+    post:
+      tags: [inbox]
+      operationId: sendMessage
+      summary: Send a message (via Evolution / SZ.Chat adapter)
+      security: [{ cookieAuth: [] }]
+      parameters:
+        - $ref: "#/components/parameters/CSRFHeader"
+      responses:
+        "201": { description: Accepted }
+
+  /api/v1/conversations/{id}/takeover:
+    parameters:
+      - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+    post:
+      tags: [inbox]
+      operationId: takeoverConversation
+      summary: Human takeover (suspends the Copilot)
+      security: [{ cookieAuth: [] }]
+      parameters:
+        - $ref: "#/components/parameters/CSRFHeader"
+      responses:
+        "204": { description: Taken over }
+
+  /api/v1/conversations/{id}/resolve:
+    parameters:
+      - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+    post:
+      tags: [inbox]
+      operationId: resolveConversation
+      summary: Mark conversation resolved
+      security: [{ cookieAuth: [] }]
+      parameters:
+        - $ref: "#/components/parameters/CSRFHeader"
+      responses:
+        "204": { description: Resolved }
+
+  # ---------- Templates --------------------------------------------
+  /api/v1/templates:
+    get:
+      tags: [templates]
+      operationId: listTemplates
+      summary: List message templates
+      security: [{ cookieAuth: [] }]
+      responses:
+        "200": { description: OK }
+    post:
+      tags: [templates]
+      operationId: createTemplate
+      summary: Create template (admin)
+      security: [{ cookieAuth: [] }]
+      parameters:
+        - $ref: "#/components/parameters/CSRFHeader"
+      responses:
+        "201": { description: Created }
+
+  # ---------- Campaigns (F08) ---------------------------------------
+  /api/v1/campaigns:
+    get:
+      tags: [campaigns]
+      operationId: listCampaigns
+      summary: List campaigns
+      security: [{ cookieAuth: [] }]
+      responses:
+        "200": { description: OK }
+    post:
+      tags: [campaigns]
+      operationId: createCampaign
+      summary: Create campaign (admin)
+      security: [{ cookieAuth: [] }]
+      parameters:
+        - $ref: "#/components/parameters/CSRFHeader"
+      responses:
+        "201": { description: Created }
+
+  /api/v1/campaigns/{id}:
+    parameters:
+      - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+    get:
+      tags: [campaigns]
+      operationId: getCampaign
+      summary: Campaign detail
+      security: [{ cookieAuth: [] }]
+      responses:
+        "200": { description: OK }
+    patch:
+      tags: [campaigns]
+      operationId: updateCampaign
+      summary: Update campaign
+      security: [{ cookieAuth: [] }]
+      parameters:
+        - $ref: "#/components/parameters/CSRFHeader"
+      responses:
+        "200": { description: Updated }
+
+  /api/v1/campaigns/{id}/launch:
+    parameters:
+      - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+    post:
+      tags: [campaigns]
+      operationId: launchCampaign
+      summary: Launch / pause / resume / cancel
+      security: [{ cookieAuth: [] }]
+      parameters:
+        - $ref: "#/components/parameters/CSRFHeader"
+      responses:
+        "204": { description: Status changed }
+
+  # ---------- Workflows (F07) ---------------------------------------
+  /api/v1/workflows:
+    get:
+      tags: [workflows]
+      operationId: listWorkflows
+      summary: List workflows
+      security: [{ cookieAuth: [] }]
+      responses:
+        "200": { description: OK }
+    post:
+      tags: [workflows]
+      operationId: createWorkflow
+      summary: Create workflow draft
+      security: [{ cookieAuth: [] }]
+      parameters:
+        - $ref: "#/components/parameters/CSRFHeader"
+      responses:
+        "201": { description: Created }
+
+  /api/v1/workflows/{id}:
+    parameters:
+      - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+    get:
+      tags: [workflows]
+      operationId: getWorkflow
+      summary: Workflow detail (with steps)
+      security: [{ cookieAuth: [] }]
+      responses:
+        "200": { description: OK }
+    patch:
+      tags: [workflows]
+      operationId: updateWorkflow
+      summary: Update workflow metadata
+      security: [{ cookieAuth: [] }]
+      parameters:
+        - $ref: "#/components/parameters/CSRFHeader"
+      responses:
+        "200": { description: Updated }
+
+  /api/v1/workflows/{id}/steps:
+    parameters:
+      - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+    post:
+      tags: [workflows]
+      operationId: createWorkflowStep
+      summary: Add a step to a workflow
+      security: [{ cookieAuth: [] }]
+      parameters:
+        - $ref: "#/components/parameters/CSRFHeader"
+      responses:
+        "201": { description: Created }
+
+  /api/v1/workflows/{id}/steps/{stepId}:
+    parameters:
+      - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      - { name: stepId, in: path, required: true, schema: { type: string, format: uuid } }
+    put:
+      tags: [workflows]
+      operationId: updateWorkflowStep
+      summary: Replace step config
+      security: [{ cookieAuth: [] }]
+      parameters:
+        - $ref: "#/components/parameters/CSRFHeader"
+      responses:
+        "200": { description: Updated }
+    delete:
+      tags: [workflows]
+      operationId: deleteWorkflowStep
+      summary: Remove step
+      security: [{ cookieAuth: [] }]
+      parameters:
+        - $ref: "#/components/parameters/CSRFHeader"
+      responses:
+        "204": { description: Deleted }
+
+  /api/v1/workflows/{id}/runs:
+    parameters:
+      - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+    post:
+      tags: [workflows]
+      operationId: enqueueWorkflowRun
+      summary: Enqueue a debug run
+      security: [{ cookieAuth: [] }]
+      parameters:
+        - $ref: "#/components/parameters/CSRFHeader"
+      responses:
+        "202": { description: Enqueued }
+
+  /api/v1/runs/{id}/steps:
+    parameters:
+      - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+    get:
+      tags: [workflows]
+      operationId: listRunSteps
+      summary: Trace timeline for a run (refetch 2s while pending|running)
+      security: [{ cookieAuth: [] }]
+      responses:
+        "200": { description: OK }
+
+  # ---------- Agents / Copilot (F06) --------------------------------
+  /api/v1/agents:
+    get:
+      tags: [agents]
+      operationId: listAgents
+      summary: List Copilot agents
+      security: [{ cookieAuth: [] }]
+      responses:
+        "200": { description: OK }
+    post:
+      tags: [agents]
+      operationId: createAgent
+      summary: Create agent (admin)
+      security: [{ cookieAuth: [] }]
+      parameters:
+        - $ref: "#/components/parameters/CSRFHeader"
+      responses:
+        "201": { description: Created }
+
+  /api/v1/agents/{id}:
+    parameters:
+      - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+    get:
+      tags: [agents]
+      operationId: getAgent
+      summary: Agent detail
+      security: [{ cookieAuth: [] }]
+      responses:
+        "200": { description: OK }
+    patch:
+      tags: [agents]
+      operationId: updateAgent
+      summary: Partial update (prompt, model, temperature, TTS)
+      security: [{ cookieAuth: [] }]
+      parameters:
+        - $ref: "#/components/parameters/CSRFHeader"
+      responses:
+        "200": { description: Updated }
+
+  /api/v1/agents/{id}/playground/message:
+    parameters:
+      - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+    post:
+      tags: [agents]
+      operationId: agentPlaygroundMessage
+      summary: SSE streaming chat with the agent (OpenRouter under the hood)
+      security: [{ cookieAuth: [] }]
+      parameters:
+        - $ref: "#/components/parameters/CSRFHeader"
+      responses:
+        "200":
+          description: text/event-stream of delta/done/error frames
+          content:
+            text/event-stream: {}
+        "503": { description: LLM provider unavailable }
+
+  /api/v1/agents/{id}/metrics:
+    parameters:
+      - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+    get:
+      tags: [agents]
+      operationId: getAgentMetrics
+      summary: Sessions / messages / tokens / latency in window
+      security: [{ cookieAuth: [] }]
+      parameters:
+        - { name: since, in: query, schema: { type: string, format: date-time } }
+        - { name: until, in: query, schema: { type: string, format: date-time } }
+      responses:
+        "200": { description: OK }
+
+  /api/v1/agents/{id}/tts/preview:
+    parameters:
+      - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+    post:
+      tags: [agents]
+      operationId: agentTTSPreview
+      summary: Inline TTS preview (audio/mpeg)
+      security: [{ cookieAuth: [] }]
+      parameters:
+        - $ref: "#/components/parameters/CSRFHeader"
+      responses:
+        "200":
+          description: MP3 preview (no-store)
+          content:
+            audio/mpeg: {}
+
+  /api/v1/agents/{id}/triggers:
+    parameters:
+      - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+    get:
+      tags: [agents]
+      operationId: listAgentTriggers
+      summary: List auto-assignment triggers
+      security: [{ cookieAuth: [] }]
+      responses:
+        "200": { description: OK }
+    post:
+      tags: [agents]
+      operationId: createAgentTrigger
+      summary: Create trigger rule
+      security: [{ cookieAuth: [] }]
+      parameters:
+        - $ref: "#/components/parameters/CSRFHeader"
+      responses:
+        "201": { description: Created }
+
+  /api/v1/triggers/{tid}:
+    parameters:
+      - { name: tid, in: path, required: true, schema: { type: string, format: uuid } }
+    patch:
+      tags: [agents]
+      operationId: updateAgentTrigger
+      summary: Update trigger rule
+      security: [{ cookieAuth: [] }]
+      parameters:
+        - $ref: "#/components/parameters/CSRFHeader"
+      responses:
+        "200": { description: Updated }
+    delete:
+      tags: [agents]
+      operationId: deleteAgentTrigger
+      summary: Delete trigger rule
+      security: [{ cookieAuth: [] }]
+      parameters:
+        - $ref: "#/components/parameters/CSRFHeader"
+      responses:
+        "204": { description: Deleted }
+
+  /api/v1/knowledge/collections:
+    get:
+      tags: [agents]
+      operationId: listKnowledgeCollections
+      summary: RAG collections (S39)
+      security: [{ cookieAuth: [] }]
+      responses:
+        "200": { description: OK }
+    post:
+      tags: [agents]
+      operationId: createKnowledgeCollection
+      summary: Create RAG collection
+      security: [{ cookieAuth: [] }]
+      parameters:
+        - $ref: "#/components/parameters/CSRFHeader"
+      responses:
+        "201": { description: Created }
+
+  /api/v1/knowledge/sources:
+    post:
+      tags: [agents]
+      operationId: enqueueKnowledgeSource
+      summary: Enqueue text/markdown source for embedding
+      security: [{ cookieAuth: [] }]
+      parameters:
+        - $ref: "#/components/parameters/CSRFHeader"
+      responses:
+        "202": { description: Queued }
+
+  # ---------- Billing (F14) -----------------------------------------
+  /api/v1/billing/subscription:
+    get:
+      tags: [billing]
+      operationId: getActiveSubscription
+      summary: Tenant's current subscription (member)
+      security: [{ cookieAuth: [] }]
+      responses:
+        "200":
+          description: Current subscription or null
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: "#/components/schemas/Subscription"
+                  - type: object
+                    properties:
+                      data: { nullable: true }
+
+  /api/v1/billing/checkout:
+    post:
+      tags: [billing]
+      operationId: startCheckout
+      summary: Start checkout (admin — creates PIX via Mock or Asaas)
+      security: [{ cookieAuth: [] }]
+      parameters:
+        - $ref: "#/components/parameters/CSRFHeader"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/CheckoutRequest" }
+      responses:
+        "201":
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Subscription" }
+          description: Checkout created
+        "409": { description: Already active subscription exists }
+
+  /api/v1/billing/subscription/cancel:
+    post:
+      tags: [billing]
+      operationId: cancelSubscription
+      summary: Cancel active subscription (admin)
+      security: [{ cookieAuth: [] }]
+      parameters:
+        - $ref: "#/components/parameters/CSRFHeader"
+      responses:
+        "204": { description: Cancelled }
+
+  # ---------- Quotas (S51) ------------------------------------------
+  /api/v1/quotas:
+    get:
+      tags: [quotas]
+      operationId: listQuotas
+      summary: All tenant quotas with derived effective_limit + remaining
+      security: [{ cookieAuth: [] }]
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items: { $ref: "#/components/schemas/Quota" }
+
+  /api/v1/quotas/{resource}:
+    parameters:
+      - { name: resource, in: path, required: true, schema: { type: string } }
+    get:
+      tags: [quotas]
+      operationId: getQuota
+      summary: Single resource quota
+      security: [{ cookieAuth: [] }]
+      responses:
+        "200":
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Quota" }
+          description: OK
+        "404": { $ref: "#/components/responses/NotFound" }
+    patch:
+      tags: [quotas]
+      operationId: patchQuota
+      summary: Master-only admin_adjustment / purchased_addons update
+      security: [{ cookieAuth: [] }]
+      parameters:
+        - $ref: "#/components/parameters/CSRFHeader"
+      responses:
+        "200":
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Quota" }
+          description: OK
+        "403": { description: Master role required }
+
+  # ---------- Integrations (S49/S50) --------------------------------
+  /api/v1/integrations:
+    get:
+      tags: [integrations]
+      operationId: listIntegrations
+      summary: Connected providers + health metadata
+      security: [{ cookieAuth: [] }]
+      responses:
+        "200": { description: OK }
+
+  /api/v1/integrations/google/connect:
+    get:
+      tags: [integrations]
+      operationId: googleOAuthConnect
+      summary: 302 redirect to Google OAuth consent
+      security: [{ cookieAuth: [] }]
+      responses:
+        "302": { description: Redirect to Google }
+
+  /api/v1/integrations/google/callback:
+    get:
+      tags: [integrations]
+      operationId: googleOAuthCallback
+      summary: OAuth redirect landing (CSRF-exempt subgroup; state HMAC enforced)
+      security: [{ cookieAuth: [] }]
+      responses:
+        "302": { description: Redirect to settings }
+
+  /api/v1/integrations/google/disconnect:
+    post:
+      tags: [integrations]
+      operationId: googleDisconnect
+      summary: Revoke + delete Google credential (admin)
+      security: [{ cookieAuth: [] }]
+      parameters:
+        - $ref: "#/components/parameters/CSRFHeader"
+      responses:
+        "204": { description: Disconnected }
+
+  /api/v1/integrations/tinyerp:
+    post:
+      tags: [integrations]
+      operationId: tinyerpConnect
+      summary: Store TinyERP API key (admin)
+      security: [{ cookieAuth: [] }]
+      parameters:
+        - $ref: "#/components/parameters/CSRFHeader"
+      responses:
+        "204": { description: Connected }
+
+  /api/v1/integrations/tinyerp/disconnect:
+    post:
+      tags: [integrations]
+      operationId: tinyerpDisconnect
+      summary: Remove TinyERP credential
+      security: [{ cookieAuth: [] }]
+      parameters:
+        - $ref: "#/components/parameters/CSRFHeader"
+      responses:
+        "204": { description: Disconnected }
+
+  /api/v1/integrations/tinyerp/push-order:
+    post:
+      tags: [integrations]
+      operationId: tinyerpPushOrder
+      summary: Push proposal → TinyERP order (admin)
+      security: [{ cookieAuth: [] }]
+      parameters:
+        - $ref: "#/components/parameters/CSRFHeader"
+      responses:
+        "201": { description: Created }
+
+  /api/v1/integrations/tinyerp/sync-products:
+    post:
+      tags: [integrations]
+      operationId: tinyerpSyncProducts
+      summary: Paginated product catalog sync (S50)
+      security: [{ cookieAuth: [] }]
+      parameters:
+        - $ref: "#/components/parameters/CSRFHeader"
+      responses:
+        "200": { description: "{fetched, inserted, updated, skipped}" }
+
+  /api/v1/integrations/meta:
+    post:
+      tags: [integrations]
+      operationId: metaConnect
+      summary: Store Meta Ads system-user token (admin — S50)
+      security: [{ cookieAuth: [] }]
+      parameters:
+        - $ref: "#/components/parameters/CSRFHeader"
+      responses:
+        "204": { description: Connected }
+
+  /api/v1/integrations/meta/disconnect:
+    post:
+      tags: [integrations]
+      operationId: metaDisconnect
+      summary: Remove Meta credential
+      security: [{ cookieAuth: [] }]
+      parameters:
+        - $ref: "#/components/parameters/CSRFHeader"
+      responses:
+        "204": { description: Disconnected }
+
+  /api/v1/integrations/meta/ads-insights:
+    get:
+      tags: [integrations]
+      operationId: metaAdsInsights
+      summary: Cached Meta Graph API Ads Insights (15min TTL)
+      security: [{ cookieAuth: [] }]
+      parameters:
+        - { name: account_id, in: query, schema: { type: string } }
+        - { name: date_range, in: query, schema: { type: string } }
+      responses:
+        "200":
+          description: Account + campaign rollup
+          headers:
+            X-Torque-Cache:
+              schema: { type: string, enum: [hit, miss] }
+        "412": { description: Meta not connected }
+
+  /api/v1/integrations/szchat:
+    post:
+      tags: [integrations]
+      operationId: szchatConnect
+      summary: Store SZ.Chat API key (admin — S50)
+      security: [{ cookieAuth: [] }]
+      parameters:
+        - $ref: "#/components/parameters/CSRFHeader"
+      responses:
+        "204": { description: Connected }
+
+  /api/v1/integrations/szchat/disconnect:
+    post:
+      tags: [integrations]
+      operationId: szchatDisconnect
+      summary: Remove SZ.Chat credential
+      security: [{ cookieAuth: [] }]
+      parameters:
+        - $ref: "#/components/parameters/CSRFHeader"
+      responses:
+        "204": { description: Disconnected }
+
+  # ---------- Public webhooks (no auth; HMAC / shared secret) -------
+  /webhooks/billing/webhook:
+    post:
+      tags: [webhooks]
+      operationId: billingWebhook
+      summary: Generic billing provider webhook (shared secret header)
+      responses:
+        "200": { description: Recorded (or idempotent replay) }
+        "401": { description: Invalid secret header }
+
+  /webhooks/billing/asaas:
+    post:
+      tags: [webhooks]
+      operationId: asaasWebhook
+      summary: Asaas-native webhook (S51 — payload normalized server-side)
+      responses:
+        "200": { description: Recorded (or idempotent replay) }
+        "401": { description: Invalid secret header }
+
+  /webhooks/lead:
+    post:
+      tags: [webhooks]
+      operationId: leadWebhook
+      summary: Public lead ingestion (HMAC-SHA256 signature — S50)
+      description: |
+        Signed via `X-Torque-Lead-Signature: sha256=<hex>` over the raw body.
+        Tenant is routed via the `X-Torque-Tenant: <uuid>` header. Dedup is
+        `(organization_id, external_id)` UNIQUE; duplicate retries return 200.
+      responses:
+        "201": { description: Lead created; workflow trigger lead_created fired }
+        "200": { description: Duplicate external_id — idempotent }
+        "400": { description: Malformed body or missing external_id }
+        "401": { description: HMAC signature mismatch }
+        "413": { description: Body exceeded 64 KiB cap }
+        "503": { description: Webhook disabled (secret not configured) }
+
+  # ---------- Analytics + Performance -------------------------------
+  /api/v1/analytics/leads:
+    get:
+      tags: [analytics]
+      operationId: leadsAnalytics
+      summary: Lead counts aggregated by window
+      security: [{ cookieAuth: [] }]
+      responses:
+        "200": { description: OK }
+
+  /api/v1/analytics/funnel:
+    get:
+      tags: [analytics]
+      operationId: funnelAnalytics
+      summary: Conversion funnel per pipe
+      security: [{ cookieAuth: [] }]
+      responses:
+        "200": { description: OK }
+
+  /api/v1/performance/ranking:
+    get:
+      tags: [performance]
+      operationId: performanceRanking
+      summary: F09 member ranking by closed-won revenue
+      security: [{ cookieAuth: [] }]
+      parameters:
+        - { name: window, in: query, schema: { type: string, enum: [7d, 30d, 90d] } }
+      responses:
+        "200": { description: OK }
+
+  /api/v1/performance/goals:
+    get:
+      tags: [performance]
+      operationId: listGoals
+      summary: Sales goals
+      security: [{ cookieAuth: [] }]
+      responses:
+        "200": { description: OK }
+
+  /api/v1/performance/commissions:
+    get:
+      tags: [performance]
+      operationId: listCommissions
+      summary: Commissions
+      security: [{ cookieAuth: [] }]
+      responses:
+        "200": { description: OK }
+
+  # ---------- Products / Members / Proposals ------------------------
+  /api/v1/products:
+    get:
+      tags: [products]
+      operationId: listProducts
+      summary: Product catalog
+      security: [{ cookieAuth: [] }]
+      responses:
+        "200": { description: OK }
+    post:
+      tags: [products]
+      operationId: createProduct
+      summary: Create product (admin)
+      security: [{ cookieAuth: [] }]
+      parameters:
+        - $ref: "#/components/parameters/CSRFHeader"
+      responses:
+        "201": { description: Created }
+
+  /api/v1/members:
+    get:
+      tags: [members]
+      operationId: listMembers
+      summary: Team members (F10)
+      security: [{ cookieAuth: [] }]
+      responses:
+        "200": { description: OK }
+    post:
+      tags: [members]
+      operationId: addMember
+      summary: Add member (admin)
+      security: [{ cookieAuth: [] }]
+      parameters:
+        - $ref: "#/components/parameters/CSRFHeader"
+      responses:
+        "201": { description: Created }
+
+  /api/v1/proposals:
+    get:
+      tags: [proposals]
+      operationId: listProposals
+      summary: F03 proposals
+      security: [{ cookieAuth: [] }]
+      responses:
+        "200": { description: OK }
+    post:
+      tags: [proposals]
+      operationId: createProposal
+      summary: Create proposal (admin)
+      security: [{ cookieAuth: [] }]
+      parameters:
+        - $ref: "#/components/parameters/CSRFHeader"
+      responses:
+        "201": { description: Created }
+
+  # ---------- Settings / Onboarding / Master ------------------------
+  /api/v1/settings/org:
+    get:
+      tags: [settings]
+      operationId: getOrgSettings
+      summary: Org profile settings
+      security: [{ cookieAuth: [] }]
+      responses:
+        "200": { description: OK }
+    patch:
+      tags: [settings]
+      operationId: updateOrgSettings
+      summary: Update org profile (admin)
+      security: [{ cookieAuth: [] }]
+      parameters:
+        - $ref: "#/components/parameters/CSRFHeader"
+      responses:
+        "200": { description: Updated }
+
+  /api/v1/onboarding:
+    get:
+      tags: [onboarding]
+      operationId: getOnboardingStatus
+      summary: Current onboarding step state
+      security: [{ cookieAuth: [] }]
+      responses:
+        "200": { description: OK }
+
+  /api/v1/onboarding/complete:
+    post:
+      tags: [onboarding]
+      operationId: completeOnboardingStep
+      summary: Advance a canonical step
+      security: [{ cookieAuth: [] }]
+      parameters:
+        - $ref: "#/components/parameters/CSRFHeader"
+      responses:
+        "204": { description: Advanced }
+
+  /api/v1/master/organizations:
+    get:
+      tags: [master]
+      operationId: masterListOrganizations
+      summary: Cross-org list (master)
+      security: [{ cookieAuth: [] }]
+      responses:
+        "200": { description: OK }
+
+  /api/v1/master/impersonate:
+    post:
+      tags: [master]
+      operationId: masterImpersonate
+      summary: Impersonate target org — audit-first (D062 invariant)
+      security: [{ cookieAuth: [] }]
+      parameters:
+        - $ref: "#/components/parameters/CSRFHeader"
+      responses:
+        "200": { description: Impersonated session issued }
+        "500": { description: AUDIT_FAILED — impersonation refused atomically }
+
 components:
   securitySchemes:
     cookieAuth:
@@ -235,6 +1419,44 @@ components:
       content:
         application/json:
           schema: { $ref: "#/components/schemas/Error" }
+    InvalidBody:
+      description: Request body could not be parsed
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/Error" }
+    NotFound:
+      description: Resource not found (or outside tenant scope)
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/Error" }
+    QuotaExceeded:
+      description: 402 — tenant at cap for the resource (S51)
+      headers:
+        X-Quota-Resource:
+          schema: { type: string }
+        X-Quota-Limit:
+          schema: { type: integer }
+        X-Quota-Usage:
+          schema: { type: integer }
+        X-Quota-Remaining:
+          schema: { type: integer }
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              error:
+                type: object
+                properties:
+                  code: { type: string, enum: [QUOTA_EXCEEDED] }
+                  message: { type: string }
+                  details:
+                    type: object
+                    properties:
+                      resource: { type: string }
+                      limit: { type: integer }
+                      current_usage: { type: integer }
+                      remaining: { type: integer }
 
   schemas:
     Health:
@@ -338,3 +1560,150 @@ components:
         created_at: { type: string, format: date-time }
         started_at: { type: string, format: date-time, nullable: true }
         ended_at: { type: string, format: date-time, nullable: true }
+
+    # ---------- Leads -----------------------------------------------
+    Lead:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        name: { type: string }
+        company: { type: string, nullable: true }
+        phone: { type: string, nullable: true }
+        email: { type: string, nullable: true }
+        position: { type: string, nullable: true }
+        responsible_id: { type: string, format: uuid, nullable: true }
+        rating: { type: integer, minimum: 0, maximum: 5, nullable: true }
+        qualification_score: { type: integer, nullable: true }
+        segment: { type: string, nullable: true }
+        origin: { type: string, nullable: true }
+        custom_fields: { type: object, additionalProperties: true }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+
+    LeadPage:
+      type: object
+      properties:
+        data:
+          type: array
+          items: { $ref: "#/components/schemas/Lead" }
+        meta:
+          type: object
+          properties:
+            next_cursor: { type: string, description: "Empty when last page" }
+
+    LeadCreateRequest:
+      type: object
+      required: [name]
+      properties:
+        name: { type: string }
+        company: { type: string, nullable: true }
+        phone: { type: string, nullable: true, description: "phone OR email required" }
+        email: { type: string, format: email, nullable: true }
+        position: { type: string, nullable: true }
+        responsible_id: { type: string, format: uuid, nullable: true }
+        origin: { type: string, nullable: true }
+        custom_fields: { type: object, additionalProperties: true }
+
+    LeadPatchRequest:
+      type: object
+      properties:
+        name: { type: string, nullable: true }
+        company: { type: string, nullable: true }
+        phone: { type: string, nullable: true }
+        email: { type: string, nullable: true }
+        position: { type: string, nullable: true }
+        responsible_id: { type: string, format: uuid, nullable: true }
+        rating: { type: integer, nullable: true }
+        segment: { type: string, nullable: true }
+
+    # ---------- Billing / Subscription ------------------------------
+    Subscription:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        plan_id: { type: string }
+        status: { type: string, enum: [pending, active, past_due, cancelled, expired] }
+        provider: { type: string, enum: [mock, asaas] }
+        amount_cents: { type: integer }
+        currency: { type: string, example: BRL }
+        pix_qr_code: { type: string, nullable: true }
+        pix_qr_code_image: { type: string, nullable: true, description: "data:image/png;base64,..." }
+        pix_expires_at: { type: string, format: date-time, nullable: true }
+        current_period_end: { type: string, format: date-time, nullable: true }
+        cancelled_at: { type: string, format: date-time, nullable: true }
+        created_at: { type: string, format: date-time }
+
+    CheckoutRequest:
+      type: object
+      required: [plan_id, amount_cents]
+      properties:
+        plan_id: { type: string }
+        amount_cents: { type: integer, minimum: 1 }
+        currency: { type: string, default: BRL }
+
+    # ---------- Quotas (S51) ----------------------------------------
+    Quota:
+      type: object
+      properties:
+        resource: { type: string, example: leads }
+        plan_base: { type: integer, minimum: 0 }
+        purchased_addons: { type: integer, minimum: 0 }
+        admin_adjustment: { type: integer, description: "Can be negative" }
+        current_usage: { type: integer, minimum: 0 }
+        effective_limit: { type: integer, description: "max(0, base + addons + adjustment)" }
+        remaining: { type: integer, description: "max(0, effective_limit - current_usage)" }
+
+    # ---------- Integrations (S49/S50) ------------------------------
+    IntegrationCredential:
+      type: object
+      properties:
+        provider: { type: string, enum: [google, tinyerp, meta, szchat] }
+        connected: { type: boolean }
+        external_account_id: { type: string, nullable: true }
+        scopes:
+          type: array
+          items: { type: string }
+          nullable: true
+        expires_at: { type: string, format: date-time, nullable: true }
+        last_success_at: { type: string, format: date-time, nullable: true }
+        last_error_text: { type: string, nullable: true }
+        last_error_at: { type: string, format: date-time, nullable: true }
+
+    MetaAdAccountInsights:
+      type: object
+      properties:
+        account_id: { type: string }
+        date_range: { type: string }
+        currency: { type: string, nullable: true }
+        spend_cents: { type: integer }
+        impressions: { type: integer }
+        clicks: { type: integer }
+        leads: { type: integer }
+        cpl_cents: { type: integer, description: "-1 when leads=0" }
+        campaigns:
+          type: array
+          items:
+            type: object
+            properties:
+              campaign_id: { type: string }
+              name: { type: string }
+              spend_cents: { type: integer }
+              impressions: { type: integer }
+              clicks: { type: integer }
+              leads: { type: integer }
+        fetched_at: { type: string, format: date-time }
+
+    # ---------- Lead webhook (S50) ----------------------------------
+    LeadWebhookPayload:
+      type: object
+      required: [external_id, name]
+      properties:
+        external_id: { type: string, description: "Provider-unique dedup key" }
+        source: { type: string, enum: [webhook, meta, szchat, manual, n8n] }
+        name: { type: string }
+        company: { type: string, nullable: true }
+        phone: { type: string, nullable: true, description: "phone OR email required" }
+        email: { type: string, format: email, nullable: true }
+        position: { type: string, nullable: true }
+        origin: { type: string, nullable: true }
+        custom_fields: { type: object, additionalProperties: true }

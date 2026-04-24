@@ -1,21 +1,31 @@
 name: Release
 
 # Triggered by a `v*` tag on main. Builds distroless Docker images for both
-# surfaces, pushes to GHCR, and emits a draft GitHub release. Deploy is
-# separate (deploy.yml) and intentionally gated by an environment review.
+# surfaces, pushes to GHCR, signs each image via cosign keyless OIDC, and
+# emits a draft GitHub release. Deploy (deploy.yml) verifies the cosign
+# signature before applying migrations.
 
 on:
   push:
     tags: ['v*']
 
+# S52 — id-token: write is mandatory for cosign keyless signing. The
+# OIDC token minted by GitHub is what Sigstore's Fulcio cert authority
+# binds to the transparency log entry, so consumers can verify "this
+# image was built by this workflow at this tag" without us managing any
+# long-lived key material.
 permissions:
   contents: write
   packages: write
+  id-token: write
 
 jobs:
   docker:
-    name: Build + push images
+    name: Build, push, sign images
     runs-on: ubuntu-latest
+    outputs:
+      api_digest: ${{ steps.build_api.outputs.digest }}
+      web_digest: ${{ steps.build_web.outputs.digest }}
     steps:
       - uses: actions/checkout@v4
 
@@ -27,7 +37,16 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      # S52 — install cosign via the official action so we always get
+      # a pinned, auditable version rather than curling from the
+      # internet at every run.
+      - name: Install cosign
+        uses: sigstore/cosign-installer@v3
+        with:
+          cosign-release: 'v2.4.1'
+
       - name: Build + push API
+        id: build_api
         uses: docker/build-push-action@v6
         with:
           context: ./torque-api
@@ -40,7 +59,19 @@ jobs:
           cache-from: type=gha,scope=torque-api
           cache-to: type=gha,scope=torque-api,mode=max
 
+      # S52 — sign the image we just pushed by digest (never by tag —
+      # a tag can be overwritten after the signature lands, digest is
+      # immutable). --yes skips the interactive confirmation; the
+      # OIDC token is picked up automatically from GITHUB_ACTIONS.
+      - name: Sign API image
+        env:
+          COSIGN_EXPERIMENTAL: '1'
+        run: |
+          cosign sign --yes \
+            ghcr.io/${{ github.repository }}/torque-api@${{ steps.build_api.outputs.digest }}
+
       - name: Build + push web
+        id: build_web
         uses: docker/build-push-action@v6
         with:
           context: ./torque-web
@@ -50,6 +81,13 @@ jobs:
             ghcr.io/${{ github.repository }}/torque-web:latest
           cache-from: type=gha,scope=torque-web
           cache-to: type=gha,scope=torque-web,mode=max
+
+      - name: Sign web image
+        env:
+          COSIGN_EXPERIMENTAL: '1'
+        run: |
+          cosign sign --yes \
+            ghcr.io/${{ github.repository }}/torque-web@${{ steps.build_web.outputs.digest }}
 
   release:
     name: Draft release
