@@ -64,7 +64,9 @@ CREATE TYPE commission_status AS ENUM ('pending', 'approved', 'paid', 'cancelled
 CREATE TABLE commissions (
   id                uuid               PRIMARY KEY DEFAULT gen_random_uuid(),
   organization_id   uuid               NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
-  proposal_id       uuid               NULL REFERENCES proposals(id) ON DELETE SET NULL,
+  -- 1:1 com pipe_proposals (PK = pipe_entry_id). O nome da coluna foi preservado
+  -- como proposal_id para alinhar com a API JSON; a FK aponta para pipe_proposals.
+  proposal_id       uuid               NULL REFERENCES pipe_proposals(pipe_entry_id) ON DELETE SET NULL,
   member_id         uuid               NOT NULL REFERENCES team_members(id) ON DELETE CASCADE,
   -- percentage stored as numeric to support 0.005 decimals; bounds
   -- 0..100 so a config bug can't pay negative or >100% commission.
