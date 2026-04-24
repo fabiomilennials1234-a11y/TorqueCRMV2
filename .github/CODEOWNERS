@@ -1,0 +1,42 @@
+# CODEOWNERS — dual-review enforcement for sensitive paths.
+#
+# Gate §10 (Plano Paridade v8) mandates dual-review on all money-flow
+# changes. GitHub branch protection should require CODEOWNERS approval
+# on these paths. See `Torque-dir-new/09 - Backlog/Plano de Acao Paridade
+# v8 - Sprints S30-S52.md §Gate Go-to-Production`.
+#
+# Replace the placeholder handles with real @username or @org/team before
+# enabling "Require review from Code Owners" in branch protection.
+
+# --- Money-flow (billing/subscriptions/checkout, Asaas provider) -----
+/torque-api/internal/service/billing/**           @highermind/security @highermind/qa
+/torque-api/internal/handler/billing/**           @highermind/security @highermind/qa
+/torque-api/internal/handler/quotas/**            @highermind/security @highermind/qa
+/torque-api/internal/repository/subscription/**   @highermind/security @highermind/qa
+/torque-api/internal/repository/quota/**          @highermind/security @highermind/qa
+/torque-api/migrations/*billing*                  @highermind/dba @highermind/security
+/torque-api/migrations/*quota*                    @highermind/dba @highermind/security
+/torque-api/migrations/*subscription*             @highermind/dba @highermind/security
+/torque-web/src/features/billing/**               @highermind/security @highermind/qa
+
+# --- Security-sensitive infra (cosign, deploy, auth middleware) -----
+/.github/workflows/release.yml                    @highermind/security @highermind/infra
+/.github/workflows/deploy.yml                     @highermind/security @highermind/infra
+/.github/workflows/security-scan.yml              @highermind/security
+/torque-api/internal/httpx/middleware/**          @highermind/security
+/torque-api/internal/service/jwt/**               @highermind/security
+/torque-api/internal/service/crypto/**            @highermind/security
+/torque-api/internal/service/permission/**        @highermind/security
+/torque-api/internal/handler/master/**            @highermind/security
+/torque-api/internal/handler/auth/**              @highermind/security
+
+# --- Cross-cutting: migrations require DBA sign-off -----------------
+/torque-api/migrations/**                         @highermind/dba
+
+# --- Runbooks / DR / pentest records --------------------------------
+/.specs/security/**                               @highermind/security
+/.specs/runbooks/**                               @highermind/infra @highermind/security
+
+# --- Fallback: architect reviews architectural changes --------------
+/Torque-dir-new/08 - Decisoes/**                  @highermind/architect
+/CLAUDE.md                                        @highermind/architect
