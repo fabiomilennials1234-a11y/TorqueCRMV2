@@ -91,6 +91,12 @@ jobs:
           go-version: '1.22'
           cache-dependency-path: torque-api/go.sum
 
+      # go.sum nao esta committed (oversight pre-S52). Regenerar em runtime
+      # com `go mod tidy` antes de qualquer ferramenta que verifique deps.
+      # Quando go.sum for commitado em sprint futura, este step vira no-op.
+      - name: go mod tidy (regen go.sum)
+        run: go mod tidy
+
       - name: go mod download
         run: go mod download
 
@@ -123,6 +129,11 @@ jobs:
         with:
           go-version: '1.22'
           cache-dependency-path: torque-api/go.sum
+
+      # go.sum nao esta committed (oversight pre-S52). Regenerar em runtime
+      # com `go mod tidy` antes do golangci-lint typecheck.
+      - name: go mod tidy (regen go.sum)
+        run: go mod tidy
 
       # Pre-download deps explicitly. golangci-lint-action invoca o linter
       # com module mode, mas em runners frescos sem cache os pacotes
