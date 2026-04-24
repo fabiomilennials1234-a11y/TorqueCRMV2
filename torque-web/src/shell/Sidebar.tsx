@@ -32,8 +32,8 @@ type NavItem = {
 
 const vendasNav: NavItem[] = [
   { to: '/', label: 'Visao geral', icon: LayoutDashboard, shortcut: 'G D' },
-  { to: '/pipeline', label: 'Funis', icon: Columns3, shortcut: 'G P', badge: '24' },
-  { to: '/inbox', label: 'Conversas', icon: MessagesSquare, shortcut: 'G I', badge: '9' },
+  { to: '/pipeline', label: 'Funis', icon: Columns3, shortcut: 'G P' },
+  { to: '/inbox', label: 'Conversas', icon: MessagesSquare, shortcut: 'G I' },
   { to: '/follow-ups', label: 'Follow-ups', icon: CheckSquare, shortcut: 'G F' },
 ]
 
@@ -108,19 +108,6 @@ export function Sidebar() {
         {footerNav.map((item) => (
           <SidebarLink key={item.to} item={item} />
         ))}
-      </div>
-
-      <div className="px-4 pb-4 pt-2">
-        <div className="rounded-md bg-elevated/50 p-3 shadow-hairline">
-          <div className="flex items-center justify-between">
-            <span className="text-2xs uppercase tracking-[0.12em] text-ink-dim">Plano Growth</span>
-            <span className="font-metric text-xs text-ink-muted">64%</span>
-          </div>
-          <div className="mt-2 h-1 overflow-hidden rounded-full bg-hairline">
-            <div className="h-full rounded-full bg-accent" style={{ width: '64%' }} />
-          </div>
-          <p className="mt-2 text-2xs text-ink-dim">3.200 / 5.000 leads este mes</p>
-        </div>
       </div>
     </aside>
   )

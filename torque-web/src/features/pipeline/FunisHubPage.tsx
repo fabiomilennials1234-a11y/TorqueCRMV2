@@ -55,7 +55,7 @@ export function FunisHubPage() {
             {items.map((p) => (
               <li key={p.id}>
                 <Link
-                  to={`/funil/${p.id}`}
+                  to={`/pipe/${p.id}`}
                   className="group block rounded-md shadow-hairline transition hover:shadow-[inset_0_0_0_1px_hsl(var(--ink-dim)/0.5)]"
                 >
                   <Card className="h-full p-5">
