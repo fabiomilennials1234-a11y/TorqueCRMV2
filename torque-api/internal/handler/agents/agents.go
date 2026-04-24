@@ -32,6 +32,7 @@ import (
 	"github.com/milennials/torque-api/internal/httpx"
 	mw "github.com/milennials/torque-api/internal/httpx/middleware"
 	agentrepo "github.com/milennials/torque-api/internal/repository/agent"
+	quotarepo "github.com/milennials/torque-api/internal/repository/quota"
 	"github.com/milennials/torque-api/internal/service/ai"
 	"github.com/milennials/torque-api/internal/service/knowledge"
 	"github.com/milennials/torque-api/internal/ws"
@@ -46,6 +47,17 @@ type Handler struct {
 	// operational in a future config where ingest is delegated to a
 	// separate service.
 	ingest *knowledge.Service
+	// registry (S52) is the in-proc registry of in-flight streams.
+	// Passing nil degrades gracefully — kill-switch still deny-lists
+	// future requests, it just can't reach a stream that's already
+	// running. Prod always wires this.
+	registry *ai.Registry
+	// quota (S52) meters the tenant's `agents` slot count. Passing nil
+	// disables the 402 gate on POST /agents and skips the usage
+	// increment/decrement — matches the backward-compatible shape used
+	// by the leads handler. Prod wires this; tests that do not care
+	// about quota can omit it.
+	quota *quotarepo.Repository
 }
 
 func New(repo *agentrepo.Repository, bus *event.Bus) *Handler {
@@ -59,9 +71,37 @@ func (h *Handler) WithIngest(ingest *knowledge.Service) *Handler {
 	return h
 }
 
+// WithRegistry attaches the stream registry so kill-switch + disable
+// can cancel in-flight SSE streams. Fluent.
+func (h *Handler) WithRegistry(reg *ai.Registry) *Handler {
+	h.registry = reg
+	return h
+}
+
+// WithQuota attaches the quota repository so POST /agents enforces the
+// tenant's `agents` slot cap (S52). Fluent. nil collapses back to
+// unbounded creation (matches the pre-S52 shape and mirrors the leads
+// handler contract).
+//
+// The same *quotarepo.Repository instance is reused by PlaygroundHandler
+// for the variable-cost `ai_tokens` meter — the repo exposes Get +
+// IncrementUsage keyed on resource, so one instance covers both uses.
+func (h *Handler) WithQuota(q *quotarepo.Repository) *Handler {
+	h.quota = q
+	return h
+}
+
 func (h *Handler) Routes(r chi.Router) {
 	r.Get("/agents", h.listAgents)
-	r.Post("/agents", h.createAgent)
+	// S52 — POST /agents sits behind the quota gate when wired. Mirrors
+	// the leads-handler pattern: admission check before the create,
+	// IncrementUsage(+1) in the handler after a successful insert, and
+	// IncrementUsage(-1) in `disable` so the tenant reclaims the slot.
+	if h.quota != nil {
+		r.With(mw.RequireQuota(h.quota, quotarepo.ResourceAgents)).Post("/agents", h.createAgent)
+	} else {
+		r.Post("/agents", h.createAgent)
+	}
 	r.Get("/agents/{id}", h.getAgent)
 	r.Post("/agents/{id}/activate", h.activate)
 	r.Post("/agents/{id}/disable", h.disable)
@@ -237,6 +277,14 @@ func (h *Handler) createAgent(w http.ResponseWriter, r *http.Request) {
 		httpx.WriteError(w, http.StatusBadRequest, "INVALID_AGENT", err.Error())
 		return
 	}
+	// S52 — increment usage AFTER the create succeeds. Handler failure
+	// paths above do not increment. The middleware admitted us under
+	// effective_limit; the tiny window between check and bump can only
+	// over-count when a tenant fires concurrent creates, which the
+	// rate limiter bounds.
+	if h.quota != nil {
+		_, _ = h.quota.IncrementUsage(r.Context(), orgID, quotarepo.ResourceAgents, 1)
+	}
 	h.publish(orgID, a.ID, "agent.created", toAgentView(a))
 	httpx.WriteJSON(w, http.StatusCreated, toAgentView(a))
 }
@@ -280,6 +328,24 @@ func (h *Handler) setStatus(w http.ResponseWriter, r *http.Request, status, evt 
 		httpx.WriteError(w, http.StatusInternalServerError, "INTERNAL", "could not set status")
 		return
 	}
+	// S52 — a transition to `disabled` is a stronger kill than
+	// kill_switch (flip is reversible, disable is admin-issued).
+	// Cancel every in-flight stream so the agent stops burning
+	// tokens the moment the status changes.
+	if status == "disabled" && h.registry != nil {
+		_ = h.registry.CancelAll(id)
+	}
+	// S52 — disable is terminal for slot accounting: the agent no
+	// longer counts against the tenant's `agents` cap. Fire-and-
+	// forget decrement; IncrementUsage clamps at 0 so a double-call
+	// cannot underflow. Activate/re-enable paths deliberately do NOT
+	// re-increment — drift-free recount job is the canonical authority
+	// if we ever suspect divergence. The safe invariant is
+	// usage <= effective_limit, and decrement is the only operation
+	// the ongoing-op surface needs.
+	if status == "disabled" && h.quota != nil {
+		_, _ = h.quota.IncrementUsage(r.Context(), orgID, quotarepo.ResourceAgents, -1)
+	}
 	h.publish(orgID, id, evt, map[string]string{"status": status})
 	w.WriteHeader(http.StatusNoContent)
 }
@@ -303,7 +369,19 @@ func (h *Handler) killSwitch(w http.ResponseWriter, r *http.Request) {
 		httpx.WriteError(w, http.StatusInternalServerError, "INTERNAL", "could not flip kill switch")
 		return
 	}
-	h.publish(orgID, id, "agent.kill_switch", map[string]bool{"enabled": body.Enabled})
+	// S52 — when the flip is engaging the switch, cancel every
+	// in-flight stream registered for this agent. Running providers
+	// hand their goroutines a ctx.Err(); the SSE writer emits an
+	// AGENT_KILLED error frame and closes. A flip to `enabled=false`
+	// has no effect on already-running streams.
+	cancelled := 0
+	if body.Enabled && h.registry != nil {
+		cancelled = h.registry.CancelAll(id)
+	}
+	h.publish(orgID, id, "agent.kill_switch", map[string]any{
+		"enabled":            body.Enabled,
+		"cancelled_streams":  cancelled,
+	})
 	w.WriteHeader(http.StatusNoContent)
 }
 

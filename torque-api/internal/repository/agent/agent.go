@@ -516,6 +516,88 @@ func (r *Repository) AppendMessage(ctx context.Context, in AppendMessageInput) (
 	return m, nil
 }
 
+// PlaygroundTurnInput captures the user + assistant turn produced by
+// one playground SSE call. Both messages land in a single (ad-hoc)
+// agent_session so the /sessions/:id/messages history endpoint can
+// replay them, and tokens_input/tokens_output on the assistant row
+// feed the S42 metrics + S52 AI-budget meter.
+type PlaygroundTurnInput struct {
+	OrganizationID uuid.UUID
+	AgentID        uuid.UUID
+	// LeadID / ConversationID — nil for anonymous playground turns.
+	LeadID         *uuid.UUID
+	ConversationID *uuid.UUID
+	UserContent    string
+	AssistantContent string
+	TokensInput    int
+	TokensOutput   int
+	LatencyMs      int
+}
+
+// PersistPlaygroundTurn opens a short-lived session, appends the user
+// and assistant messages (with the token counters on the assistant
+// row), and closes the session. All inside one pgx transaction so a
+// partial failure leaves nothing behind. Returns the session id the
+// caller surfaces on the terminal SSE frame for traceability.
+func (r *Repository) PersistPlaygroundTurn(ctx context.Context, in PlaygroundTurnInput) (uuid.UUID, error) {
+	if in.OrganizationID == uuid.Nil || in.AgentID == uuid.Nil {
+		return uuid.Nil, errors.New("org and agent required")
+	}
+	tx, err := r.pool.Begin(ctx)
+	if err != nil {
+		return uuid.Nil, fmt.Errorf("begin tx: %w", err)
+	}
+	defer func() { _ = tx.Rollback(ctx) }() // idempotent after commit
+
+	var sessID uuid.UUID
+	if err := tx.QueryRow(ctx,
+		`INSERT INTO agent_sessions (organization_id, agent_id, lead_id, conversation_id, state)
+		 VALUES ($1,$2,$3,$4,'ended')
+		 RETURNING id`,
+		in.OrganizationID, in.AgentID, in.LeadID, in.ConversationID,
+	).Scan(&sessID); err != nil {
+		return uuid.Nil, fmt.Errorf("insert session: %w", err)
+	}
+
+	// User turn — no token counters (we don't bill input context on
+	// the user row; providers report input token count on the
+	// assistant turn's terminal frame).
+	if _, err := tx.Exec(ctx,
+		`INSERT INTO agent_messages (organization_id, session_id, role, content)
+		 VALUES ($1,$2,'user',$3)`,
+		in.OrganizationID, sessID, in.UserContent,
+	); err != nil {
+		return uuid.Nil, fmt.Errorf("insert user msg: %w", err)
+	}
+
+	// Assistant turn — carries the usage counters so aggregate metrics +
+	// quota increments have a single source of truth.
+	if _, err := tx.Exec(ctx,
+		`INSERT INTO agent_messages (
+		   organization_id, session_id, role, content,
+		   tokens_input, tokens_output, latency_ms
+		 ) VALUES ($1,$2,'assistant',$3,$4,$5,$6)`,
+		in.OrganizationID, sessID, in.AssistantContent,
+		in.TokensInput, in.TokensOutput, in.LatencyMs,
+	); err != nil {
+		return uuid.Nil, fmt.Errorf("insert assistant msg: %w", err)
+	}
+
+	// Stamp ended_at so the session is closed the moment it's persisted
+	// (playground turns are stateless — nothing opens a follow-up turn
+	// against this same session id).
+	if _, err := tx.Exec(ctx,
+		`UPDATE agent_sessions SET ended_at = now() WHERE id = $1`, sessID,
+	); err != nil {
+		return uuid.Nil, fmt.Errorf("close session: %w", err)
+	}
+
+	if err := tx.Commit(ctx); err != nil {
+		return uuid.Nil, fmt.Errorf("commit tx: %w", err)
+	}
+	return sessID, nil
+}
+
 // AgentMetrics is the aggregation shape surfaced by GET /agents/:id/metrics.
 // Window is closed-open [Since, Until).
 type AgentMetrics struct {

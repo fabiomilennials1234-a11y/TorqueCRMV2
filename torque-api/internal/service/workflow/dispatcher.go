@@ -1,13 +1,13 @@
-// Package workflow hosts the S44 executor + action dispatcher for F07.
+// Package workflow hosts the S44/S45/S52 executor + action dispatcher
+// for F07.
 //
 // The executor walks a workflow DAG one step at a time, handing each
-// step to the ActionDispatcher. For S44 the dispatcher has four
-// concrete actions (send_message, update_lead, wait, branch); all are
-// side-effect free in this sprint — they log + produce output JSON —
-// so the execution trace is faithful even before the external
-// integrations (Evolution, pipe, scheduler) wire to real callers in
-// S45. A real send_message plugged in here is the only bit that
-// changes; the executor + dispatcher interface stay stable.
+// step to the ActionDispatcher. S44 shipped four side-effect-free
+// handlers (send_message, update_lead, wait, branch). S45 added three
+// more (create_task, call_agent, http). S52 turns all seven into real
+// side-effects backed by repositories + the Evolution adapter, with
+// retry classification (ErrTransient / ErrNonRetryable) and a bus
+// publisher so downstream observers react to every mutation.
 package workflow
 
 import (
@@ -16,13 +16,63 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/rs/zerolog"
+
+	"github.com/milennials/torque-api/internal/event"
+	agentrepo "github.com/milennials/torque-api/internal/repository/agent"
+	inboxrepo "github.com/milennials/torque-api/internal/repository/inbox"
+	leadrepo "github.com/milennials/torque-api/internal/repository/lead"
+	taskrepo "github.com/milennials/torque-api/internal/repository/task"
+	"github.com/milennials/torque-api/internal/service/integration"
 )
 
 // ErrActionUnknown bubbles up when the step kind is not registered.
 // Runs hitting this fail — not retry — because a missing handler is a
 // configuration bug, not a transient glitch.
 var ErrActionUnknown = errors.New("workflow: action handler not registered")
+
+// ErrTransient is returned by handlers when the failure is expected to
+// succeed on retry (Evolution 5xx, HTTP timeout, rate limit). The
+// executor schedules a backoff-based retry up to max_attempts.
+var ErrTransient = errors.New("workflow: transient error — retryable")
+
+// ErrNonRetryable is returned when a failure is structural (bad
+// config, resource deleted, permanent 4xx). The executor sends the
+// run straight to the DLQ without wasting retries.
+var ErrNonRetryable = errors.New("workflow: non-retryable error")
+
+// ErrSuspend is a sentinel the executor recognizes to mean "park this
+// run at the NEXT step with a scheduled resume". Wait handlers return
+// this along with a StepOutcome whose NextStepID carries the resume
+// marker `__suspend:<iso8601>`.
+var ErrSuspend = errors.New("workflow: suspend run for scheduled resume")
+
+// classifyError wraps a raw error with the appropriate sentinel if
+// the caller didn't. Callers that KNOW the failure class return the
+// right sentinel directly; this is a safety net for adapters that
+// surface opaque error values.
+func classifyError(err error) error {
+	if err == nil {
+		return nil
+	}
+	if errors.Is(err, ErrTransient) || errors.Is(err, ErrNonRetryable) {
+		return err
+	}
+	// Providers: Evolution / SZ.Chat map their own transient errors
+	// via integration.Err* sentinels; Unreachable + RateLimited are
+	// retryable, AuthFailed is not (credentials don't heal).
+	if errors.Is(err, integration.ErrUnreachable) ||
+		errors.Is(err, integration.ErrRateLimited) ||
+		errors.Is(err, integration.ErrCircuitOpen) {
+		return fmt.Errorf("%w: %v", ErrTransient, err)
+	}
+	if errors.Is(err, integration.ErrAuthFailed) ||
+		errors.Is(err, integration.ErrUnsupported) {
+		return fmt.Errorf("%w: %v", ErrNonRetryable, err)
+	}
+	return err
+}
 
 // StepContext carries everything a handler needs to do its work. Kept
 // small so expanding it doesn't cascade through every handler.
@@ -61,6 +111,21 @@ type ActionHandler interface {
 	Execute(ctx context.Context, sc StepContext) (StepOutcome, error)
 }
 
+// Deps is the dependency envelope passed to real handlers. Zero-valued
+// fields disable the corresponding side-effect: e.g. constructing a
+// dispatcher without a leadrepo makes UpdateLeadAction degrade to a
+// logged no-op with `applied:false`. That lets tests wire partial
+// dispatchers without a DB.
+type Deps struct {
+	Pool       *pgxpool.Pool
+	Bus        *event.Bus
+	Leads      *leadrepo.Repository
+	Tasks      *taskrepo.Repository
+	Agents     *agentrepo.Repository
+	Inbox      *inboxrepo.Repository
+	Messaging  integration.MessagingProvider
+}
+
 // Dispatcher is a lookup over ActionHandlers keyed by kind. Looking
 // up a kind that wasn't registered returns ErrActionUnknown instead
 // of panicking so a bad workflow config fails loudly at run time but
@@ -70,19 +135,39 @@ type Dispatcher struct {
 	logger   zerolog.Logger
 }
 
-// NewDispatcher builds a dispatcher with the default S44 handlers
-// registered. Callers can later Register() additional kinds (S45+
-// `create_task`, `call_agent`, `http`, `schedule` trigger, etc.).
-func NewDispatcher(logger zerolog.Logger) *Dispatcher {
+// NewDispatcher builds a dispatcher with the S44 + S45 handlers
+// registered and real dependencies injected. Callers that want a
+// deps-free dispatcher (unit tests, old boot paths) can pass a zero
+// Deps — handlers will degrade gracefully.
+func NewDispatcher(logger zerolog.Logger, deps Deps) *Dispatcher {
 	d := &Dispatcher{
 		handlers: map[string]ActionHandler{},
 		logger:   logger.With().Str("component", "workflow_dispatcher").Logger(),
 	}
-	d.Register(&SendMessageAction{logger: logger})
-	d.Register(&UpdateLeadAction{logger: logger})
+	d.Register(&SendMessageAction{logger: logger, deps: deps})
+	d.Register(&UpdateLeadAction{logger: logger, deps: deps})
 	d.Register(&WaitAction{logger: logger})
 	d.Register(&BranchAction{logger: logger})
+	d.Register(&CreateTaskAction{logger: logger, deps: deps})
+	d.Register(&CallAgentAction{logger: logger, deps: deps})
+	d.Register(&HTTPRequestAction{logger: logger})
 	return d
+}
+
+// NewDispatcherBare is the deps-free constructor used by legacy tests
+// that only care about the registry + branch logic. Real production
+// always calls NewDispatcher with a populated Deps.
+func NewDispatcherBare(logger zerolog.Logger) *Dispatcher {
+	return NewDispatcher(logger, Deps{})
+}
+
+// NewDispatcherS45 retained for compatibility with existing boot
+// wiring; it now routes through NewDispatcher with empty deps. Any
+// caller that wants real side-effects should migrate to NewDispatcher.
+//
+// Deprecated: kept so older callsites compile while boot migrates.
+func NewDispatcherS45(logger zerolog.Logger) *Dispatcher {
+	return NewDispatcher(logger, Deps{})
 }
 
 // Register binds a handler to its Kind. Re-registering a kind
@@ -98,7 +183,8 @@ func (d *Dispatcher) Dispatch(ctx context.Context, kind string, sc StepContext) 
 	if !ok {
 		return StepOutcome{}, fmt.Errorf("%w: %s", ErrActionUnknown, kind)
 	}
-	return h.Execute(ctx, sc)
+	out, err := h.Execute(ctx, sc)
+	return out, classifyError(err)
 }
 
 // Handlers returns the registered kinds (sorted-free). Useful for
@@ -109,102 +195,6 @@ func (d *Dispatcher) Handlers() []string {
 		out = append(out, k)
 	}
 	return out
-}
-
-// ---------- send_message --------------------------------------------
-
-// SendMessageAction is an S44 stub. In S45 it will route through
-// internal/service/integration/messaging to the Evolution adapter.
-// Today it records the intended template + body in output so the
-// execution trace proves the dispatch worked end-to-end.
-type SendMessageAction struct {
-	logger zerolog.Logger
-}
-
-// Kind implements ActionHandler.
-func (*SendMessageAction) Kind() string { return "send_message" }
-
-// Execute records the intended send as output. No side effect yet.
-func (a *SendMessageAction) Execute(_ context.Context, sc StepContext) (StepOutcome, error) {
-	var cfg struct {
-		Template string `json:"template"`
-		Body     string `json:"body"`
-		// trigger_kind tags trigger-only nodes (lead_created,
-		// message_received) that are dropped in the canvas. They
-		// act as pass-throughs here: the dispatcher records the
-		// trigger fired and flows to next_step_ids.
-		TriggerKind string `json:"trigger_kind,omitempty"`
-	}
-	_ = json.Unmarshal(sc.Config, &cfg)
-	a.logger.Debug().
-		Str("run_id", sc.RunID).
-		Str("step_id", sc.StepID).
-		Str("template", cfg.Template).
-		Msg("send_message dispatched (stub)")
-	out, _ := json.Marshal(map[string]any{
-		"kind":     "send_message",
-		"template": cfg.Template,
-		"body":     cfg.Body,
-		"trigger":  cfg.TriggerKind,
-		"sent":     false, // S45 flips true when Evolution wired.
-	})
-	return StepOutcome{Output: out}, nil
-}
-
-// ---------- update_lead ---------------------------------------------
-
-type UpdateLeadAction struct {
-	logger zerolog.Logger
-}
-
-func (*UpdateLeadAction) Kind() string { return "update_lead" }
-
-// Execute records the fields the workflow wants to set on the lead.
-// The real lead repo call wires in S45 (`action.set_lead_stage`
-// variant). Keeping it stubbed here keeps S44 scoped to the engine.
-func (a *UpdateLeadAction) Execute(_ context.Context, sc StepContext) (StepOutcome, error) {
-	var cfg map[string]any
-	_ = json.Unmarshal(sc.Config, &cfg)
-	a.logger.Debug().
-		Str("run_id", sc.RunID).
-		Str("lead_id", sc.LeadID).
-		Msg("update_lead dispatched (stub)")
-	out, _ := json.Marshal(map[string]any{
-		"kind":    "update_lead",
-		"fields":  cfg,
-		"applied": false,
-	})
-	return StepOutcome{Output: out}, nil
-}
-
-// ---------- wait ----------------------------------------------------
-
-// WaitAction is the simplest handler: records the requested pause
-// and returns. Actual suspension + re-enqueue is a follow-up (needs
-// a scheduler integration + `run_at` future timestamp). S44 proves
-// the engine can sequence through a wait step without blocking the
-// runner goroutine.
-type WaitAction struct {
-	logger zerolog.Logger
-}
-
-func (*WaitAction) Kind() string { return "wait" }
-
-func (a *WaitAction) Execute(_ context.Context, sc StepContext) (StepOutcome, error) {
-	var cfg struct {
-		DurationSeconds int `json:"duration_seconds"`
-	}
-	_ = json.Unmarshal(sc.Config, &cfg)
-	a.logger.Debug().
-		Str("run_id", sc.RunID).
-		Int("duration_seconds", cfg.DurationSeconds).
-		Msg("wait dispatched (no real pause in S44)")
-	out, _ := json.Marshal(map[string]any{
-		"kind":             "wait",
-		"duration_seconds": cfg.DurationSeconds,
-		"suspended":        false,
-	})
-	return StepOutcome{Output: out}, nil
 }
 
 // ---------- branch --------------------------------------------------
@@ -238,10 +228,6 @@ func (a *BranchAction) Execute(_ context.Context, sc StepContext) (StepOutcome, 
 		Expression string `json:"expression"`
 	}
 	_ = json.Unmarshal(sc.Config, &cfg)
-	// We don't wire to actual lead data in S44 — the executor passes
-	// a synthetic `facts` map through PreviousOutputs keyed by
-	// `__input`. Real lead facts land with the bus subscriber that
-	// hydrates the context from the leads repo.
 	result, valid := evalBranch(cfg.Expression, sc)
 	a.logger.Debug().
 		Str("run_id", sc.RunID).
@@ -255,12 +241,6 @@ func (a *BranchAction) Execute(_ context.Context, sc StepContext) (StepOutcome, 
 		"result":           result,
 		"expression_valid": valid,
 	})
-	// next_step_ids[0] = true branch, [1] = false. The executor
-	// consults StepOutcome.NextStepID — empty string = default walk.
-	// We signal the choice by returning a marker the executor
-	// interprets: "__branch:true" or "__branch:false". The executor
-	// resolves this to the actual next step id after picking from
-	// the step's next_step_ids slice.
 	marker := "__branch:true"
 	if !result {
 		marker = "__branch:false"
@@ -277,7 +257,6 @@ func evalBranch(expr string, sc StepContext) (bool, bool) {
 		return true, false
 	}
 	lv := resolvePath(lhs, sc)
-	// rhs is either a quoted string, a number, or a dotted path.
 	rv := resolveRHS(rhs, sc)
 	switch op {
 	case "==":
@@ -292,7 +271,6 @@ func evalBranch(expr string, sc StepContext) (bool, bool) {
 // splitExpr finds the operator token and returns trimmed lhs/rhs.
 // Ordering matters: look for "!=" before "=" because "=" is a prefix.
 func splitExpr(expr string) (lhs, op, rhs string, ok bool) {
-	// Try operators in longest-first order.
 	for _, o := range []string{"==", "!="} {
 		if idx := indexOf(expr, o); idx >= 0 {
 			return trim(expr[:idx]), o, trim(expr[idx+len(o):]), true
@@ -302,9 +280,9 @@ func splitExpr(expr string) (lhs, op, rhs string, ok bool) {
 }
 
 // resolvePath walks a dotted path like "lead.origin" / "input.amount"
-// against the StepContext. Handles two roots today: "input" (the run
-// input json) and "prev.<step_id>" (a prior step output). Unknown
-// root returns "".
+// against the StepContext. Handles three roots: "input" (the run
+// input json), "prev.<step_id>" (a prior step output), and "lead"
+// (the hydrated lead fact bag).
 func resolvePath(path string, sc StepContext) string {
 	seg, rest, has := splitDot(path)
 	if !has {
@@ -328,9 +306,6 @@ func resolvePath(path string, sc StepContext) string {
 		}
 		return walkMap(m, sub)
 	case "lead":
-		// lead facts land in PreviousOutputs under "__lead" when the
-		// bus subscriber hydrates. Keeping the lookup here means
-		// tests can inject a fake lead map without changing dispatcher.
 		var m map[string]any
 		if raw, ok := sc.PreviousOutputs["__lead"]; ok && len(raw) > 0 {
 			_ = json.Unmarshal(raw, &m)

@@ -14,6 +14,7 @@
 package members
 
 import (
+	"context"
 	"errors"
 	"net/http"
 	"time"
@@ -26,6 +27,7 @@ import (
 	"github.com/milennials/torque-api/internal/httpx"
 	mw "github.com/milennials/torque-api/internal/httpx/middleware"
 	memberrepo "github.com/milennials/torque-api/internal/repository/member"
+	quotarepo "github.com/milennials/torque-api/internal/repository/quota"
 	"github.com/milennials/torque-api/internal/ws"
 )
 
@@ -34,10 +36,22 @@ type ReadHandler struct {
 	repo *memberrepo.Repository
 }
 
+// quotaGate is the narrow contract the admin handler needs from the
+// quota repository. Kept local (not in the repo package) so tests can
+// drop in a fake without spinning a pgxpool, and so the production
+// `*quotarepo.Repository` implicitly satisfies it without any casting.
+// The underlying middleware uses its own `QuotaReader` interface — that
+// one is a strict subset of this one.
+type quotaGate interface {
+	mw.QuotaReader
+	IncrementUsage(ctx context.Context, orgID uuid.UUID, resource string, delta int) (int, error)
+}
+
 // AdminHandler serves the admin-only mutations + permission management.
 type AdminHandler struct {
-	repo *memberrepo.Repository
-	bus  *event.Bus
+	repo  *memberrepo.Repository
+	bus   *event.Bus
+	quota quotaGate
 }
 
 // NewRead binds a read handler.
@@ -50,6 +64,19 @@ func NewAdmin(repo *memberrepo.Repository, bus *event.Bus) *AdminHandler {
 	return &AdminHandler{repo: repo, bus: bus}
 }
 
+// WithQuota attaches the quota repository so POST /members enforces the
+// org's team_members cap (S52). nil is accepted — the handler collapses
+// back to unbounded add/deactivate (matches pre-S52 behavior for test
+// fixtures that don't seed plan_quotas).
+func (h *AdminHandler) WithQuota(q *quotarepo.Repository) *AdminHandler {
+	if q == nil {
+		h.quota = nil
+		return h
+	}
+	h.quota = q
+	return h
+}
+
 // ReadRoutes mounts read endpoints under the tenant-scoped group.
 func (h *ReadHandler) Routes(r chi.Router) {
 	r.Get("/members", h.list)
@@ -59,7 +86,15 @@ func (h *ReadHandler) Routes(r chi.Router) {
 
 // AdminRoutes mounts admin endpoints under the admin-only group.
 func (h *AdminHandler) Routes(r chi.Router) {
-	r.Post("/members", h.add)
+	// S52 — POST /members sits behind the quota gate when wired. The
+	// handler also increments usage post-success and decrements on
+	// deactivate/update-is_active transitions so the counter tracks the
+	// active-member headcount the plan caps enforce.
+	if h.quota != nil {
+		r.With(mw.RequireQuota(h.quota, quotarepo.ResourceTeamMembers)).Post("/members", h.add)
+	} else {
+		r.Post("/members", h.add)
+	}
 	r.Patch("/members/{id}", h.update)
 	r.Delete("/members/{id}", h.deactivate)
 	r.Put("/members/{id}/permissions/{featureKey}", h.setOverride)
@@ -193,6 +228,12 @@ func (h *AdminHandler) add(w http.ResponseWriter, r *http.Request) {
 		httpx.WriteError(w, http.StatusBadRequest, "INVALID_MEMBER", err.Error())
 		return
 	}
+	// S52 — increment usage AFTER the create succeeds. Handler failure
+	// paths above do not increment. Fire-and-forget: a drift-free usage
+	// recount job is the canonical authority for divergence.
+	if h.quota != nil {
+		_, _ = h.quota.IncrementUsage(r.Context(), orgID, quotarepo.ResourceTeamMembers, 1)
+	}
 	h.publish(orgID, m.ID, "member.created", toView(m))
 	httpx.WriteJSON(w, http.StatusCreated, toView(m))
 }
@@ -238,6 +279,17 @@ func (h *AdminHandler) update(w http.ResponseWriter, r *http.Request) {
 		httpx.WriteError(w, http.StatusForbidden, "SELF_DEACTIVATE", "admins cannot deactivate themselves")
 		return
 	}
+	// S52 — the team_members quota tracks *active* seat count. A PATCH
+	// that flips is_active changes that count, so we snapshot the prior
+	// value before Update so we only bump on a real transition.
+	var priorActive *bool
+	if h.quota != nil && body.IsActive != nil {
+		prior, gerr := h.repo.Get(r.Context(), orgID, id)
+		if gerr == nil {
+			v := prior.IsActive
+			priorActive = &v
+		}
+	}
 	m, err := h.repo.Update(r.Context(), orgID, id, in)
 	if errors.Is(err, memberrepo.ErrNotFound) {
 		httpx.WriteError(w, http.StatusNotFound, "NOT_FOUND", "member not found")
@@ -250,6 +302,16 @@ func (h *AdminHandler) update(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		httpx.WriteError(w, http.StatusInternalServerError, "INTERNAL", "could not update member")
 		return
+	}
+	// S52 — settle the quota delta only when is_active actually flipped.
+	// Idempotent PATCHes (same is_active echoed back) leave the counter
+	// untouched.
+	if h.quota != nil && priorActive != nil && body.IsActive != nil && *priorActive != *body.IsActive {
+		delta := -1
+		if *body.IsActive {
+			delta = 1
+		}
+		_, _ = h.quota.IncrementUsage(r.Context(), orgID, quotarepo.ResourceTeamMembers, delta)
 	}
 	h.publish(orgID, m.ID, "member.updated", toView(m))
 	httpx.WriteJSON(w, http.StatusOK, toView(m))
@@ -273,6 +335,13 @@ func (h *AdminHandler) deactivate(w http.ResponseWriter, r *http.Request) {
 		}
 		httpx.WriteError(w, http.StatusInternalServerError, "INTERNAL", "could not deactivate member")
 		return
+	}
+	// S52 — reclaim the seat. Deactivate is guarded by `is_active=true`
+	// at the repo (line 235), so ErrNotFound above covers both
+	// missing-member and already-deactivated — the increment only
+	// fires when the row actually flipped.
+	if h.quota != nil {
+		_, _ = h.quota.IncrementUsage(r.Context(), orgID, quotarepo.ResourceTeamMembers, -1)
 	}
 	h.publish(orgID, id, "member.deactivated", map[string]any{"id": id})
 	w.WriteHeader(http.StatusNoContent)

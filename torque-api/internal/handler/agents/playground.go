@@ -11,11 +11,14 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
+	"github.com/rs/zerolog"
 
 	"github.com/milennials/torque-api/internal/httpx"
 	mw "github.com/milennials/torque-api/internal/httpx/middleware"
 	agentrepo "github.com/milennials/torque-api/internal/repository/agent"
+	quotarepo "github.com/milennials/torque-api/internal/repository/quota"
 	"github.com/milennials/torque-api/internal/service/ai"
+	"github.com/milennials/torque-api/internal/service/ai/pii"
 )
 
 // PlaygroundHandler composes the existing Handler with the LLM provider.
@@ -32,6 +35,18 @@ type PlaygroundHandler struct {
 	// tts is optional; when nil, the TTS preview endpoint returns 503.
 	// Prod wires ElevenLabsTTS; dev without a key wires MockTTS.
 	tts ai.TTS
+	// quotaRepo records token usage post-stream against the tenant's
+	// `ai_tokens` meter (S52). Passing nil disables the increment path
+	// — the middleware gate still 402s when at cap, but usage won't
+	// advance. Prod callers always wire this.
+	quotaRepo *quotarepo.Repository
+	// registry holds the context cancel fn of every in-flight stream
+	// so a kill_switch flip can terminate them mid-turn. Passing nil
+	// is safe — Register/CancelAll become no-ops.
+	registry *ai.Registry
+	// logger emits structured PII-scrub + token-usage fields. Defaults
+	// to the zero Logger (Nop) when unset.
+	logger zerolog.Logger
 }
 
 // NewPlayground wraps a base Handler with an LLM provider. Passing nil
@@ -43,12 +58,47 @@ func NewPlayground(base *Handler, provider ai.Provider, embedder ai.Embedder, tt
 	return &PlaygroundHandler{Handler: base, provider: provider, embedder: embedder, tts: tts}
 }
 
+// WithQuota binds the quota repository so post-stream token usage can
+// be accounted against ai_tokens. Fluent — returns the same handler so
+// main.go chaining stays compact.
+func (h *PlaygroundHandler) WithQuota(repo *quotarepo.Repository) *PlaygroundHandler {
+	h.quotaRepo = repo
+	return h
+}
+
+// WithRegistry binds the in-proc stream registry so flipping
+// kill_switch cancels in-flight streams. Fluent.
+func (h *PlaygroundHandler) WithRegistry(reg *ai.Registry) *PlaygroundHandler {
+	h.registry = reg
+	return h
+}
+
+// WithLogger binds a structured logger. Fluent.
+func (h *PlaygroundHandler) WithLogger(l zerolog.Logger) *PlaygroundHandler {
+	h.logger = l
+	return h
+}
+
 // Routes extends the base routes with the playground + agent update.
-func (h *PlaygroundHandler) Routes(r chi.Router) {
+//
+// S52 — `aiBudget` + `ttsBudget` are optional middlewares applied per
+// route so only the endpoints that actually dial a paid provider get
+// the 402 gate. PATCH /agents/:id does not consume tokens so it stays
+// ungated. Passing nil for either falls back to an unrestricted mount
+// (useful in tests).
+func (h *PlaygroundHandler) Routes(r chi.Router, aiBudget, ttsBudget func(http.Handler) http.Handler) {
 	h.Handler.Routes(r)
 	r.Patch("/agents/{id}", h.updateAgent)
-	r.Post("/agents/{id}/playground/message", h.playground)
-	r.Post("/agents/{id}/tts/preview", h.ttsPreview)
+	playMw := []func(http.Handler) http.Handler{}
+	if aiBudget != nil {
+		playMw = append(playMw, aiBudget)
+	}
+	ttsMw := []func(http.Handler) http.Handler{}
+	if ttsBudget != nil {
+		ttsMw = append(ttsMw, ttsBudget)
+	}
+	r.With(playMw...).Post("/agents/{id}/playground/message", h.playground)
+	r.With(ttsMw...).Post("/agents/{id}/tts/preview", h.ttsPreview)
 }
 
 // -------- update -----------------------------------------------------
@@ -162,17 +212,49 @@ func (h *PlaygroundHandler) playground(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// S52 — PII scrub on user-authored turns. Every role=="user" message
+	// goes through the BR-PII regex pack before we concatenate into
+	// the provider request. CPF/CNPJ/phone/email/credit are replaced
+	// with redaction sentinels. We accumulate counts so the audit log
+	// records exposure at request scope, not per-message (a 10-CPF
+	// turn is as interesting as a 1-CPF turn from a policy
+	// standpoint — the signal is "did PII leave my tenant?").
+	var totalPII pii.Counts
+	scrubbedMessages := make([]struct {
+		Role    string
+		Content string
+	}, len(body.Messages))
+	for i, m := range body.Messages {
+		content := m.Content
+		if m.Role == "user" {
+			scrubbed, c := pii.Scrub(m.Content)
+			content = scrubbed
+			totalPII.CPF += c.CPF
+			totalPII.CNPJ += c.CNPJ
+			totalPII.Phone += c.Phone
+			totalPII.Email += c.Email
+			totalPII.Credit += c.Credit
+		}
+		scrubbedMessages[i] = struct {
+			Role    string
+			Content string
+		}{m.Role, content}
+	}
+
 	// S39 — RAG retrieval. If the agent is bound to a collection AND an
 	// embedder is wired, embed the last user turn, search topK chunks,
 	// and prepend them as a delimited context block to the system prompt.
+	// S52 — chunks ALSO pass through the PII scrubber — a tenant's own
+	// knowledge base can still contain PII that must not reach the
+	// upstream provider.
 	// Retrieval errors degrade gracefully: the model gets the base
 	// prompt without context rather than failing the whole request.
 	systemPrompt := agent.SystemPrompt
 	if agent.KnowledgeCollectionID != nil && h.embedder != nil {
 		lastUser := ""
-		for i := len(body.Messages) - 1; i >= 0; i-- {
-			if body.Messages[i].Role == "user" {
-				lastUser = body.Messages[i].Content
+		for i := len(scrubbedMessages) - 1; i >= 0; i-- {
+			if scrubbedMessages[i].Role == "user" {
+				lastUser = scrubbedMessages[i].Content
 				break
 			}
 		}
@@ -185,6 +267,23 @@ func (h *PlaygroundHandler) playground(w http.ResponseWriter, r *http.Request) {
 			if embErr == nil && len(vecs) == 1 {
 				chunks, searchErr := h.repo.SimilaritySearch(retrieveCtx, orgID, agent.ID, vecs[0], 5)
 				if searchErr == nil && len(chunks) > 0 {
+					// Scrub retrieved chunk content BEFORE prepending.
+					pScrubbed := make([]pii.Chunk, len(chunks))
+					for i, c := range chunks {
+						pScrubbed[i] = pii.Chunk{Content: c.Content}
+					}
+					pScrubbed, ragCounts := pii.ScrubRAGContext(pScrubbed)
+					// Merge rag-side counts into the request total.
+					totalPII.CPF += ragCounts.CPF
+					totalPII.CNPJ += ragCounts.CNPJ
+					totalPII.Phone += ragCounts.Phone
+					totalPII.Email += ragCounts.Email
+					totalPII.Credit += ragCounts.Credit
+					// Swap scrubbed content back into the chunks so
+					// prependContext renders the sanitised text.
+					for i := range chunks {
+						chunks[i].Content = pScrubbed[i].Content
+					}
 					systemPrompt = prependContext(agent.SystemPrompt, chunks)
 				}
 			}
@@ -192,11 +291,27 @@ func (h *PlaygroundHandler) playground(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	// Emit one structured log line per request with PII + agent metadata
+	// so the SOC dashboard can track "did PII leave my tenant?" at a
+	// glance. The zero Logger is safe to use — it discards.
+	if totalPII.Total() > 0 {
+		h.logger.Info().
+			Str("tenant_id", orgID.String()).
+			Str("agent_id", agent.ID.String()).
+			Int("pii_cpf", totalPII.CPF).
+			Int("pii_cnpj", totalPII.CNPJ).
+			Int("pii_phone", totalPII.Phone).
+			Int("pii_email", totalPII.Email).
+			Int("pii_credit", totalPII.Credit).
+			Int("pii_total", totalPII.Total()).
+			Msg("ai.pii_scrub")
+	}
+
 	// Build ChatRequest: system prompt first (optionally enriched with
-	// retrieved chunks above), then the caller's messages.
-	msgs := make([]ai.Message, 0, len(body.Messages)+1)
+	// retrieved chunks above), then the caller's scrubbed messages.
+	msgs := make([]ai.Message, 0, len(scrubbedMessages)+1)
 	msgs = append(msgs, ai.Message{Role: ai.RoleSystem, Content: systemPrompt})
-	for _, m := range body.Messages {
+	for _, m := range scrubbedMessages {
 		role := ai.RoleUser
 		if m.Role == "assistant" {
 			role = ai.RoleAssistant
@@ -228,6 +343,15 @@ func (h *PlaygroundHandler) playground(w http.ResponseWriter, r *http.Request) {
 	ctx, cancel := context.WithTimeout(r.Context(), 60*time.Second)
 	defer cancel()
 
+	// Register with the runtime registry so a kill-switch flip on the
+	// agent's admin endpoint cancels this ctx mid-stream. The closure
+	// removes our entry once we return (defer order: unreg → cancel).
+	if h.registry != nil {
+		unreg := h.registry.Register(agent.ID, cancel)
+		defer unreg()
+	}
+
+	started := time.Now()
 	out := make(chan ai.Chunk, 16)
 	errCh := make(chan error, 1)
 	go func() { errCh <- h.provider.Chat(ctx, req, out) }()
@@ -238,23 +362,135 @@ func (h *PlaygroundHandler) playground(w http.ResponseWriter, r *http.Request) {
 		flusher.Flush()
 	}
 
+	// Accumulate the assistant response across deltas so we can
+	// persist the final text on `done`. Also remember the token
+	// counts from the terminal frame for quota accounting.
+	var assistantBuf strings.Builder
+	var inputTokens, outputTokens int
+	var streamDone bool
+
 	for chunk := range out {
 		if chunk.Delta != "" {
+			assistantBuf.WriteString(chunk.Delta)
 			writeEvent("delta", map[string]string{"content": chunk.Delta})
 		}
 		if chunk.Done {
+			inputTokens = chunk.InputTokens
+			outputTokens = chunk.OutputTokens
+			streamDone = true
 			writeEvent("done", map[string]any{
 				"input_tokens":  chunk.InputTokens,
 				"output_tokens": chunk.OutputTokens,
 			})
 		}
 	}
-	if err := <-errCh; err != nil && !errors.Is(err, context.Canceled) {
+	providerErr := <-errCh
+	if providerErr != nil && !errors.Is(providerErr, context.Canceled) {
+		// Check whether this was our own kill-switch cancel; a
+		// distinct code lets the frontend render "agent desativado
+		// durante resposta" rather than a generic failure.
+		code := classify(providerErr)
+		if ctx.Err() != nil && !errors.Is(providerErr, context.DeadlineExceeded) {
+			code = "AGENT_KILLED"
+		}
 		writeEvent("error", map[string]string{
-			"code":    classify(err),
-			"message": err.Error(),
+			"code":    code,
+			"message": providerErr.Error(),
 		})
+		return
 	}
+
+	// S52 — persist + meter. A clean stream (done frame received, no
+	// error) produces one session + two messages (user/assistant)
+	// with token counters on the assistant row, and increments the
+	// tenant's ai_tokens quota by input+output.
+	//
+	// Streams aborted mid-way (provider error, kill-switch) are
+	// DELIBERATELY NOT persisted — we'd have no reliable assistant
+	// text and no token count. A retry would then not double-charge.
+	if !streamDone {
+		return
+	}
+	h.finalizeStream(orgID, agent.ID, finalizeInput{
+		userContent:      latestUserContent(scrubbedMessages),
+		assistantContent: assistantBuf.String(),
+		inputTokens:      inputTokens,
+		outputTokens:     outputTokens,
+		latencyMs:        int(time.Since(started) / time.Millisecond),
+	})
+}
+
+// finalizeInput bundles the post-stream persistence payload so the
+// method signature stays readable.
+type finalizeInput struct {
+	userContent      string
+	assistantContent string
+	inputTokens      int
+	outputTokens     int
+	latencyMs        int
+}
+
+// finalizeStream persists the turn in agent_sessions/agent_messages and
+// bumps the tenant's ai_tokens quota. Runs in a detached 5s ctx so it
+// doesn't block the SSE close and survives a client that drops the
+// connection immediately after the done frame.
+//
+// Deliberately does NOT inherit from the request ctx — the request
+// context is cancelled the moment the SSE writer closes, which is often
+// BEFORE the final frame propagates through the handler. A detached
+// context.Background lets the persistence + quota increment complete
+// even when the browser has already hung up.
+func (h *PlaygroundHandler) finalizeStream(orgID, agentID uuid.UUID, in finalizeInput) {
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	if _, err := h.repo.PersistPlaygroundTurn(ctx, agentrepo.PlaygroundTurnInput{
+		OrganizationID:   orgID,
+		AgentID:          agentID,
+		UserContent:      in.userContent,
+		AssistantContent: in.assistantContent,
+		TokensInput:      in.inputTokens,
+		TokensOutput:     in.outputTokens,
+		LatencyMs:        in.latencyMs,
+	}); err != nil {
+		h.logger.Warn().
+			Err(err).
+			Str("tenant_id", orgID.String()).
+			Str("agent_id", agentID.String()).
+			Msg("playground turn persistence failed")
+		// Continue to quota increment anyway — usage still happened
+		// upstream and an unmetered request is worse than a partial
+		// audit trail.
+	}
+
+	if h.quotaRepo != nil {
+		total := in.inputTokens + in.outputTokens
+		if total > 0 {
+			if _, err := h.quotaRepo.IncrementUsage(ctx, orgID, quotarepo.ResourceAITokens, total); err != nil {
+				h.logger.Warn().
+					Err(err).
+					Str("tenant_id", orgID.String()).
+					Int("tokens", total).
+					Msg("ai_tokens quota increment failed")
+			}
+		}
+	}
+}
+
+// latestUserContent returns the most recent user message from the
+// scrubbed conversation — used as the persisted user turn. Defensive:
+// an empty conversation produces an empty string (the handler has
+// already rejected len==0 earlier).
+func latestUserContent(msgs []struct {
+	Role    string
+	Content string
+}) string {
+	for i := len(msgs) - 1; i >= 0; i-- {
+		if msgs[i].Role == "user" {
+			return msgs[i].Content
+		}
+	}
+	return ""
 }
 
 // prependContext renders retrieved chunks as a block that sits before
@@ -352,6 +588,28 @@ func (h *PlaygroundHandler) ttsPreview(w http.ResponseWriter, r *http.Request) {
 		}
 		httpx.WriteError(w, status, code, err.Error())
 		return
+	}
+	// S52 — TTS seconds metering. We don't have a low-level duration
+	// signal from ElevenLabs without decoding the mp3, so we
+	// approximate by rune count ÷ 15 (common BR Portuguese speaking
+	// rate). Rounding up to at least 1 second prevents a 1-char
+	// preview from consuming zero of the cap. The increment is
+	// best-effort — a failed DB write is logged but does NOT mask the
+	// successful synthesis (the tenant already got the audio).
+	if h.quotaRepo != nil {
+		seconds := (len([]rune(text)) / 15)
+		if seconds < 1 {
+			seconds = 1
+		}
+		metCtx, metCancel := context.WithTimeout(context.Background(), 3*time.Second)
+		defer metCancel()
+		if _, err := h.quotaRepo.IncrementUsage(metCtx, orgID, quotarepo.ResourceTTSSeconds, seconds); err != nil {
+			h.logger.Warn().
+				Err(err).
+				Str("tenant_id", orgID.String()).
+				Int("seconds", seconds).
+				Msg("tts_seconds quota increment failed")
+		}
 	}
 	w.Header().Set("Content-Type", "audio/mpeg")
 	w.Header().Set("Cache-Control", "no-store")

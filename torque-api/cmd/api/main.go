@@ -86,6 +86,7 @@ import (
 	userrepo "github.com/milennials/torque-api/internal/repository/user"
 	workflowrepo "github.com/milennials/torque-api/internal/repository/workflow"
 	"github.com/milennials/torque-api/internal/service/ai"
+	aitrigger "github.com/milennials/torque-api/internal/service/ai/trigger"
 	"github.com/milennials/torque-api/internal/service/billing"
 	cryptosvc "github.com/milennials/torque-api/internal/service/crypto"
 	"github.com/milennials/torque-api/internal/service/integration/gcal"
@@ -167,6 +168,12 @@ func run() error {
 		}
 	}()
 
+	// S52 — in-proc registry of live LLM streams so kill-switch +
+	// agent disable can cancel them mid-turn. Shared between the
+	// playground handler (registers on dial) and the agents handler
+	// (cancels on flip).
+	aiRegistry := ai.NewRegistry()
+
 	// Worker pool. S04 ships the infrastructure; handlers per-kind are wired
 	// by future sprints (leads import, bulk workflows, etc).
 	operations := operationrepo.New(pool)
@@ -186,16 +193,39 @@ func run() error {
 		}
 	}()
 
-	// S44 — workflow executor runner + event-bus subscriber.
+	// S44/S45/S52 — workflow executor runner + event-bus subscriber.
 	// Runner claims pending workflow_runs via SKIP LOCKED and walks the
-	// DAG; subscriber listens for `lead.created` and fans out one
-	// enqueue per active workflow whose trigger matches.
+	// DAG; subscriber listens for `lead.created` / `lead.stage_changed`
+	// / `message.received` and fans out one enqueue per active workflow.
+	//
+	// S52 turns the 7 action handlers into real side-effects:
+	//   - send_message wires to the messaging provider (nil today; the
+	//     Evolution adapter is instantiated per-tenant at send time in
+	//     a follow-up; handlers degrade to logged no-ops until then).
+	//   - update_lead / create_task / call_agent plug into their repos.
+	//   - http calls out with https-only + SSRF allowlist.
+	//   - wait suspends the run via workflow_runs.next_retry_at.
+	//
+	// The executor + runner carry retry/DLQ + watchdog (see migration
+	// 0028). Transient failures backoff-retry up to max_attempts; all
+	// attempts (including retries) land rows in workflow_run_failures.
+	// The watchdog reclaims `running` rows whose process died mid-step.
 	wfRepo := workflowrepo.New(pool)
-	// S45 — NewDispatcherS45 wires the 4 S44 handlers + 3 new ones
-	// (create_task, call_agent, http). Total 7 action kinds registered.
-	dispatcher := workflowsvc.NewDispatcherS45(logger)
-	executor := workflowsvc.NewExecutor(wfRepo, dispatcher, logger)
-	wfRunner := workflowsvc.NewRunner(workflowsvc.DefaultRunnerConfig(), wfRepo, executor, logger)
+	dispatcher := workflowsvc.NewDispatcher(logger, workflowsvc.Deps{
+		Pool:   pool,
+		Bus:    bus,
+		Leads:  leadrepo.New(pool),
+		Tasks:  taskrepo.New(pool),
+		Agents: agentrepo.New(pool),
+		Inbox:  inboxrepo.New(pool),
+		// Messaging: wired in a follow-up once the per-tenant
+		// Evolution/SZ.Chat provider selector lands. Handlers already
+		// log "wired:false" and pass through when nil.
+		Messaging: nil,
+	})
+	executor := workflowsvc.NewExecutorWithBus(wfRepo, dispatcher, bus, logger)
+	wfRunner := workflowsvc.NewRunnerWithBus(
+		workflowsvc.DefaultRunnerConfig(), wfRepo, executor, bus, logger)
 	wfRunner.Start(ctx)
 	defer func() {
 		shutdownCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
@@ -204,17 +234,32 @@ func run() error {
 			logger.Warn().Err(err).Msg("workflow runner shutdown timed out")
 		}
 	}()
-	busSub := workflowsvc.NewBusSubscriber(bus, wfRepo, logger)
-	busSub.Start(ctx)
+	wfSub := workflowsvc.NewBusSubscriber(bus, wfRepo, logger)
+	wfSub.Start(ctx)
 	defer func() {
 		shutdownCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 		defer cancel()
-		if err := busSub.Shutdown(shutdownCtx); err != nil {
+		if err := wfSub.Shutdown(shutdownCtx); err != nil {
 			logger.Warn().Err(err).Msg("workflow bus subscriber shutdown timed out")
 		}
 	}()
 
-	router, err := newRouter(cfg, logger, pool, rl, hub, operations, bus)
+	// S52 — agent trigger dispatcher. Subscribes to the same bus and
+	// translates message.received / conversation.created events into
+	// AssignAgent calls when a tenant's active triggers match. Closes
+	// the S40 gap where triggers had a matcher but no runtime.
+	agentRepoForSub := agentrepo.New(pool)
+	triggerSub := aitrigger.New(bus, agentRepoForSub, logger)
+	triggerSub.Start(ctx)
+	defer func() {
+		shutdownCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+		if err := triggerSub.Shutdown(shutdownCtx); err != nil {
+			logger.Warn().Err(err).Msg("agent trigger subscriber shutdown timed out")
+		}
+	}()
+
+	router, err := newRouter(cfg, logger, pool, rl, hub, operations, bus, aiRegistry)
 	if err != nil {
 		return err
 	}
@@ -288,6 +333,7 @@ func newRouter(
 	hub *ws.Hub,
 	operations *operationrepo.Repository,
 	bus *event.Bus,
+	aiRegistry *ai.Registry,
 ) (http.Handler, error) {
 	r := chi.NewRouter()
 
@@ -524,7 +570,16 @@ func newRouter(
 					// Empty OPENROUTER_API_KEY leaves provider=nil and the
 					// playground endpoint returns 503 PROVIDER_UNAVAILABLE.
 					agentRepo := agentrepo.New(pool)
-					agentBase := agentshandler.New(agentRepo, bus)
+					// S52 — registry is shared so kill_switch + disable
+					// cancel in-flight streams. WithQuota lights up the
+					// RequireQuota gate on POST /agents (resource=agents
+					// slot count) + IncrementUsage on create /
+					// decrement on disable. Same *quotarepo.Repository
+					// instance is reused by PlaygroundHandler for the
+					// variable-cost `ai_tokens` meter below.
+					agentBase := agentshandler.New(agentRepo, bus).
+						WithRegistry(aiRegistry).
+						WithQuota(quotaRepo)
 					var aiProvider ai.Provider
 					if cfg.OpenRouterAPIKey != "" {
 						p, err := ai.NewOpenRouter(ai.Config{
@@ -586,11 +641,25 @@ func newRouter(
 						logger.Warn().Msg("ELEVENLABS_API_KEY empty — using MockTTS (synthesis quality is fake)")
 						tts = ai.NewMockTTS()
 					}
-					agentshandler.NewPlayground(agentBase, aiProvider, embedder, tts).Routes(admin)
+					// S52 — playground carries budget middleware (pre-stream
+					// 402 at cap) + WithQuota (post-stream IncrementUsage)
+					// + WithRegistry (register stream cancel) + WithLogger
+					// (ai.pii_scrub + quota_increment fields). The gate
+					// is applied per-route via Routes(r, aiBudget, ttsBudget)
+					// so only the paid endpoints 402 — PATCH /agents/:id
+					// stays ungated.
+					agentshandler.NewPlayground(agentBase, aiProvider, embedder, tts).
+						WithQuota(quotaRepo).
+						WithRegistry(aiRegistry).
+						WithLogger(logger).
+						Routes(admin, mw.RequireAITokenBudget(quotaRepo), mw.RequireTTSBudget(quotaRepo))
 					proposalshandler.New(proposalrepo.New(pool), bus).Routes(admin)
-					workflowshandler.New(workflowrepo.New(pool), bus).Routes(admin)
+					// S52 — workflows + team_members carry the same RequireQuota
+					// drop-in as leads (S51). Builder pattern keeps nil-quota
+					// call sites working for fixture tests.
+					workflowshandler.New(workflowrepo.New(pool), bus).WithQuota(quotaRepo).Routes(admin)
 					campaignshandler.New(campaignrepo.New(pool), bus).Routes(admin)
-					membershandler.NewAdmin(memberRepo, bus).Routes(admin)
+					membershandler.NewAdmin(memberRepo, bus).WithQuota(quotaRepo).Routes(admin)
 					productshandler.NewAdmin(productRepo, bus).Routes(admin)
 					pipeshandler.NewAdmin(piperepo.New(pool), bus).Routes(admin)
 					performanceHandler.AdminRoutes(admin)
