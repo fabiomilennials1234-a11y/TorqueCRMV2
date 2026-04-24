@@ -9,17 +9,17 @@ import (
 
 func TestChunk_EmptyInput(t *testing.T) {
 	t.Parallel()
-	if got := ai.Chunk("", ai.DefaultChunkOptions()); len(got) != 0 {
+	if got := ai.ChunkText("", ai.DefaultChunkOptions()); len(got) != 0 {
 		t.Errorf("want no chunks, got %d", len(got))
 	}
-	if got := ai.Chunk("   \n\n\t  ", ai.DefaultChunkOptions()); len(got) != 0 {
+	if got := ai.ChunkText("   \n\n\t  ", ai.DefaultChunkOptions()); len(got) != 0 {
 		t.Errorf("want no chunks for whitespace-only input")
 	}
 }
 
 func TestChunk_SingleSmallParagraph(t *testing.T) {
 	t.Parallel()
-	out := ai.Chunk("Olá mundo.", ai.DefaultChunkOptions())
+	out := ai.ChunkText("Olá mundo.", ai.DefaultChunkOptions())
 	if len(out) != 1 {
 		t.Fatalf("want 1 chunk, got %d", len(out))
 	}
@@ -34,7 +34,7 @@ func TestChunk_SingleSmallParagraph(t *testing.T) {
 func TestChunk_SplitsParagraphs(t *testing.T) {
 	t.Parallel()
 	text := strings.Repeat("palavra ", 600) + "\n\n" + strings.Repeat("outra ", 600)
-	out := ai.Chunk(text, ai.ChunkOptions{TargetTokens: 500, OverlapTokens: 50})
+	out := ai.ChunkText(text, ai.ChunkOptions{TargetTokens: 500, OverlapTokens: 50})
 	if len(out) < 2 {
 		t.Fatalf("want multiple chunks, got %d", len(out))
 	}
@@ -50,7 +50,7 @@ func TestChunk_SplitsParagraphs(t *testing.T) {
 func TestChunk_OverlapPresent(t *testing.T) {
 	t.Parallel()
 	text := strings.Repeat("alpha beta gamma delta ", 200)
-	out := ai.Chunk(text, ai.ChunkOptions{TargetTokens: 100, OverlapTokens: 20})
+	out := ai.ChunkText(text, ai.ChunkOptions{TargetTokens: 100, OverlapTokens: 20})
 	if len(out) < 2 {
 		t.Fatalf("want >=2 chunks, got %d", len(out))
 	}
@@ -109,7 +109,7 @@ func TestChunk_OverlapPresent(t *testing.T) {
 func TestChunk_PreservesOrderAndContent(t *testing.T) {
 	t.Parallel()
 	text := "Um.\n\nDois.\n\nTrês."
-	out := ai.Chunk(text, ai.DefaultChunkOptions())
+	out := ai.ChunkText(text, ai.DefaultChunkOptions())
 	if len(out) < 1 {
 		t.Fatalf("want >= 1 chunks")
 	}
@@ -128,7 +128,7 @@ func TestChunk_LongSentenceSlicedByWords(t *testing.T) {
 	t.Parallel()
 	// One giant sentence with no punctuation — exceeds budget.
 	text := strings.Repeat("word ", 1000)
-	out := ai.Chunk(text, ai.ChunkOptions{TargetTokens: 50, OverlapTokens: 5})
+	out := ai.ChunkText(text, ai.ChunkOptions{TargetTokens: 50, OverlapTokens: 5})
 	if len(out) < 2 {
 		t.Fatalf("want multi-chunk split, got %d", len(out))
 	}

@@ -5,10 +5,14 @@ import (
 	"unicode"
 )
 
-// Chunk is a piece of text small enough to fit in a retrieval context
+// TextChunk is a piece of text small enough to fit in a retrieval context
 // window. `Ord` preserves source order so rebuilding the original
 // document after ingest is trivial.
-type Chunk struct {
+//
+// Renamed from `Chunk` in the CI repair sprint to disambiguate from
+// `ai.Chunk` (LLM stream frame, openrouter.go) which lives in the same
+// package and would otherwise redeclare the identifier.
+type TextChunk struct {
 	Ord            int
 	Content        string
 	TokensEstimate int
@@ -32,7 +36,7 @@ func DefaultChunkOptions() ChunkOptions {
 	return ChunkOptions{TargetTokens: 500, OverlapTokens: 50}
 }
 
-// Chunk splits `text` into overlapping, paragraph-aware chunks.
+// ChunkText splits `text` into overlapping, paragraph-aware TextChunks.
 //
 // Tokens are approximated with a word count scaled by a tokens-per-word
 // constant — empirically ~1.3 for English + Portuguese mixed text. We
@@ -46,7 +50,7 @@ func DefaultChunkOptions() ChunkOptions {
 // The splitter walks paragraphs first (blank line separated), then
 // sentences, then words. It prefers natural boundaries but will slice
 // mid-sentence if a single paragraph exceeds TargetTokens.
-func Chunk(text string, opts ChunkOptions) []Chunk {
+func ChunkText(text string, opts ChunkOptions) []TextChunk {
 	if opts.TargetTokens <= 0 {
 		opts = DefaultChunkOptions()
 	}
@@ -64,7 +68,7 @@ func Chunk(text string, opts ChunkOptions) []Chunk {
 
 	paragraphs := splitParagraphs(text)
 
-	var chunks []Chunk
+	var chunks []TextChunk
 	var current []string
 	currentTokens := 0
 	ord := 0
@@ -79,7 +83,7 @@ func Chunk(text string, opts ChunkOptions) []Chunk {
 			currentTokens = 0
 			return
 		}
-		chunks = append(chunks, Chunk{
+		chunks = append(chunks, TextChunk{
 			Ord:            ord,
 			Content:        content,
 			TokensEstimate: currentTokens,
