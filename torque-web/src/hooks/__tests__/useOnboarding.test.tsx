@@ -25,7 +25,8 @@ function wrap(client: QueryClient) {
 describe('useOnboarding', () => {
   it('GETs /api/v1/onboarding', async () => {
     fetchMock.mockResolvedValueOnce({
-      ok: true, status: 200,
+      ok: true,
+      status: 200,
       json: async () => ({
         current_step: 'welcome',
         steps_completed: [],
@@ -43,7 +44,8 @@ describe('useOnboarding', () => {
 
   it('useCompleteStep POSTs /api/v1/onboarding/steps', async () => {
     fetchMock.mockResolvedValueOnce({
-      ok: true, status: 200,
+      ok: true,
+      status: 200,
       json: async () => ({
         current_step: 'finish',
         steps_completed: ['welcome'],

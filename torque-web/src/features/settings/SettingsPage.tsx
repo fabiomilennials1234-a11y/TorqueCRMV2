@@ -29,10 +29,7 @@ import {
   type MemberRole,
   type TeamMember,
 } from '@/hooks/useMembers'
-import {
-  useOrganization,
-  useUpdateOrganization,
-} from '@/hooks/useOrgSettings'
+import { useOrganization, useUpdateOrganization } from '@/hooks/useOrgSettings'
 import { IntegrationsSection } from '@/features/settings/IntegrationsSection'
 import { cn } from '@/lib/utils'
 
@@ -264,8 +261,8 @@ function TeamSection() {
     const rows = members.data ?? []
     const q = query.trim().toLowerCase()
     if (!q) return rows
-    return rows.filter((m) =>
-      m.display_name.toLowerCase().includes(q) || m.email.toLowerCase().includes(q)
+    return rows.filter(
+      (m) => m.display_name.toLowerCase().includes(q) || m.email.toLowerCase().includes(q)
     )
   }, [members.data, query])
 
@@ -328,7 +325,10 @@ function TeamSection() {
       )}
 
       {members.isSuccess && filtered.length === 0 && (
-        <EmptyState title="Nenhum membro encontrado" description="Ajuste a busca ou convide alguém." />
+        <EmptyState
+          title="Nenhum membro encontrado"
+          description="Ajuste a busca ou convide alguém."
+        />
       )}
 
       {members.isSuccess && filtered.length > 0 && (
@@ -380,7 +380,7 @@ function InviteForm({
         void onSubmit({ email: email.trim(), display_name: displayName.trim(), role })
       }}
     >
-      <div className="flex-1 min-w-[200px]">
+      <div className="min-w-[200px] flex-1">
         <label htmlFor={emailId} className="mb-1 block text-xs text-ink-muted">
           E-mail do usuário
         </label>
@@ -392,7 +392,7 @@ function InviteForm({
           required
         />
       </div>
-      <div className="flex-1 min-w-[200px]">
+      <div className="min-w-[200px] flex-1">
         <label htmlFor={nameId} className="mb-1 block text-xs text-ink-muted">
           Nome de exibição
         </label>

@@ -95,11 +95,7 @@ export function ConversationList(props: ConversationListProps) {
               { k: 'resolved', label: 'Resolvidas' },
             ] as { k: StateFilter; label: string }[]
           ).map((t) => (
-            <Pill
-              key={t.k}
-              active={stateFilter === t.k}
-              onClick={() => onStateFilterChange(t.k)}
-            >
+            <Pill key={t.k} active={stateFilter === t.k} onClick={() => onStateFilterChange(t.k)}>
               {t.label}
             </Pill>
           ))}
@@ -113,7 +109,9 @@ export function ConversationList(props: ConversationListProps) {
           emptyFallback={
             <div className="px-6 py-12 text-center text-sm text-ink-muted">
               {search ? (
-                <>Nenhuma conversa bate com "<span className="text-ink">{search}</span>".</>
+                <>
+                  Nenhuma conversa bate com "<span className="text-ink">{search}</span>".
+                </>
               ) : (
                 'Sem conversas neste filtro ainda.'
               )}
@@ -161,7 +159,7 @@ function ConversationRow({ conversation, active, separator, onClick }: Conversat
       className={cn(
         'block w-full px-4 py-3 text-left transition-colors',
         separator && 'shadow-[inset_0_1px_0_0_hsl(var(--hairline))]',
-        active ? 'bg-elevated/60' : 'hover:bg-elevated/30',
+        active ? 'bg-elevated/60' : 'hover:bg-elevated/30'
       )}
     >
       <div className="flex items-baseline justify-between gap-2">
@@ -178,7 +176,7 @@ function ConversationRow({ conversation, active, separator, onClick }: Conversat
         {c.unread_count > 0 && (
           <span
             aria-label={`${c.unread_count} mensagens não lidas`}
-            className="font-metric shrink-0 rounded-full bg-accent px-1.5 text-2xs tabular-nums text-background"
+            className="font-metric text-background shrink-0 rounded-full bg-accent px-1.5 text-2xs tabular-nums"
           >
             {c.unread_count > 99 ? '99+' : c.unread_count}
           </span>

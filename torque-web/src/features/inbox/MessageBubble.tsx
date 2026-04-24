@@ -54,16 +54,11 @@ export function MessageBubble({ message }: MessageBubbleProps) {
   }
 
   return (
-    <div
-      className={cn(
-        'flex w-full',
-        isOutbound ? 'justify-end' : 'justify-start',
-      )}
-    >
+    <div className={cn('flex w-full', isOutbound ? 'justify-end' : 'justify-start')}>
       <div
         className={cn(
           'max-w-[72%] rounded-lg px-3 py-2 text-sm shadow-elev-1',
-          isOutbound ? 'bg-accent/15 text-ink' : 'bg-surface text-ink-muted',
+          isOutbound ? 'bg-accent/15 text-ink' : 'bg-surface text-ink-muted'
         )}
       >
         <MessageBody message={m} />
@@ -152,7 +147,7 @@ function MessageFooter({
           className={cn(
             'inline-flex items-center',
             status === 'read' ? 'text-info' : '',
-            status === 'failed' ? 'text-danger' : '',
+            status === 'failed' ? 'text-danger' : ''
           )}
         >
           <StatusIcon className="h-3 w-3" />

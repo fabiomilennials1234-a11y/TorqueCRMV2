@@ -39,7 +39,7 @@ const MAX_DELAY_MS = 2_000
  */
 export function lazyRetry<T extends { default: unknown }>(
   importFn: () => Promise<T>,
-  attempt = 1,
+  attempt = 1
 ): Promise<T> {
   return importFn().catch((err: unknown) => {
     if (attempt >= MAX_ATTEMPTS) {
@@ -52,7 +52,7 @@ export function lazyRetry<T extends { default: unknown }>(
           : new AppError(
               'CHUNK_LOAD_FAILED',
               'Não foi possível carregar esta página. Atualize a aba.',
-              0,
+              0
             )
       notifyAppError(wrapped, 'lazy_chunk_load')
       throw wrapped

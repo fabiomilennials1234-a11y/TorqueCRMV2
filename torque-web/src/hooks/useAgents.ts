@@ -105,24 +105,24 @@ export function useAgent(id: string | undefined) {
 }
 
 export function useCreateAgent() {
-  return useAppMutation<Agent, CreateAgentPayload>(
-    (body) => post<Agent>('/api/v1/agents', body),
-    { invalidate: [['copilot', 'agents']], errorContext: 'copilot.agent.create' }
-  )
+  return useAppMutation<Agent, CreateAgentPayload>((body) => post<Agent>('/api/v1/agents', body), {
+    invalidate: [['copilot', 'agents']],
+    errorContext: 'copilot.agent.create',
+  })
 }
 
 export function useActivateAgent(id: string) {
-  return useAppMutation<void, void>(
-    () => post<void>(`/api/v1/agents/${id}/activate`, {}),
-    { invalidate: [['copilot', 'agents']], errorContext: 'copilot.agent.activate' }
-  )
+  return useAppMutation<void, void>(() => post<void>(`/api/v1/agents/${id}/activate`, {}), {
+    invalidate: [['copilot', 'agents']],
+    errorContext: 'copilot.agent.activate',
+  })
 }
 
 export function useDisableAgent(id: string) {
-  return useAppMutation<void, void>(
-    () => post<void>(`/api/v1/agents/${id}/disable`, {}),
-    { invalidate: [['copilot', 'agents']], errorContext: 'copilot.agent.disable' }
-  )
+  return useAppMutation<void, void>(() => post<void>(`/api/v1/agents/${id}/disable`, {}), {
+    invalidate: [['copilot', 'agents']],
+    errorContext: 'copilot.agent.disable',
+  })
 }
 
 export function useSetKillSwitch(id: string) {
@@ -158,10 +158,9 @@ export function useOpenSession(agentId: string) {
 }
 
 export function useEndSession(sessionId: string) {
-  return useAppMutation<void, void>(
-    () => post<void>(`/api/v1/sessions/${sessionId}/end`, {}),
-    { errorContext: 'copilot.session.end' }
-  )
+  return useAppMutation<void, void>(() => post<void>(`/api/v1/sessions/${sessionId}/end`, {}), {
+    errorContext: 'copilot.session.end',
+  })
 }
 
 export function useSessionMessages(sessionId: string | undefined) {
@@ -268,13 +267,16 @@ export function useKnowledgeSources(collectionId: string | undefined) {
   useWSSubscribe<KnowledgeSource>(
     ['knowledge.source_enqueued'],
     () => {
-      if (collectionId) void client.invalidateQueries({ queryKey: knowledgeKeys().sources(collectionId) })
+      if (collectionId)
+        void client.invalidateQueries({ queryKey: knowledgeKeys().sources(collectionId) })
     },
     [collectionId]
   )
 
   return useQuery<KnowledgeSource[]>({
-    queryKey: collectionId ? knowledgeKeys().sources(collectionId) : ['copilot', 'knowledge', 'sources', 'disabled'],
+    queryKey: collectionId
+      ? knowledgeKeys().sources(collectionId)
+      : ['copilot', 'knowledge', 'sources', 'disabled'],
     enabled: Boolean(collectionId),
     queryFn: async () =>
       (
@@ -511,13 +513,10 @@ export function useUpdateTrigger(agentId: string, triggerId: string) {
 }
 
 export function useDeleteTrigger(agentId: string, triggerId: string) {
-  return useAppMutation<void, void>(
-    () => del<void>(`/api/v1/triggers/${triggerId}`),
-    {
-      invalidate: [['copilot', 'agents', agentId, 'triggers']],
-      errorContext: 'copilot.trigger.delete',
-    }
-  )
+  return useAppMutation<void, void>(() => del<void>(`/api/v1/triggers/${triggerId}`), {
+    invalidate: [['copilot', 'agents', agentId, 'triggers']],
+    errorContext: 'copilot.trigger.delete',
+  })
 }
 
 /** S38: PATCH /api/v1/agents/:id — partial update do config do agente. */
@@ -536,8 +535,8 @@ export function useDeleteAgent(id: string) {
   // Backend currently has no delete endpoint — use disable instead.
   // Kept as a convenience alias so the UI can show "Excluir agente" mapped
   // semantically to disable. Rename when DELETE lands.
-  return useAppMutation<void, void>(
-    () => del<void>(`/api/v1/agents/${id}`),
-    { invalidate: [['copilot', 'agents']], errorContext: 'copilot.agent.delete' }
-  )
+  return useAppMutation<void, void>(() => del<void>(`/api/v1/agents/${id}`), {
+    invalidate: [['copilot', 'agents']],
+    errorContext: 'copilot.agent.delete',
+  })
 }

@@ -22,35 +22,141 @@ import { Construction } from 'lucide-react'
 // path.
 // ---------------------------------------------------------------------------
 
-const AppShell = lazy(() => lazyRetry(() => import('@/shell/AppShell').then((m) => ({ default: m.AppShell }))))
-const CockpitShell = lazy(() => lazyRetry(() => import('@/features/cockpit/CockpitShell').then((m) => ({ default: m.CockpitShell }))))
-const CockpitView = lazy(() => lazyRetry(() => import('@/features/cockpit/CockpitView').then((m) => ({ default: m.CockpitView }))))
+const AppShell = lazy(() =>
+  lazyRetry(() => import('@/shell/AppShell').then((m) => ({ default: m.AppShell })))
+)
+const CockpitShell = lazy(() =>
+  lazyRetry(() =>
+    import('@/features/cockpit/CockpitShell').then((m) => ({ default: m.CockpitShell }))
+  )
+)
+const CockpitView = lazy(() =>
+  lazyRetry(() =>
+    import('@/features/cockpit/CockpitView').then((m) => ({ default: m.CockpitView }))
+  )
+)
 
-const LoginPage = lazy(() => lazyRetry(() => import('@/features/auth/LoginPage').then((m) => ({ default: m.LoginPage }))))
-const DashboardPage = lazy(() => lazyRetry(() => import('@/features/dashboard/DashboardPage').then((m) => ({ default: m.DashboardPage }))))
-const KanbanPage = lazy(() => lazyRetry(() => import('@/features/pipeline/KanbanPage').then((m) => ({ default: m.KanbanPage }))))
-const InboxPage = lazy(() => lazyRetry(() => import('@/features/inbox/InboxPage').then((m) => ({ default: m.InboxPage }))))
-const WorkflowListPage = lazy(() => lazyRetry(() => import('@/features/workflows/WorkflowListPage').then((m) => ({ default: m.WorkflowListPage }))))
-const WorkflowCanvasPage = lazy(() => lazyRetry(() => import('@/features/workflows/WorkflowCanvasPage').then((m) => ({ default: m.WorkflowCanvasPage }))))
-const WorkflowExecutionsPage = lazy(() => lazyRetry(() => import('@/features/workflows/WorkflowExecutionsPage').then((m) => ({ default: m.WorkflowExecutionsPage }))))
-const CampaignsPage = lazy(() => lazyRetry(() => import('@/features/campaigns/CampaignsPage').then((m) => ({ default: m.CampaignsPage }))))
-const CampaignDetailPage = lazy(() => lazyRetry(() => import('@/features/campaigns/CampaignDetailPage').then((m) => ({ default: m.CampaignDetailPage }))))
-const AgentListPage = lazy(() => lazyRetry(() => import('@/features/copilot/AgentListPage').then((m) => ({ default: m.AgentListPage }))))
-const AgentPlaygroundPage = lazy(() => lazyRetry(() => import('@/features/copilot/AgentPlaygroundPage').then((m) => ({ default: m.AgentPlaygroundPage }))))
-const AgentMetricsPage = lazy(() => lazyRetry(() => import('@/features/copilot/AgentMetricsPage').then((m) => ({ default: m.AgentMetricsPage }))))
-const AnalyticsPage = lazy(() => lazyRetry(() => import('@/features/analytics/AnalyticsPage').then((m) => ({ default: m.AnalyticsPage }))))
-const PerformancePage = lazy(() => lazyRetry(() => import('@/features/performance/PerformancePage').then((m) => ({ default: m.PerformancePage }))))
-const AgendaPage = lazy(() => lazyRetry(() => import('@/features/agenda/AgendaPage').then((m) => ({ default: m.AgendaPage }))))
-const UpsellPage = lazy(() => lazyRetry(() => import('@/features/upsell/UpsellPage').then((m) => ({ default: m.UpsellPage }))))
-const CustomPipePage = lazy(() => lazyRetry(() => import('@/features/pipes/CustomPipePage').then((m) => ({ default: m.CustomPipePage }))))
-const TVDashboardPage = lazy(() => lazyRetry(() => import('@/features/tv/TVDashboardPage').then((m) => ({ default: m.TVDashboardPage }))))
-const SettingsPage = lazy(() => lazyRetry(() => import('@/features/settings/SettingsPage').then((m) => ({ default: m.SettingsPage }))))
-const CheckoutPage = lazy(() => lazyRetry(() => import('@/features/billing/CheckoutPage').then((m) => ({ default: m.CheckoutPage }))))
-const MasterPage = lazy(() => lazyRetry(() => import('@/features/master/MasterPage').then((m) => ({ default: m.MasterPage }))))
-const OnboardingPage = lazy(() => lazyRetry(() => import('@/features/onboarding/OnboardingPage').then((m) => ({ default: m.OnboardingPage }))))
-const ProductsPage = lazy(() => lazyRetry(() => import('@/features/products/ProductsPage').then((m) => ({ default: m.ProductsPage }))))
-const NotFoundPage = lazy(() => lazyRetry(() => import('@/features/errors/NotFoundPage').then((m) => ({ default: m.NotFoundPage }))))
-const ForbiddenPage = lazy(() => lazyRetry(() => import('@/features/errors/ForbiddenPage').then((m) => ({ default: m.ForbiddenPage }))))
+const LoginPage = lazy(() =>
+  lazyRetry(() => import('@/features/auth/LoginPage').then((m) => ({ default: m.LoginPage })))
+)
+const DashboardPage = lazy(() =>
+  lazyRetry(() =>
+    import('@/features/dashboard/DashboardPage').then((m) => ({ default: m.DashboardPage }))
+  )
+)
+const KanbanPage = lazy(() =>
+  lazyRetry(() => import('@/features/pipeline/KanbanPage').then((m) => ({ default: m.KanbanPage })))
+)
+const InboxPage = lazy(() =>
+  lazyRetry(() => import('@/features/inbox/InboxPage').then((m) => ({ default: m.InboxPage })))
+)
+const WorkflowListPage = lazy(() =>
+  lazyRetry(() =>
+    import('@/features/workflows/WorkflowListPage').then((m) => ({ default: m.WorkflowListPage }))
+  )
+)
+const WorkflowCanvasPage = lazy(() =>
+  lazyRetry(() =>
+    import('@/features/workflows/WorkflowCanvasPage').then((m) => ({
+      default: m.WorkflowCanvasPage,
+    }))
+  )
+)
+const WorkflowExecutionsPage = lazy(() =>
+  lazyRetry(() =>
+    import('@/features/workflows/WorkflowExecutionsPage').then((m) => ({
+      default: m.WorkflowExecutionsPage,
+    }))
+  )
+)
+const CampaignsPage = lazy(() =>
+  lazyRetry(() =>
+    import('@/features/campaigns/CampaignsPage').then((m) => ({ default: m.CampaignsPage }))
+  )
+)
+const CampaignDetailPage = lazy(() =>
+  lazyRetry(() =>
+    import('@/features/campaigns/CampaignDetailPage').then((m) => ({
+      default: m.CampaignDetailPage,
+    }))
+  )
+)
+const AgentListPage = lazy(() =>
+  lazyRetry(() =>
+    import('@/features/copilot/AgentListPage').then((m) => ({ default: m.AgentListPage }))
+  )
+)
+const AgentPlaygroundPage = lazy(() =>
+  lazyRetry(() =>
+    import('@/features/copilot/AgentPlaygroundPage').then((m) => ({
+      default: m.AgentPlaygroundPage,
+    }))
+  )
+)
+const AgentMetricsPage = lazy(() =>
+  lazyRetry(() =>
+    import('@/features/copilot/AgentMetricsPage').then((m) => ({ default: m.AgentMetricsPage }))
+  )
+)
+const AnalyticsPage = lazy(() =>
+  lazyRetry(() =>
+    import('@/features/analytics/AnalyticsPage').then((m) => ({ default: m.AnalyticsPage }))
+  )
+)
+const PerformancePage = lazy(() =>
+  lazyRetry(() =>
+    import('@/features/performance/PerformancePage').then((m) => ({ default: m.PerformancePage }))
+  )
+)
+const AgendaPage = lazy(() =>
+  lazyRetry(() => import('@/features/agenda/AgendaPage').then((m) => ({ default: m.AgendaPage })))
+)
+const UpsellPage = lazy(() =>
+  lazyRetry(() => import('@/features/upsell/UpsellPage').then((m) => ({ default: m.UpsellPage })))
+)
+const CustomPipePage = lazy(() =>
+  lazyRetry(() =>
+    import('@/features/pipes/CustomPipePage').then((m) => ({ default: m.CustomPipePage }))
+  )
+)
+const TVDashboardPage = lazy(() =>
+  lazyRetry(() =>
+    import('@/features/tv/TVDashboardPage').then((m) => ({ default: m.TVDashboardPage }))
+  )
+)
+const SettingsPage = lazy(() =>
+  lazyRetry(() =>
+    import('@/features/settings/SettingsPage').then((m) => ({ default: m.SettingsPage }))
+  )
+)
+const CheckoutPage = lazy(() =>
+  lazyRetry(() =>
+    import('@/features/billing/CheckoutPage').then((m) => ({ default: m.CheckoutPage }))
+  )
+)
+const MasterPage = lazy(() =>
+  lazyRetry(() => import('@/features/master/MasterPage').then((m) => ({ default: m.MasterPage })))
+)
+const OnboardingPage = lazy(() =>
+  lazyRetry(() =>
+    import('@/features/onboarding/OnboardingPage').then((m) => ({ default: m.OnboardingPage }))
+  )
+)
+const ProductsPage = lazy(() =>
+  lazyRetry(() =>
+    import('@/features/products/ProductsPage').then((m) => ({ default: m.ProductsPage }))
+  )
+)
+const NotFoundPage = lazy(() =>
+  lazyRetry(() =>
+    import('@/features/errors/NotFoundPage').then((m) => ({ default: m.NotFoundPage }))
+  )
+)
+const ForbiddenPage = lazy(() =>
+  lazyRetry(() =>
+    import('@/features/errors/ForbiddenPage').then((m) => ({ default: m.ForbiddenPage }))
+  )
+)
 
 // ---------------------------------------------------------------------------
 // Placeholder for routes under construction
@@ -124,7 +230,10 @@ export const router = createBrowserRouter([
                   { path: 'inbox', element: withSuspense(<InboxPage />) },
                   { path: 'workflows', element: withSuspense(<WorkflowListPage />) },
                   { path: 'workflows/:id', element: withSuspense(<WorkflowCanvasPage />) },
-                  { path: 'workflows/:id/executions', element: withSuspense(<WorkflowExecutionsPage />) },
+                  {
+                    path: 'workflows/:id/executions',
+                    element: withSuspense(<WorkflowExecutionsPage />),
+                  },
                   { path: 'campaigns', element: withSuspense(<CampaignsPage />) },
                   { path: 'campaigns/:id', element: withSuspense(<CampaignDetailPage />) },
                   { path: 'copilot', element: withSuspense(<AgentListPage />) },

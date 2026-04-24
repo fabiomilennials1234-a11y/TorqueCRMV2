@@ -35,8 +35,7 @@ export interface MemberOverride {
 
 function memberKeys() {
   return {
-    list: (includeInactive: boolean) =>
-      ['members', { includeInactive }] as const,
+    list: (includeInactive: boolean) => ['members', { includeInactive }] as const,
     detail: (id: string) => ['members', 'detail', id] as const,
     overrides: (id: string) => ['members', id, 'overrides'] as const,
   }
@@ -80,13 +79,13 @@ export function useMemberOverrides(id: string | undefined) {
 // -------- mutations --------------------------------------------------
 
 export function useAddMember() {
-  return useAppMutation<
-    TeamMember,
-    { email: string; display_name: string; role: MemberRole }
-  >((body) => post<TeamMember>('/api/v1/members', body), {
-    invalidate: [['members']],
-    errorContext: 'member.add',
-  })
+  return useAppMutation<TeamMember, { email: string; display_name: string; role: MemberRole }>(
+    (body) => post<TeamMember>('/api/v1/members', body),
+    {
+      invalidate: [['members']],
+      errorContext: 'member.add',
+    }
+  )
 }
 
 export function useUpdateMember(id: string) {
@@ -105,10 +104,10 @@ export function useUpdateMember(id: string) {
 }
 
 export function useDeactivateMember(id: string) {
-  return useAppMutation<void, void>(
-    () => del<void>(`/api/v1/members/${id}`),
-    { invalidate: [['members']], errorContext: 'member.deactivate' }
-  )
+  return useAppMutation<void, void>(() => del<void>(`/api/v1/members/${id}`), {
+    invalidate: [['members']],
+    errorContext: 'member.deactivate',
+  })
 }
 
 export function useSetMemberPermission(id: string) {
@@ -124,8 +123,7 @@ export function useSetMemberPermission(id: string) {
 
 export function useClearMemberPermission(id: string) {
   return useAppMutation<void, { feature_key: string }>(
-    ({ feature_key }) =>
-      del<void>(`/api/v1/members/${id}/permissions/${feature_key}`),
+    ({ feature_key }) => del<void>(`/api/v1/members/${id}/permissions/${feature_key}`),
     {
       invalidate: [['members', id, 'overrides'], ['members']],
       errorContext: 'member.permission_clear',

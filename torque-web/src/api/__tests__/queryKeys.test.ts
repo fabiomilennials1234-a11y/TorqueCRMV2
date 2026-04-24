@@ -10,7 +10,11 @@ describe('queryKeys', () => {
 
   it('list keys include filters only when provided', () => {
     expect(queryKeys.leads.list()).toEqual(['leads', 'list'])
-    expect(queryKeys.leads.list({ stage: 'qualif' })).toEqual(['leads', 'list', { stage: 'qualif' }])
+    expect(queryKeys.leads.list({ stage: 'qualif' })).toEqual([
+      'leads',
+      'list',
+      { stage: 'qualif' },
+    ])
   })
 
   it('detail keys scope by id', () => {

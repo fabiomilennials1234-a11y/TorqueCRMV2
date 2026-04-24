@@ -78,10 +78,7 @@ export function MessageComposer({ conversationId, contactName, disabled }: Messa
   return (
     <div className="relative shrink-0 border-t border-hairline px-6 py-3">
       {showTemplates && (
-        <TemplatePicker
-          onPick={handleTemplate}
-          onDismiss={() => setShowTemplates(false)}
-        />
+        <TemplatePicker onPick={handleTemplate} onDismiss={() => setShowTemplates(false)} />
       )}
 
       <div className="flex items-end gap-2">
@@ -102,7 +99,11 @@ export function MessageComposer({ conversationId, contactName, disabled }: Messa
           onChange={(e) => setBody(e.target.value)}
           onKeyDown={handleKeyDown}
           disabled={disabled}
-          placeholder={disabled ? 'Conversa encerrada' : 'Digite uma mensagem… (Enter envia, Shift+Enter quebra linha)'}
+          placeholder={
+            disabled
+              ? 'Conversa encerrada'
+              : 'Digite uma mensagem… (Enter envia, Shift+Enter quebra linha)'
+          }
           rows={1}
           className="flex-1 resize-none rounded-md bg-elevated/40 px-3 py-2 text-sm text-ink shadow-hairline placeholder:text-ink-dim focus:outline-none focus:ring-1 focus:ring-accent/50"
         />
@@ -149,9 +150,7 @@ function TemplatePicker({
         </Button>
       </div>
       <ul className="max-h-72 overflow-y-auto">
-        {query.isLoading && (
-          <li className="px-3 py-2 text-xs text-ink-dim">Carregando…</li>
-        )}
+        {query.isLoading && <li className="px-3 py-2 text-xs text-ink-dim">Carregando…</li>}
         {query.isSuccess && query.data.length === 0 && (
           <li className="px-3 py-4 text-center text-xs text-ink-dim">
             Nenhum template ativo. Admins podem criar em Configurações.

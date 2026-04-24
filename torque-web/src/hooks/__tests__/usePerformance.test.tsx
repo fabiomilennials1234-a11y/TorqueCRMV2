@@ -47,10 +47,9 @@ describe('usePerformance — hooks', () => {
       mockJSON({ data: [], since: '2026-03-21T00:00:00Z', until: '2026-04-20T00:00:00Z' })
     )
     const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
-    renderHook(
-      () => useRanking({ since: '2026-03-21T00:00:00Z', until: '2026-04-20T00:00:00Z' }),
-      { wrapper: wrap(client) }
-    )
+    renderHook(() => useRanking({ since: '2026-03-21T00:00:00Z', until: '2026-04-20T00:00:00Z' }), {
+      wrapper: wrap(client),
+    })
     await waitFor(() => expect(fetchMock).toHaveBeenCalled())
     const url = String(fetchMock.mock.calls[0]?.[0])
     expect(url).toContain('/api/v1/performance/ranking')
@@ -58,18 +57,16 @@ describe('usePerformance — hooks', () => {
   })
 
   it('useGoals GET + useCreateGoal POST', async () => {
-    fetchMock
-      .mockResolvedValueOnce(mockJSON({ data: [] }))
-      .mockResolvedValueOnce(
-        mockJSON({
-          id: 'g1',
-          metric: 'deals_won',
-          target: 5,
-          period_start: '2026-04-01T00:00:00Z',
-          period_end: '2026-04-30T00:00:00Z',
-          created_at: '2026-04-20T00:00:00Z',
-        })
-      )
+    fetchMock.mockResolvedValueOnce(mockJSON({ data: [] })).mockResolvedValueOnce(
+      mockJSON({
+        id: 'g1',
+        metric: 'deals_won',
+        target: 5,
+        period_start: '2026-04-01T00:00:00Z',
+        period_end: '2026-04-30T00:00:00Z',
+        created_at: '2026-04-20T00:00:00Z',
+      })
+    )
     const client = new QueryClient({
       defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
     })
@@ -110,11 +107,15 @@ describe('usePerformance — hooks', () => {
   })
 
   it('useAwards GET + useCreateAward POST', async () => {
-    fetchMock
-      .mockResolvedValueOnce(mockJSON({ data: [] }))
-      .mockResolvedValueOnce(
-        mockJSON({ id: 'a1', title: 'Top', criteria: {}, winners: [], created_at: '2026-04-20T00:00:00Z' })
-      )
+    fetchMock.mockResolvedValueOnce(mockJSON({ data: [] })).mockResolvedValueOnce(
+      mockJSON({
+        id: 'a1',
+        title: 'Top',
+        criteria: {},
+        winners: [],
+        created_at: '2026-04-20T00:00:00Z',
+      })
+    )
     const client = new QueryClient({
       defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
     })

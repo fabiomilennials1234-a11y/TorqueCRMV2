@@ -2,12 +2,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { renderHook, waitFor } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-import {
-  useMovePipeEntry,
-  usePipeEntries,
-  usePipeStages,
-  usePipes,
-} from '@/hooks/usePipes'
+import { useMovePipeEntry, usePipeEntries, usePipeStages, usePipes } from '@/hooks/usePipes'
 
 const fetchMock = vi.fn()
 beforeEach(() => vi.stubGlobal('fetch', fetchMock))
@@ -28,7 +23,20 @@ function mockJSON(body: unknown, status = 200) {
 
 describe('usePipes read hooks', () => {
   it('usePipes GETs /api/v1/pipes', async () => {
-    fetchMock.mockResolvedValueOnce(mockJSON({ data: [{ id: 'p1', kind: 'whatsapp', name: 'WhatsApp', is_default: true, is_archived: false, position: 0 }] }))
+    fetchMock.mockResolvedValueOnce(
+      mockJSON({
+        data: [
+          {
+            id: 'p1',
+            kind: 'whatsapp',
+            name: 'WhatsApp',
+            is_default: true,
+            is_archived: false,
+            position: 0,
+          },
+        ],
+      })
+    )
     const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
     const { result } = renderHook(() => usePipes(), { wrapper: wrap(client) })
     await waitFor(() => expect(result.current.isSuccess).toBe(true))
@@ -53,10 +61,14 @@ describe('usePipes read hooks', () => {
 
 describe('useMovePipeEntry', () => {
   it('POSTs /api/v1/pipes/:id/entries/move', async () => {
-    fetchMock.mockResolvedValueOnce(mockJSON({
-      id: 'e1', stage_id: 's2', lead_id: 'l1',
-      entered_stage_at: '2026-04-20T00:00:00Z',
-    }))
+    fetchMock.mockResolvedValueOnce(
+      mockJSON({
+        id: 'e1',
+        stage_id: 's2',
+        lead_id: 'l1',
+        entered_stage_at: '2026-04-20T00:00:00Z',
+      })
+    )
     const client = new QueryClient({ defaultOptions: { mutations: { retry: false } } })
     const { result } = renderHook(() => useMovePipeEntry('p1'), { wrapper: wrap(client) })
     await result.current.mutateAsync({ lead_id: 'l1', new_stage_id: 's2' })

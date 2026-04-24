@@ -16,12 +16,7 @@ import { Input } from '@/ui/input'
 import { PageHeader } from '@/ui/page-header'
 import { Skeleton } from '@/ui/skeleton'
 import { friendlyMessage } from '@/api/errors'
-import {
-  useArchiveProduct,
-  useCreateProduct,
-  useProducts,
-  type Product,
-} from '@/hooks/useProducts'
+import { useArchiveProduct, useCreateProduct, useProducts, type Product } from '@/hooks/useProducts'
 
 export function ProductsPage() {
   const [search, setSearch] = useState('')
@@ -75,9 +70,7 @@ export function ProductsPage() {
         />
       )}
 
-      {query.isSuccess && query.items.length > 0 && (
-        <ProductTable items={query.items} />
-      )}
+      {query.isSuccess && query.items.length > 0 && <ProductTable items={query.items} />}
 
       {query.hasNextPage && (
         <div className="mt-4 flex justify-center">
@@ -254,12 +247,10 @@ function ProductRow({ product, separator }: { product: Product; separator: boole
     >
       <td className="px-5 py-3">
         <div className="text-sm text-ink">{product.name}</div>
-        {product.description && (
-          <div className="text-xs text-ink-dim">{product.description}</div>
-        )}
+        {product.description && <div className="text-xs text-ink-dim">{product.description}</div>}
       </td>
-      <td className="px-5 py-3 font-metric text-xs text-ink-muted">{product.sku ?? '—'}</td>
-      <td className="px-5 py-3 text-right font-metric text-sm text-ink">
+      <td className="font-metric px-5 py-3 text-xs text-ink-muted">{product.sku ?? '—'}</td>
+      <td className="font-metric px-5 py-3 text-right text-sm text-ink">
         {formatMoney(product.price_cents, product.currency)}
       </td>
       <td className="px-5 py-3">

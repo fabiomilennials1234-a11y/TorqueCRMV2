@@ -219,7 +219,7 @@ export function useAgentStream(agentId: string | undefined) {
         })
       }
     },
-    [agentId],
+    [agentId]
   )
 
   // Ensure we don't leak an in-flight request on unmount.
@@ -228,7 +228,7 @@ export function useAgentStream(agentId: string | undefined) {
       abortRef.current?.abort()
       abortRef.current = null
     },
-    [],
+    []
   )
 
   return {

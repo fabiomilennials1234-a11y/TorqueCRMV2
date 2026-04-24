@@ -20,13 +20,20 @@ function wrap(client: QueryClient) {
 describe('ProductsPage', () => {
   it('renders the catalog title and fetches /api/v1/products', async () => {
     fetchMock.mockResolvedValueOnce({
-      ok: true, status: 200,
+      ok: true,
+      status: 200,
       json: async () => ({
-        data: [{
-          id: 'p1', name: 'Licença Pro', price_cents: 19900, currency: 'BRL',
-          is_active: true,
-          created_at: '2026-04-20T00:00:00Z', updated_at: '2026-04-20T00:00:00Z',
-        }],
+        data: [
+          {
+            id: 'p1',
+            name: 'Licença Pro',
+            price_cents: 19900,
+            currency: 'BRL',
+            is_active: true,
+            created_at: '2026-04-20T00:00:00Z',
+            updated_at: '2026-04-20T00:00:00Z',
+          },
+        ],
         meta: { next_cursor: null },
       }),
       headers: new Headers(),

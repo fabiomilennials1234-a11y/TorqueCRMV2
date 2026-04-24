@@ -52,8 +52,7 @@ export function TVDashboardPage() {
             <span
               key={w}
               className={
-                'h-1.5 w-8 rounded-full ' +
-                (i === widgetIdx ? 'bg-accent' : 'bg-surface/20')
+                'h-1.5 w-8 rounded-full ' + (i === widgetIdx ? 'bg-accent' : 'bg-surface/20')
               }
             />
           ))}
@@ -72,7 +71,9 @@ function ProposalsWidget({ range }: { range: { since: string; until: string } })
       <span className="font-fraunces text-7xl text-surface">
         {data ? data.sent_in_window.toLocaleString('pt-BR') : '—'}
       </span>
-      <span className="text-sm text-surface/70">enviadas · {data?.accepted_in_window ?? 0} aceitas</span>
+      <span className="text-sm text-surface/70">
+        enviadas · {data?.accepted_in_window ?? 0} aceitas
+      </span>
       {data && (
         <span className="mt-3 font-mono text-2xl text-accent">
           {(data.won_amount_cents / 100).toLocaleString('pt-BR', {
@@ -98,11 +99,8 @@ function RankingWidget({ range }: { range: { since: string; until: string } }) {
       ) : (
         <ol className="space-y-2">
           {top.map((e, i) => (
-            <li
-              key={e.member_id}
-              className="flex items-center gap-3 rounded-lg bg-surface/10 p-3"
-            >
-              <span className="w-8 font-fraunces text-xl text-accent">#{i + 1}</span>
+            <li key={e.member_id} className="flex items-center gap-3 rounded-lg bg-surface/10 p-3">
+              <span className="font-fraunces w-8 text-xl text-accent">#{i + 1}</span>
               <span className="flex-1 text-surface">{e.member_name}</span>
               <span className="font-mono text-surface">
                 {(e.revenue_cents / 100).toLocaleString('pt-BR', {

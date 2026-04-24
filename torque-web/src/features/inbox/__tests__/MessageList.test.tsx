@@ -41,7 +41,12 @@ describe('MessageList', () => {
       json: async () => ({
         data: [
           makeMessage({ id: 'a', body: 'first inbound' }),
-          makeMessage({ id: 'b', direction: 'outbound', body: 'second outbound', status: 'delivered' }),
+          makeMessage({
+            id: 'b',
+            direction: 'outbound',
+            body: 'second outbound',
+            status: 'delivered',
+          }),
         ],
       }),
       headers: new Headers(),

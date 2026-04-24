@@ -29,16 +29,27 @@ function wrap(client: QueryClient) {
 
 function mockJSON(body: unknown, status = 200) {
   return {
-    ok: true, status, json: async () => body, headers: new Headers(),
+    ok: true,
+    status,
+    json: async () => body,
+    headers: new Headers(),
   } as Response
 }
 
 describe('useAgents extras', () => {
   it('useAgent GETs /api/v1/agents/:id', async () => {
-    fetchMock.mockResolvedValueOnce(mockJSON({
-      id: 'a1', name: 'A', model: 'gpt', temperature: 0.3,
-      max_output_tokens: 1024, tools_allowlist: [], kill_switch: false, status: 'active',
-    }))
+    fetchMock.mockResolvedValueOnce(
+      mockJSON({
+        id: 'a1',
+        name: 'A',
+        model: 'gpt',
+        temperature: 0.3,
+        max_output_tokens: 1024,
+        tools_allowlist: [],
+        kill_switch: false,
+        status: 'active',
+      })
+    )
     const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
     const { result } = renderHook(() => useAgent('a1'), { wrapper: wrap(client) })
     await waitFor(() => expect(result.current.isSuccess).toBe(true))

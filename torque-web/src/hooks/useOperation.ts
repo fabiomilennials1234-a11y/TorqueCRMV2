@@ -100,7 +100,8 @@ export function useOperationStatus(id: string | undefined): UseQueryResult<Opera
 export function useOperationCancel(id: string | undefined) {
   const client = useQueryClient()
   const invalidate = useCallback(
-    () => (id ? client.invalidateQueries({ queryKey: queryKeys.operations.detail(id) }) : undefined),
+    () =>
+      id ? client.invalidateQueries({ queryKey: queryKeys.operations.detail(id) }) : undefined,
     [client, id]
   )
   return useAppMutation<void, void>(

@@ -40,15 +40,34 @@ describe('CustomPipePage', () => {
       .mockResolvedValueOnce(
         mockJSON({
           data: [
-            { id: 'p1', kind: 'custom', name: 'Churn Rescue', is_default: false, is_archived: false, position: 0 },
+            {
+              id: 'p1',
+              kind: 'custom',
+              name: 'Churn Rescue',
+              is_default: false,
+              is_archived: false,
+              position: 0,
+            },
           ],
         })
       )
       .mockResolvedValueOnce(
         mockJSON({
           data: [
-            { id: 's1', name: 'Novo', position: 0, is_final_positive: false, is_final_negative: false },
-            { id: 's2', name: 'Recuperado', position: 1, is_final_positive: true, is_final_negative: false },
+            {
+              id: 's1',
+              name: 'Novo',
+              position: 0,
+              is_final_positive: false,
+              is_final_negative: false,
+            },
+            {
+              id: 's2',
+              name: 'Recuperado',
+              position: 1,
+              is_final_positive: true,
+              is_final_negative: false,
+            },
           ],
         })
       )

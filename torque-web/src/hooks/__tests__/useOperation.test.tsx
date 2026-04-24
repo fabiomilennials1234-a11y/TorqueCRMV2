@@ -2,11 +2,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { renderHook, waitFor } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-import {
-  useOperationCancel,
-  useOperationStatus,
-  useOperationSubmit,
-} from '@/hooks/useOperation'
+import { useOperationCancel, useOperationStatus, useOperationSubmit } from '@/hooks/useOperation'
 
 const fetchMock = vi.fn()
 beforeEach(() => vi.stubGlobal('fetch', fetchMock))
@@ -47,7 +43,10 @@ describe('useOperation', () => {
       ok: true,
       status: 200,
       json: async () => ({
-        id: 'op1', kind: 'x', status: 'succeeded', result: null,
+        id: 'op1',
+        kind: 'x',
+        status: 'succeeded',
+        result: null,
       }),
       headers: new Headers(),
     } as Response)
@@ -60,7 +59,10 @@ describe('useOperation', () => {
 
   it('useOperationCancel DELETEs /api/v1/operations/:id', async () => {
     fetchMock.mockResolvedValueOnce({
-      ok: true, status: 204, json: async () => null, headers: new Headers(),
+      ok: true,
+      status: 204,
+      json: async () => null,
+      headers: new Headers(),
     } as Response)
 
     const client = new QueryClient({ defaultOptions: { mutations: { retry: false } } })

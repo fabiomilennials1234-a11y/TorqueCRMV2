@@ -46,12 +46,10 @@ export function InboxPage() {
 
   // Shared cache: ConversationList already fetches this; we read it
   // from React Query cache to find the active row synchronously.
-  const conversationsQuery = useConversations(
-    stateFilter === 'all' ? {} : { state: stateFilter },
-  )
+  const conversationsQuery = useConversations(stateFilter === 'all' ? {} : { state: stateFilter })
   const activeConversation = useMemo(
     () => (activeId ? conversationsQuery.data?.find((c) => c.id === activeId) : undefined),
-    [conversationsQuery.data, activeId],
+    [conversationsQuery.data, activeId]
   )
 
   return (
@@ -76,9 +74,7 @@ export function InboxPage() {
             */}
             <ConversationHeader
               conversation={activeConversation}
-              {...(session.user.teamMemberId
-                ? { currentMemberId: session.user.teamMemberId }
-                : {})}
+              {...(session.user.teamMemberId ? { currentMemberId: session.user.teamMemberId } : {})}
             />
             <MessageList conversationId={activeConversation.id} />
             <MessageComposer
@@ -87,8 +83,7 @@ export function InboxPage() {
                 ? { contactName: activeConversation.contact_name }
                 : {})}
               disabled={
-                activeConversation.state === 'resolved' ||
-                activeConversation.state === 'archived'
+                activeConversation.state === 'resolved' || activeConversation.state === 'archived'
               }
             />
           </>

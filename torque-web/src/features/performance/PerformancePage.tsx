@@ -186,9 +186,7 @@ function GoalRow({ goal }: { goal: Goal }) {
         ) : (
           <Badge tone="neutral">org</Badge>
         )}
-        <span className="ml-auto font-mono text-ink">
-          {goal.target.toLocaleString('pt-BR')}
-        </span>
+        <span className="ml-auto font-mono text-ink">{goal.target.toLocaleString('pt-BR')}</span>
       </div>
       <div className="mt-1 text-2xs text-ink-dim">{periodLabel}</div>
     </li>
@@ -255,7 +253,7 @@ function AmountCard({ label, value }: { label: string; value: number }) {
   return (
     <div className="rounded-lg bg-surface p-3 shadow-elev-1">
       <div className="text-2xs uppercase tracking-wide text-ink-dim">{label}</div>
-      <div className="mt-2 font-fraunces text-2xl text-ink">
+      <div className="font-fraunces mt-2 text-2xl text-ink">
         {(value / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
       </div>
     </div>
@@ -291,14 +289,10 @@ function AwardRow({ award }: { award: Award }) {
       <div className="flex items-center gap-2">
         <span className="font-medium text-ink">{award.title}</span>
         {award.awarded_at && (
-          <Badge tone="success">
-            {new Date(award.awarded_at).toLocaleDateString('pt-BR')}
-          </Badge>
+          <Badge tone="success">{new Date(award.awarded_at).toLocaleDateString('pt-BR')}</Badge>
         )}
       </div>
-      {award.description && (
-        <p className="mt-1 text-xs text-ink-dim">{award.description}</p>
-      )}
+      {award.description && <p className="mt-1 text-xs text-ink-dim">{award.description}</p>}
     </li>
   )
 }

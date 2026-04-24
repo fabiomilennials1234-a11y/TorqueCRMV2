@@ -59,17 +59,17 @@ export function useUpsertProposal(entryId: string) {
 }
 
 export function useSendProposal(entryId: string) {
-  return useAppMutation<void, void>(
-    () => post<void>(`/api/v1/proposals/${entryId}/send`, {}),
-    { invalidate: [['proposals', 'detail', entryId]], errorContext: 'proposal.send' }
-  )
+  return useAppMutation<void, void>(() => post<void>(`/api/v1/proposals/${entryId}/send`, {}), {
+    invalidate: [['proposals', 'detail', entryId]],
+    errorContext: 'proposal.send',
+  })
 }
 
 export function useAcceptProposal(entryId: string) {
-  return useAppMutation<void, void>(
-    () => post<void>(`/api/v1/proposals/${entryId}/accept`, {}),
-    { invalidate: [['proposals', 'detail', entryId]], errorContext: 'proposal.accept' }
-  )
+  return useAppMutation<void, void>(() => post<void>(`/api/v1/proposals/${entryId}/accept`, {}), {
+    invalidate: [['proposals', 'detail', entryId]],
+    errorContext: 'proposal.accept',
+  })
 }
 
 export function useRejectProposal(entryId: string) {

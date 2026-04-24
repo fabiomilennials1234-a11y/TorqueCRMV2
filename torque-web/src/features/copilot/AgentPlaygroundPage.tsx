@@ -77,7 +77,13 @@ export function AgentPlaygroundPage() {
   return <PlaygroundInner agent={query.data} agentId={id} />
 }
 
-function PlaygroundInner({ agent, agentId }: { agent: ReturnType<typeof useAgent>['data'] & {}; agentId: string }) {
+function PlaygroundInner({
+  agent,
+  agentId,
+}: {
+  agent: ReturnType<typeof useAgent>['data'] & {}
+  agentId: string
+}) {
   const update = useUpdateAgent(agentId)
   const stream = useAgentStream(agentId)
 
@@ -161,11 +167,18 @@ function PlaygroundInner({ agent, agentId }: { agent: ReturnType<typeof useAgent
     <div className="mx-auto grid h-[calc(100vh-56px)] max-w-[1600px] grid-cols-[minmax(320px,420px)_1fr] gap-6 px-8">
       {/* Editor */}
       <aside className="flex min-h-0 flex-col overflow-y-auto py-6">
-        <Link to="/copilot" className="mb-3 inline-flex items-center gap-1.5 text-xs text-ink-dim hover:text-ink-muted">
+        <Link
+          to="/copilot"
+          className="mb-3 inline-flex items-center gap-1.5 text-xs text-ink-dim hover:text-ink-muted"
+        >
           <ArrowLeft className="h-3.5 w-3.5" />
           Agentes
         </Link>
-        <PageHeader eyebrow="Copilot" title={agent.name} description={agent.description ?? undefined} />
+        <PageHeader
+          eyebrow="Copilot"
+          title={agent.name}
+          description={agent.description ?? undefined}
+        />
 
         <div className="mt-6 flex items-center gap-2">
           <Badge tone={agent.status === 'active' ? 'success' : 'neutral'}>{agent.status}</Badge>
@@ -235,9 +248,7 @@ function PlaygroundInner({ agent, agentId }: { agent: ReturnType<typeof useAgent
                 min={0}
                 max={2}
                 value={draft.temperature ?? 0}
-                onChange={(e) =>
-                  setDraft((d) => ({ ...d, temperature: Number(e.target.value) }))
-                }
+                onChange={(e) => setDraft((d) => ({ ...d, temperature: Number(e.target.value) }))}
               />
             </div>
             <div>
@@ -262,7 +273,9 @@ function PlaygroundInner({ agent, agentId }: { agent: ReturnType<typeof useAgent
               {update.isPending ? 'Salvando…' : 'Salvar alterações'}
             </Button>
             {dirty && (
-              <span className="text-2xs text-ink-dim">Alterações pendentes — chat usa a versão salva.</span>
+              <span className="text-2xs text-ink-dim">
+                Alterações pendentes — chat usa a versão salva.
+              </span>
             )}
           </div>
         </form>
@@ -316,22 +329,12 @@ function PlaygroundInner({ agent, agentId }: { agent: ReturnType<typeof useAgent
             disabled={stream.state === 'streaming'}
           />
           {stream.state === 'streaming' ? (
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={() => stream.stop()}
-            >
+            <Button type="button" variant="outline" size="sm" onClick={() => stream.stop()}>
               <Square className="mr-1 h-3.5 w-3.5" />
               Parar
             </Button>
           ) : (
-            <Button
-              type="submit"
-              variant="primary"
-              size="sm"
-              disabled={!input.trim()}
-            >
+            <Button type="submit" variant="primary" size="sm" disabled={!input.trim()}>
               <Send className="mr-1 h-3.5 w-3.5" />
               Enviar
             </Button>
@@ -348,13 +351,7 @@ function PlaygroundInner({ agent, agentId }: { agent: ReturnType<typeof useAgent
   )
 }
 
-function ChatTranscript({
-  conversation,
-  pending,
-}: {
-  conversation: ChatTurn[]
-  pending: string
-}) {
+function ChatTranscript({ conversation, pending }: { conversation: ChatTurn[]; pending: string }) {
   const scrollRef = useRef<HTMLDivElement>(null)
   useEffect(() => {
     const el = scrollRef.current
@@ -454,7 +451,8 @@ function KnowledgePanel({
         <h3 className="text-sm font-medium text-ink">Base de conhecimento</h3>
       </div>
       <p className="mb-3 text-2xs text-ink-dim">
-        Ligue uma coleção para injetar contexto recuperado (topK=5) no system prompt antes de cada mensagem.
+        Ligue uma coleção para injetar contexto recuperado (topK=5) no system prompt antes de cada
+        mensagem.
       </p>
 
       <div className="space-y-2">
@@ -498,7 +496,12 @@ function KnowledgePanel({
           <Button type="submit" variant="primary" size="sm" disabled={createCollection.isPending}>
             Criar
           </Button>
-          <Button type="button" variant="ghost" size="sm" onClick={() => setCreatingCollection(false)}>
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            onClick={() => setCreatingCollection(false)}
+          >
             Cancelar
           </Button>
         </form>
@@ -814,7 +817,9 @@ function TriggerRow({
   trigger,
 }: {
   agentId: string
-  trigger: ReturnType<typeof useAgentTriggers>['data'] extends readonly (infer T)[] | undefined ? T : never
+  trigger: ReturnType<typeof useAgentTriggers>['data'] extends readonly (infer T)[] | undefined
+    ? T
+    : never
 }) {
   const update = useUpdateTrigger(agentId, trigger.id)
   const remove = useDeleteTrigger(agentId, trigger.id)
@@ -857,7 +862,13 @@ function TriggerRow({
         <div className="mt-0.5 truncate text-2xs text-ink-dim">{summary}</div>
       </div>
       <div className="flex items-center gap-1">
-        <Button type="button" variant="ghost" size="sm" onClick={handleToggle} disabled={update.isPending}>
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          onClick={handleToggle}
+          disabled={update.isPending}
+        >
           {trigger.is_active ? 'Desativar' : 'Ativar'}
         </Button>
         <Button

@@ -41,17 +41,17 @@ export function useCompleteStep() {
 }
 
 export function useDismissOnboarding() {
-  return useAppMutation<void, void>(
-    () => post<void>('/api/v1/onboarding/dismiss', {}),
-    { invalidate: [['onboarding']], errorContext: 'onboarding.dismiss' }
-  )
+  return useAppMutation<void, void>(() => post<void>('/api/v1/onboarding/dismiss', {}), {
+    invalidate: [['onboarding']],
+    errorContext: 'onboarding.dismiss',
+  })
 }
 
 export function useResetOnboarding() {
-  return useAppMutation<void, void>(
-    () => post<void>('/api/v1/onboarding/reset', {}),
-    { invalidate: [['onboarding']], errorContext: 'onboarding.reset' }
-  )
+  return useAppMutation<void, void>(() => post<void>('/api/v1/onboarding/reset', {}), {
+    invalidate: [['onboarding']],
+    errorContext: 'onboarding.reset',
+  })
 }
 
 /**

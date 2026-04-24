@@ -2,11 +2,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { renderHook, waitFor } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-import {
-  useAddMember,
-  useMembers,
-  useSetMemberPermission,
-} from '@/hooks/useMembers'
+import { useAddMember, useMembers, useSetMemberPermission } from '@/hooks/useMembers'
 
 const fetchMock = vi.fn()
 beforeEach(() => vi.stubGlobal('fetch', fetchMock))
@@ -93,7 +89,9 @@ describe('useAddMember + useSetMemberPermission', () => {
     const { result: add } = renderHook(() => useAddMember(), { wrapper: wrap(client) })
     await add.current.mutateAsync({ email: 'x@y.com', display_name: 'X', role: 'membro' })
 
-    const { result: perm } = renderHook(() => useSetMemberPermission('new'), { wrapper: wrap(client) })
+    const { result: perm } = renderHook(() => useSetMemberPermission('new'), {
+      wrapper: wrap(client),
+    })
     await perm.current.mutateAsync({ feature_key: 'leads.delete', value: false })
 
     const calls = fetchMock.mock.calls

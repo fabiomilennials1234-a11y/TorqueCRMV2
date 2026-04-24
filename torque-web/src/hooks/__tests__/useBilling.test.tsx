@@ -2,11 +2,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { renderHook, waitFor } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-import {
-  useCancelSubscription,
-  useStartCheckout,
-  useSubscription,
-} from '@/hooks/useBilling'
+import { useCancelSubscription, useStartCheckout, useSubscription } from '@/hooks/useBilling'
 
 const fetchMock = vi.fn()
 beforeEach(() => vi.stubGlobal('fetch', fetchMock))
@@ -24,10 +20,16 @@ function wrap(client: QueryClient) {
 describe('useBilling', () => {
   it('useSubscription hits /api/v1/billing/subscription', async () => {
     fetchMock.mockResolvedValueOnce({
-      ok: true, status: 200,
+      ok: true,
+      status: 200,
       json: async () => ({
-        id: 's1', plan_id: 'growth', status: 'active', provider: 'mock',
-        amount_cents: 19900, currency: 'BRL', created_at: '2026-04-20T00:00:00Z',
+        id: 's1',
+        plan_id: 'growth',
+        status: 'active',
+        provider: 'mock',
+        amount_cents: 19900,
+        currency: 'BRL',
+        created_at: '2026-04-20T00:00:00Z',
       }),
       headers: new Headers(),
     } as Response)
@@ -40,10 +42,16 @@ describe('useBilling', () => {
 
   it('useStartCheckout POSTs /api/v1/billing/checkout', async () => {
     fetchMock.mockResolvedValueOnce({
-      ok: true, status: 201,
+      ok: true,
+      status: 201,
       json: async () => ({
-        id: 's1', plan_id: 'growth', status: 'pending', provider: 'mock',
-        amount_cents: 19900, currency: 'BRL', created_at: '2026-04-20T00:00:00Z',
+        id: 's1',
+        plan_id: 'growth',
+        status: 'pending',
+        provider: 'mock',
+        amount_cents: 19900,
+        currency: 'BRL',
+        created_at: '2026-04-20T00:00:00Z',
       }),
       headers: new Headers(),
     } as Response)
@@ -57,7 +65,10 @@ describe('useBilling', () => {
 
   it('useCancelSubscription POSTs /api/v1/billing/subscription/cancel', async () => {
     fetchMock.mockResolvedValueOnce({
-      ok: true, status: 204, json: async () => null, headers: new Headers(),
+      ok: true,
+      status: 204,
+      json: async () => null,
+      headers: new Headers(),
     } as Response)
 
     const client = new QueryClient({ defaultOptions: { mutations: { retry: false } } })

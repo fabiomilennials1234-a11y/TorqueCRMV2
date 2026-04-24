@@ -20,12 +20,15 @@ function wrap(client: QueryClient) {
 describe('useConversations', () => {
   it('serializes filters into the query string', async () => {
     fetchMock.mockResolvedValueOnce({
-      ok: true, status: 200,
+      ok: true,
+      status: 200,
       json: async () => ({ data: [] }),
       headers: new Headers(),
     } as Response)
     const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
-    renderHook(() => useConversations({ state: 'open', assigned_to: 'u1' }), { wrapper: wrap(client) })
+    renderHook(() => useConversations({ state: 'open', assigned_to: 'u1' }), {
+      wrapper: wrap(client),
+    })
     await waitFor(() => expect(fetchMock).toHaveBeenCalledOnce())
     const [url] = fetchMock.mock.calls[0] ?? []
     expect(url).toBe('/api/v1/conversations?state=open&assigned_to=u1')
@@ -35,8 +38,17 @@ describe('useConversations', () => {
 describe('useSendMessage', () => {
   it('POSTs to /conversations/:id/messages', async () => {
     fetchMock.mockResolvedValueOnce({
-      ok: true, status: 202,
-      json: async () => ({ id: 'm1', conversation_id: 'c1', direction: 'outbound', kind: 'text', body: 'hi', status: 'queued', occurred_at: '2026-04-19T00:00:00Z' }),
+      ok: true,
+      status: 202,
+      json: async () => ({
+        id: 'm1',
+        conversation_id: 'c1',
+        direction: 'outbound',
+        kind: 'text',
+        body: 'hi',
+        status: 'queued',
+        occurred_at: '2026-04-19T00:00:00Z',
+      }),
       headers: new Headers(),
     } as Response)
     const client = new QueryClient({ defaultOptions: { mutations: { retry: false } } })

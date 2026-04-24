@@ -57,7 +57,8 @@ describe('AgentListPage', () => {
 
   it('shows empty state when no agents exist', async () => {
     fetchMock.mockResolvedValueOnce({
-      ok: true, status: 200,
+      ok: true,
+      status: 200,
       json: async () => ({ data: [] }),
       headers: new Headers(),
     } as Response)

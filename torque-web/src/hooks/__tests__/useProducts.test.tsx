@@ -40,10 +40,9 @@ describe('useProducts', () => {
     } as Response)
 
     const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
-    const { result } = renderHook(
-      () => useProducts({ active_only: true }),
-      { wrapper: wrap(client) }
-    )
+    const { result } = renderHook(() => useProducts({ active_only: true }), {
+      wrapper: wrap(client),
+    })
     await waitFor(() => expect(result.current.isSuccess).toBe(true))
 
     const url = fetchMock.mock.calls[0]?.[0] as string

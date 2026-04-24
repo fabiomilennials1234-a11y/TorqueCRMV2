@@ -35,13 +35,13 @@ export function useMessageTemplates(activeOnly = true) {
 }
 
 export function useCreateTemplate() {
-  return useAppMutation<
-    MessageTemplate,
-    { name: string; body: string; variables?: string[] }
-  >((body) => post<MessageTemplate>('/api/v1/message-templates', body), {
-    invalidate: [['message-templates']],
-    errorContext: 'template.create',
-  })
+  return useAppMutation<MessageTemplate, { name: string; body: string; variables?: string[] }>(
+    (body) => post<MessageTemplate>('/api/v1/message-templates', body),
+    {
+      invalidate: [['message-templates']],
+      errorContext: 'template.create',
+    }
+  )
 }
 
 export function useUpdateTemplate(id: string) {
@@ -55,10 +55,10 @@ export function useUpdateTemplate(id: string) {
 }
 
 export function useDeleteTemplate(id: string) {
-  return useAppMutation<void, void>(
-    () => del<void>(`/api/v1/message-templates/${id}`),
-    { invalidate: [['message-templates']], errorContext: 'template.delete' },
-  )
+  return useAppMutation<void, void>(() => del<void>(`/api/v1/message-templates/${id}`), {
+    invalidate: [['message-templates']],
+    errorContext: 'template.delete',
+  })
 }
 
 /**

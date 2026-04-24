@@ -16,7 +16,14 @@ import { useAppMutation } from '@/hooks/useAppMutation'
 import { useWSSubscribe } from '@/hooks/useWSSubscribe'
 
 export type TaskStatus = 'pending' | 'in_progress' | 'done' | 'cancelled' | 'missed'
-export type TaskKind = 'followup' | 'call' | 'qualification' | 'send_proposal' | 'confirm_meeting' | 'objection' | 'generic'
+export type TaskKind =
+  | 'followup'
+  | 'call'
+  | 'qualification'
+  | 'send_proposal'
+  | 'confirm_meeting'
+  | 'objection'
+  | 'generic'
 export type TaskPriority = 'low' | 'normal' | 'high' | 'urgent'
 
 export interface Task {
@@ -74,25 +81,28 @@ export function useTask(id: string | undefined) {
 }
 
 export function useCreateTask() {
-  return useAppMutation<Task, {
-    assigned_to: string
-    title: string
-    kind?: TaskKind
-    description?: string
-    priority?: TaskPriority
-    due_at?: string
-    lead_id?: string
-  }>(
-    (body) => post<Task>('/api/v1/tasks', body),
-    { invalidate: [queryKeys.tasks.all()], errorContext: 'task.create' }
-  )
+  return useAppMutation<
+    Task,
+    {
+      assigned_to: string
+      title: string
+      kind?: TaskKind
+      description?: string
+      priority?: TaskPriority
+      due_at?: string
+      lead_id?: string
+    }
+  >((body) => post<Task>('/api/v1/tasks', body), {
+    invalidate: [queryKeys.tasks.all()],
+    errorContext: 'task.create',
+  })
 }
 
 export function useStartTask(id: string) {
-  return useAppMutation<void, void>(
-    () => post<void>(`/api/v1/tasks/${id}/start`, {}),
-    { invalidate: [queryKeys.tasks.all()], errorContext: 'task.start' }
-  )
+  return useAppMutation<void, void>(() => post<void>(`/api/v1/tasks/${id}/start`, {}), {
+    invalidate: [queryKeys.tasks.all()],
+    errorContext: 'task.start',
+  })
 }
 
 export function useCompleteTask(id: string) {

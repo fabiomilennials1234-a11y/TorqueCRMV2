@@ -12,7 +12,9 @@ describe('useWSSubscribe', () => {
   beforeEach(() => {
     unsub = vi.fn()
     dispatch = undefined
-    vi.spyOn(TorqueWS.prototype, 'onMessage').mockImplementation(function (handler: (data: unknown) => void) {
+    vi.spyOn(TorqueWS.prototype, 'onMessage').mockImplementation(function (
+      handler: (data: unknown) => void
+    ) {
       dispatch = handler
       return unsub
     })
@@ -40,7 +42,12 @@ describe('useWSSubscribe', () => {
 
     act(() => {
       dispatch?.({ type: 'operation.updated', tenant_id: 't1', occurred_at: 'now' })
-      dispatch?.({ type: 'operation.succeeded', tenant_id: 't1', occurred_at: 'now', patch: { id: 'op' } })
+      dispatch?.({
+        type: 'operation.succeeded',
+        tenant_id: 't1',
+        occurred_at: 'now',
+        patch: { id: 'op' },
+      })
       dispatch?.({ type: 'lead.updated', tenant_id: 't1', occurred_at: 'now' })
     })
 

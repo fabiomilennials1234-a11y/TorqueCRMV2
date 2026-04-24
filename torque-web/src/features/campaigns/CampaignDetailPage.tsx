@@ -199,8 +199,7 @@ function NumberCard({ label, value, danger }: { label: string; value: number; da
       <div className="text-2xs uppercase tracking-wide text-ink-dim">{label}</div>
       <div
         className={
-          'mt-2 font-fraunces text-2xl ' +
-          (danger && value > 0 ? 'text-danger' : 'text-ink')
+          'font-fraunces mt-2 text-2xl ' + (danger && value > 0 ? 'text-danger' : 'text-ink')
         }
       >
         {value.toLocaleString('pt-BR')}

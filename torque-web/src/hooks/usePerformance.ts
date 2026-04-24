@@ -64,8 +64,7 @@ export interface Award {
 
 function keys() {
   return {
-    ranking: (since: string, until: string) =>
-      ['performance', 'ranking', since, until] as const,
+    ranking: (since: string, until: string) => ['performance', 'ranking', since, until] as const,
     goals: () => ['performance', 'goals'] as const,
     commissions: (memberId?: string) =>
       memberId
@@ -100,8 +99,9 @@ export function useRanking(window: { since: string; until: string } | undefined)
 
 export function useGoals() {
   const client = useQueryClient()
-  useWSSubscribe(['goal.created'], () =>
-    void client.invalidateQueries({ queryKey: keys().goals() })
+  useWSSubscribe(
+    ['goal.created'],
+    () => void client.invalidateQueries({ queryKey: keys().goals() })
   )
   return useQuery<Goal[]>({
     queryKey: keys().goals(),
@@ -130,8 +130,9 @@ export function useCreateGoal() {
 
 export function useCommissions(memberId?: string) {
   const client = useQueryClient()
-  useWSSubscribe(['commission.updated'], () =>
-    void client.invalidateQueries({ queryKey: ['performance', 'commissions'] })
+  useWSSubscribe(
+    ['commission.updated'],
+    () => void client.invalidateQueries({ queryKey: ['performance', 'commissions'] })
   )
   return useQuery<Commission[]>({
     queryKey: keys().commissions(memberId),
@@ -145,8 +146,7 @@ export function useCommissions(memberId?: string) {
 
 export function useSetCommissionStatus(commissionId: string) {
   return useAppMutation<void, { status: CommissionStatus }>(
-    (body) =>
-      post<void>(`/api/v1/performance/commissions/${commissionId}/status`, body),
+    (body) => post<void>(`/api/v1/performance/commissions/${commissionId}/status`, body),
     {
       invalidate: [['performance', 'commissions']],
       errorContext: 'performance.commission.status',
@@ -158,8 +158,9 @@ export function useSetCommissionStatus(commissionId: string) {
 
 export function useAwards() {
   const client = useQueryClient()
-  useWSSubscribe(['award.created'], () =>
-    void client.invalidateQueries({ queryKey: keys().awards() })
+  useWSSubscribe(
+    ['award.created'],
+    () => void client.invalidateQueries({ queryKey: keys().awards() })
   )
   return useQuery<Award[]>({
     queryKey: keys().awards(),
@@ -171,7 +172,13 @@ export function useAwards() {
 export function useCreateAward() {
   return useAppMutation<
     Award,
-    { title: string; description?: string; criteria?: unknown; winners?: unknown; awarded_at?: string }
+    {
+      title: string
+      description?: string
+      criteria?: unknown
+      winners?: unknown
+      awarded_at?: string
+    }
   >((body) => post<Award>('/api/v1/performance/awards', body), {
     invalidate: [['performance', 'awards']],
     errorContext: 'performance.award.create',

@@ -11,12 +11,7 @@ import { get, post } from '@/api/client'
 import { useAppMutation } from '@/hooks/useAppMutation'
 import { useWSSubscribe } from '@/hooks/useWSSubscribe'
 
-export type SubscriptionStatus =
-  | 'pending'
-  | 'active'
-  | 'past_due'
-  | 'cancelled'
-  | 'expired'
+export type SubscriptionStatus = 'pending' | 'active' | 'past_due' | 'cancelled' | 'expired'
 
 export interface Subscription {
   id: string
@@ -41,7 +36,12 @@ export function useSubscription() {
   const client = useQueryClient()
 
   useWSSubscribe(
-    ['subscription.created', 'subscription.activated', 'subscription.past_due', 'subscription.cancelled'],
+    [
+      'subscription.created',
+      'subscription.activated',
+      'subscription.past_due',
+      'subscription.cancelled',
+    ],
     () => void client.invalidateQueries({ queryKey: ['billing', 'subscription'] })
   )
 
@@ -61,18 +61,18 @@ export function useSubscription() {
 }
 
 export function useStartCheckout() {
-  return useAppMutation<
-    Subscription,
-    { plan_id: string; amount_cents: number; currency?: string }
-  >((body) => post<Subscription>('/api/v1/billing/checkout', body), {
-    invalidate: [['billing', 'subscription']],
-    errorContext: 'billing.checkout',
-  })
+  return useAppMutation<Subscription, { plan_id: string; amount_cents: number; currency?: string }>(
+    (body) => post<Subscription>('/api/v1/billing/checkout', body),
+    {
+      invalidate: [['billing', 'subscription']],
+      errorContext: 'billing.checkout',
+    }
+  )
 }
 
 export function useCancelSubscription() {
-  return useAppMutation<void, void>(
-    () => post<void>('/api/v1/billing/subscription/cancel', {}),
-    { invalidate: [['billing', 'subscription']], errorContext: 'billing.cancel' }
-  )
+  return useAppMutation<void, void>(() => post<void>('/api/v1/billing/subscription/cancel', {}), {
+    invalidate: [['billing', 'subscription']],
+    errorContext: 'billing.cancel',
+  })
 }

@@ -116,12 +116,9 @@ function MetricsContent({
     <div className="mt-6 space-y-8">
       <section className="grid grid-cols-1 gap-3 md:grid-cols-4">
         {kpis.map((k) => (
-          <div
-            key={k.label}
-            className="rounded-lg bg-surface p-4 shadow-elev-1"
-          >
+          <div key={k.label} className="rounded-lg bg-surface p-4 shadow-elev-1">
             <div className="text-2xs uppercase tracking-wide text-ink-dim">{k.label}</div>
-            <div className="mt-2 font-fraunces text-2xl text-ink">{k.value}</div>
+            <div className="font-fraunces mt-2 text-2xl text-ink">{k.value}</div>
           </div>
         ))}
       </section>

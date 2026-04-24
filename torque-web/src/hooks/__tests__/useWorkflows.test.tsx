@@ -20,7 +20,8 @@ function wrap(client: QueryClient) {
 describe('useWorkflows suite', () => {
   it('list hits /api/v1/workflows', async () => {
     fetchMock.mockResolvedValueOnce({
-      ok: true, status: 200,
+      ok: true,
+      status: 200,
       json: async () => ({ data: [] }),
       headers: new Headers(),
     } as Response)
@@ -32,8 +33,15 @@ describe('useWorkflows suite', () => {
 
   it('createStep POSTs under workflow id', async () => {
     fetchMock.mockResolvedValueOnce({
-      ok: true, status: 201,
-      json: async () => ({ id: 's1', kind: 'send_message', name: 'Greet', config: {}, next_step_ids: [] }),
+      ok: true,
+      status: 201,
+      json: async () => ({
+        id: 's1',
+        kind: 'send_message',
+        name: 'Greet',
+        config: {},
+        next_step_ids: [],
+      }),
       headers: new Headers(),
     } as Response)
     const client = new QueryClient({ defaultOptions: { mutations: { retry: false } } })
@@ -44,8 +52,15 @@ describe('useWorkflows suite', () => {
 
   it('enqueueRun POSTs to /runs subresource', async () => {
     fetchMock.mockResolvedValueOnce({
-      ok: true, status: 202,
-      json: async () => ({ id: 'r1', workflow_id: 'wf-1', trigger_source: 'manual', status: 'pending', created_at: '2026-04-19T00:00:00Z' }),
+      ok: true,
+      status: 202,
+      json: async () => ({
+        id: 'r1',
+        workflow_id: 'wf-1',
+        trigger_source: 'manual',
+        status: 'pending',
+        created_at: '2026-04-19T00:00:00Z',
+      }),
       headers: new Headers(),
     } as Response)
     const client = new QueryClient({ defaultOptions: { mutations: { retry: false } } })

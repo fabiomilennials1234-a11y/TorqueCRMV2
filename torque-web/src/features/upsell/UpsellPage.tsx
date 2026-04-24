@@ -41,12 +41,9 @@ export function UpsellPage() {
                 {lead.segment && <Badge tone="neutral">{lead.segment}</Badge>}
                 {lead.origin && <Badge tone="neutral">{lead.origin}</Badge>}
               </div>
-              {lead.company && (
-                <div className="mt-1 text-2xs text-ink-dim">{lead.company}</div>
-              )}
+              {lead.company && <div className="mt-1 text-2xs text-ink-dim">{lead.company}</div>}
               <div className="mt-1 text-2xs text-ink-dim">
-                Atualizado:{' '}
-                {new Date(lead.updated_at).toLocaleString('pt-BR')}
+                Atualizado: {new Date(lead.updated_at).toLocaleString('pt-BR')}
               </div>
             </li>
           ))}

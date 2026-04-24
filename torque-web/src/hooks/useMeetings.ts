@@ -35,8 +35,9 @@ function keys() {
 
 export function useMeetings(window: { from: string; to: string } | undefined) {
   const client = useQueryClient()
-  useWSSubscribe(['meeting.created', 'meeting.updated', 'meeting.deleted'], () =>
-    void client.invalidateQueries({ queryKey: ['meetings'] })
+  useWSSubscribe(
+    ['meeting.created', 'meeting.updated', 'meeting.deleted'],
+    () => void client.invalidateQueries({ queryKey: ['meetings'] })
   )
   return useQuery<{ data: Meeting[]; from: string; to: string }>({
     queryKey: window ? keys().range(window.from, window.to) : ['meetings', 'disabled'],
@@ -78,11 +79,8 @@ export function useSetMeetingStatus(id: string) {
 }
 
 export function useDeleteMeeting(id: string) {
-  return useAppMutation<void, void>(
-    () => del<void>(`/api/v1/meetings/${id}`),
-    {
-      invalidate: [['meetings']],
-      errorContext: 'meeting.delete',
-    }
-  )
+  return useAppMutation<void, void>(() => del<void>(`/api/v1/meetings/${id}`), {
+    invalidate: [['meetings']],
+    errorContext: 'meeting.delete',
+  })
 }

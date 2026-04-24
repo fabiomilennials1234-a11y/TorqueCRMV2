@@ -83,11 +83,7 @@ function ExecutionsInner({ workflowId }: { workflowId: string }) {
         />
       ) : (
         <div className="mt-6 grid grid-cols-[minmax(280px,380px)_1fr] gap-6">
-          <RunsList
-            runs={runs.data!}
-            selectedRunId={selectedRunId}
-            onSelect={setSelectedRunId}
-          />
+          <RunsList runs={runs.data!} selectedRunId={selectedRunId} onSelect={setSelectedRunId} />
           <RunTimeline runId={selectedRunId} />
         </div>
       )}
@@ -197,9 +193,7 @@ function TimelineStep({ step, ord }: { step: WorkflowRunStep; ord: number }) {
         <span className="font-mono text-ink-dim">#{ord}</span>
         <Badge tone={statusTone[step.status]}>{step.status}</Badge>
         <span className="font-mono text-2xs text-ink-dim">{step.step_id.slice(0, 8)}</span>
-        {duration != null && (
-          <span className="ml-auto text-2xs text-ink-dim">{duration} ms</span>
-        )}
+        {duration != null && <span className="ml-auto text-2xs text-ink-dim">{duration} ms</span>}
       </div>
       {outputPreview && (
         <pre className="mt-2 overflow-x-auto rounded bg-elevated/40 p-2 font-mono text-2xs text-ink">

@@ -20,8 +20,22 @@ function wrap(client: QueryClient) {
 describe('useAgents', () => {
   it('fetches /api/v1/agents and returns data[]', async () => {
     fetchMock.mockResolvedValueOnce({
-      ok: true, status: 200,
-      json: async () => ({ data: [{ id: 'a1', name: 'A', model: 'gpt', temperature: 0.3, max_output_tokens: 1024, tools_allowlist: [], kill_switch: false, status: 'active' }] }),
+      ok: true,
+      status: 200,
+      json: async () => ({
+        data: [
+          {
+            id: 'a1',
+            name: 'A',
+            model: 'gpt',
+            temperature: 0.3,
+            max_output_tokens: 1024,
+            tools_allowlist: [],
+            kill_switch: false,
+            status: 'active',
+          },
+        ],
+      }),
       headers: new Headers(),
     } as Response)
     const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
@@ -36,19 +50,34 @@ describe('useCreateAgent + useSetKillSwitch', () => {
   it('POSTs the expected endpoints', async () => {
     fetchMock
       .mockResolvedValueOnce({
-        ok: true, status: 201,
-        json: async () => ({ id: 'new', name: 'N', model: 'gpt', temperature: 0.3, max_output_tokens: 1024, tools_allowlist: [], kill_switch: false, status: 'draft' }),
+        ok: true,
+        status: 201,
+        json: async () => ({
+          id: 'new',
+          name: 'N',
+          model: 'gpt',
+          temperature: 0.3,
+          max_output_tokens: 1024,
+          tools_allowlist: [],
+          kill_switch: false,
+          status: 'draft',
+        }),
         headers: new Headers(),
       } as Response)
       .mockResolvedValueOnce({
-        ok: true, status: 204,
+        ok: true,
+        status: 204,
         json: async () => null,
         headers: new Headers(),
       } as Response)
 
     const client = new QueryClient({ defaultOptions: { mutations: { retry: false } } })
     const { result: create } = renderHook(() => useCreateAgent(), { wrapper: wrap(client) })
-    await create.current.mutateAsync({ name: 'N', system_prompt: 'you are helpful and kind', model: 'gpt' })
+    await create.current.mutateAsync({
+      name: 'N',
+      system_prompt: 'you are helpful and kind',
+      model: 'gpt',
+    })
 
     const { result: kill } = renderHook(() => useSetKillSwitch('new'), { wrapper: wrap(client) })
     await kill.current.mutateAsync({ enabled: true })

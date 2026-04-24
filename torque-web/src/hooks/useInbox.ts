@@ -51,8 +51,7 @@ export interface ConversationsFilters {
 
 function inboxKeys() {
   return {
-    list: (f: ConversationsFilters = {}) =>
-      ['inbox', 'conversations', f] as const,
+    list: (f: ConversationsFilters = {}) => ['inbox', 'conversations', f] as const,
     detail: (id: string) => ['inbox', 'conversations', 'detail', id] as const,
     messages: (id: string) => ['inbox', 'conversations', id, 'messages'] as const,
   }
@@ -68,21 +67,24 @@ export function useConversations(filters: ConversationsFilters = {}) {
     ['conversation.read', 'conversation.assigned', 'conversation.state_changed'],
     (evt) => {
       if (!evt.entity_id) return
-      client.setQueriesData<{ data: Conversation[] }>({ queryKey: ['inbox', 'conversations'] }, (prev) => {
-        if (!prev?.data) return prev
-        return {
-          ...prev,
-          data: prev.data.map((c) => {
-            if (c.id !== evt.entity_id) return c
-            if (evt.type === 'conversation.read') return { ...c, unread_count: 0 }
-            if (evt.type === 'conversation.assigned')
-              return { ...c, assigned_to: evt.patch?.assigned_to ?? null }
-            if (evt.type === 'conversation.state_changed' && evt.patch?.state)
-              return { ...c, state: evt.patch.state }
-            return c
-          }),
+      client.setQueriesData<{ data: Conversation[] }>(
+        { queryKey: ['inbox', 'conversations'] },
+        (prev) => {
+          if (!prev?.data) return prev
+          return {
+            ...prev,
+            data: prev.data.map((c) => {
+              if (c.id !== evt.entity_id) return c
+              if (evt.type === 'conversation.read') return { ...c, unread_count: 0 }
+              if (evt.type === 'conversation.assigned')
+                return { ...c, assigned_to: evt.patch?.assigned_to ?? null }
+              if (evt.type === 'conversation.state_changed' && evt.patch?.state)
+                return { ...c, state: evt.patch.state }
+              return c
+            }),
+          }
         }
-      })
+      )
     }
   )
 
@@ -111,19 +113,25 @@ export function useMessages(conversationId: string | undefined) {
   const client = useQueryClient()
 
   // A new message inbound/outbound → append to cache.
-  useWSSubscribe<Message>('message.sent', (evt) => {
-    if (!conversationId || evt.patch?.conversation_id !== conversationId) return
-    client.setQueryData<Message[]>(inboxKeys().messages(conversationId), (prev) => {
-      const patch = evt.patch
-      if (!patch) return prev
-      if (!prev) return [patch]
-      if (prev.some((m) => m.id === patch.id)) return prev
-      return [...prev, patch]
-    })
-  }, [conversationId])
+  useWSSubscribe<Message>(
+    'message.sent',
+    (evt) => {
+      if (!conversationId || evt.patch?.conversation_id !== conversationId) return
+      client.setQueryData<Message[]>(inboxKeys().messages(conversationId), (prev) => {
+        const patch = evt.patch
+        if (!patch) return prev
+        if (!prev) return [patch]
+        if (prev.some((m) => m.id === patch.id)) return prev
+        return [...prev, patch]
+      })
+    },
+    [conversationId]
+  )
 
   return useQuery<Message[]>({
-    queryKey: conversationId ? inboxKeys().messages(conversationId) : ['inbox', 'messages', 'disabled'],
+    queryKey: conversationId
+      ? inboxKeys().messages(conversationId)
+      : ['inbox', 'messages', 'disabled'],
     enabled: Boolean(conversationId),
     queryFn: async () =>
       (await get<{ data: Message[] }>(`/api/v1/conversations/${conversationId}/messages`)).data,
@@ -132,10 +140,10 @@ export function useMessages(conversationId: string | undefined) {
 
 /** POST /api/v1/conversations/:id/read */
 export function useMarkConversationRead(id: string) {
-  return useAppMutation<void, void>(
-    () => post<void>(`/api/v1/conversations/${id}/read`, {}),
-    { invalidate: [['inbox', 'conversations']], errorContext: 'conversation.read' }
-  )
+  return useAppMutation<void, void>(() => post<void>(`/api/v1/conversations/${id}/read`, {}), {
+    invalidate: [['inbox', 'conversations']],
+    errorContext: 'conversation.read',
+  })
 }
 
 /** POST /api/v1/conversations/:id/assign */

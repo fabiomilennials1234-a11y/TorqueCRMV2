@@ -37,10 +37,9 @@ describe('useInbox — hooks', () => {
   it('useConversations builds query string from filters', async () => {
     fetchMock.mockResolvedValueOnce(mockJSON({ data: [] }))
     const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
-    renderHook(
-      () => useConversations({ state: 'open', assigned_to: 'me', channel_id: 'wa1' }),
-      { wrapper: wrap(client) }
-    )
+    renderHook(() => useConversations({ state: 'open', assigned_to: 'me', channel_id: 'wa1' }), {
+      wrapper: wrap(client),
+    })
     await waitFor(() => expect(fetchMock).toHaveBeenCalled())
     const url = String(fetchMock.mock.calls[0]?.[0])
     expect(url).toContain('/api/v1/conversations')

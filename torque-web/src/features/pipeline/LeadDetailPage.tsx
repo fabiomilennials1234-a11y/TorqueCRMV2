@@ -42,9 +42,7 @@ export function LeadDetailPage() {
                   <h1 className="font-display text-xl leading-tight tracking-tightest text-ink">
                     {lead.name}
                   </h1>
-                  {lead.company && (
-                    <p className="text-sm text-ink-muted">{lead.company}</p>
-                  )}
+                  {lead.company && <p className="text-sm text-ink-muted">{lead.company}</p>}
                 </div>
               </div>
 
@@ -75,7 +73,8 @@ export function LeadDetailPage() {
                         <Star
                           key={i}
                           className={
-                            'h-3.5 w-3.5 ' + (i < (lead.rating ?? 0) ? 'fill-accent text-accent' : 'text-ink-dim')
+                            'h-3.5 w-3.5 ' +
+                            (i < (lead.rating ?? 0) ? 'fill-accent text-accent' : 'text-ink-dim')
                           }
                         />
                       ))}
@@ -100,9 +99,7 @@ export function LeadDetailPage() {
                 </div>
                 <div className="flex justify-between">
                   <dt className="text-ink-dim">Score</dt>
-                  <dd className="font-metric tabular-nums">
-                    {lead.qualification_score ?? '—'}
-                  </dd>
+                  <dd className="font-metric tabular-nums">{lead.qualification_score ?? '—'}</dd>
                 </div>
                 <div className="flex justify-between">
                   <dt className="text-ink-dim">Criado em</dt>

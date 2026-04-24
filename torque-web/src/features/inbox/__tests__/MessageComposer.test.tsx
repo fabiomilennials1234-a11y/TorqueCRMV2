@@ -30,8 +30,13 @@ describe('MessageComposer', () => {
       ok: true,
       status: 202,
       json: async () => ({
-        id: 'm1', conversation_id: 'c1', direction: 'outbound', kind: 'text',
-        body: 'oi', status: 'queued', occurred_at: '2026-04-20T00:00:00Z',
+        id: 'm1',
+        conversation_id: 'c1',
+        direction: 'outbound',
+        kind: 'text',
+        body: 'oi',
+        status: 'queued',
+        occurred_at: '2026-04-20T00:00:00Z',
       }),
       headers: new Headers(),
     } as Response)
