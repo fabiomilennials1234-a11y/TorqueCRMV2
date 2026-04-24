@@ -65,7 +65,10 @@ jobs:
     # env is exposed to every step; tests gated by its presence will run.
     services:
       postgres:
-        image: postgres:15
+        # pgvector/pgvector:pg15 estende postgres:15 com extension `vector`
+        # exigida pela migration 0019 (S39 Copilot RAG). Sem isso, `migrate up`
+        # falha em `CREATE EXTENSION vector` e bloqueia toda a suite backend.
+        image: pgvector/pgvector:pg15
         env:
           POSTGRES_USER: torque
           POSTGRES_PASSWORD: torque
@@ -111,15 +114,27 @@ jobs:
   lint-go:
     name: golangci-lint
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: torque-api
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
         with:
           go-version: '1.22'
           cache-dependency-path: torque-api/go.sum
+
+      # Pre-download deps explicitly. golangci-lint-action invoca o linter
+      # com module mode, mas em runners frescos sem cache os pacotes
+      # transitivos (pgx, chi, yaml, etc.) só aparecem depois de
+      # `go mod download`. Sem isso o typecheck reporta "undefined: pgx"
+      # falso-positivos em qualquer file que importa libs externas.
+      - name: go mod download
+        run: go mod download
+
       - uses: golangci/golangci-lint-action@v6
         with:
-          version: v1.60
+          version: v1.61.0
           working-directory: torque-api
           args: --timeout=5m
 
@@ -129,4 +144,4 @@ jobs:
       - name: gosec (high severity gate)
         uses: securego/gosec@master
         with:
-          args: '-severity=high -confidence=medium ./torque-api/...'
+          args: '-severity=high -confidence=medium ./...'
