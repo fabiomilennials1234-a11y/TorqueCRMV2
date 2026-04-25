@@ -276,6 +276,10 @@ func TestImpersonate_CookieDomainRespectsConfig(t *testing.T) {
 	})
 
 	t.Run("explicit domain passed through", func(t *testing.T) {
+		// Input traz leading dot (convenção legacy pre-RFC 6265). Go's
+		// net/http strip o leading dot on serialize per spec — modern
+		// browsers tratam Domain=foo.com como já cobrindo subdomains.
+		// Sem o dot input ainda funciona; com dot, Go normaliza out.
 		h := newHarness(t, true, ".torque.app")
 		rec := h.call()
 		resp := rec.Result()
@@ -284,8 +288,8 @@ func TestImpersonate_CookieDomainRespectsConfig(t *testing.T) {
 		if cookie == nil {
 			t.Fatalf("cookie must be set")
 		}
-		if cookie.Domain != ".torque.app" {
-			t.Fatalf("cookie.Domain: got %q, want .torque.app", cookie.Domain)
+		if cookie.Domain != "torque.app" {
+			t.Fatalf("cookie.Domain: got %q, want torque.app (Go RFC-strips leading dot on serialize)", cookie.Domain)
 		}
 	})
 }

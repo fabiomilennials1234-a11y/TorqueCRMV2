@@ -50,7 +50,7 @@ func TestProposal_CrossTenantRefuses(t *testing.T) {
 		orgA, "prop-iso-a-"+runID, "PropIsoA")
 	mustExec(`INSERT INTO organizations (id, slug, name, plan_id) VALUES ($1,$2,$3,'free')`,
 		orgB, "prop-iso-b-"+runID, "PropIsoB")
-	mustExec(`INSERT INTO leads (id, organization_id, name, phone) VALUES ($1,$2,'L','+5511999999999')`,
+	mustExec(`INSERT INTO leads (id, organization_id, name, phone) VALUES ($1,$2,'Lead Teste','+5511999999999')`,
 		leadA, orgA)
 	mustExec(`INSERT INTO pipes (id, organization_id, kind, name, position)
 	          VALUES ($1,$2,'proposal','Prop',0)`, pipeA, orgA)

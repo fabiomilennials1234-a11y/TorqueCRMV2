@@ -78,7 +78,9 @@ func TestConfirmation_UpsertConfirmNoShow(t *testing.T) {
 	})
 
 	repo := confirmationrepo.New(pool)
-	meetingAt := time.Now().Add(2 * time.Hour).UTC()
+	// Truncate pra microsegundos: Postgres TIMESTAMP(6) descarta nanos.
+	// Sem isso `Equal` compara instants e Go mantém ns que pg dropou.
+	meetingAt := time.Now().Add(2 * time.Hour).UTC().Truncate(time.Microsecond)
 
 	// Upsert → then Get → then MarkConfirmed → idempotent re-confirm → MarkNoShow.
 	c1, err := repo.Upsert(ctx, confirmationrepo.UpsertInput{

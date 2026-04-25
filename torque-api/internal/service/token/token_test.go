@@ -25,7 +25,9 @@ func TestGenerate_URLSafeHighEntropy(t *testing.T) {
 
 func TestHash_Deterministic(t *testing.T) {
 	t.Parallel()
-	if token.Hash("abc") != token.Hash("abc") {
+	h1 := token.Hash("abc")
+	h2 := token.Hash("abc")
+	if h1 != h2 {
 		t.Fatal("hash must be deterministic")
 	}
 	if token.Hash("abc") == token.Hash("abd") {
