@@ -34,13 +34,13 @@ export function PipeSnapshotPanel({ stages, lead, taskId }: PipeSnapshotPanelPro
       <header className="flex items-start justify-between pb-3">
         <div className="flex items-center gap-2">
           <Layers className="h-3.5 w-3.5 text-[hsl(var(--accent))]" strokeWidth={2} aria-hidden />
-          <h3 className="text-[0.8125rem] font-medium text-ink">{lead?.pipeName ?? 'Pipe'}</h3>
+          <h3 className="text-ink text-[0.8125rem] font-medium">{lead?.pipeName ?? 'Pipe'}</h3>
         </div>
-        <span className="text-[10px] uppercase tracking-[0.1em] text-ink-dim">Mover</span>
+        <span className="text-ink-dim text-[10px] tracking-[0.1em] uppercase">Mover</span>
       </header>
 
       {!lead ? (
-        <p className="py-6 text-center text-xs text-ink-dim">Nenhuma task ativa.</p>
+        <p className="text-ink-dim py-6 text-center text-xs">Nenhuma task ativa.</p>
       ) : (
         <ol className="flex flex-col gap-1" role="radiogroup" aria-label="Etapas do kanban">
           {stages.map((s) => {
@@ -105,7 +105,7 @@ export function PipeSnapshotPanel({ stages, lead, taskId }: PipeSnapshotPanelPro
                     />
                   ) : (
                     <ChevronDown
-                      className="h-3 w-3 shrink-0 -rotate-90 text-ink-dim opacity-0 transition-opacity group-hover:opacity-100"
+                      className="text-ink-dim h-3 w-3 shrink-0 -rotate-90 opacity-0 transition-opacity group-hover:opacity-100"
                       strokeWidth={1.75}
                       aria-hidden
                     />
@@ -118,7 +118,7 @@ export function PipeSnapshotPanel({ stages, lead, taskId }: PipeSnapshotPanelPro
       )}
 
       {lead && (
-        <p className="mt-3 border-t border-[hsl(var(--clay-rim)/0.35)] pt-3 text-[11px] leading-relaxed text-ink-dim">
+        <p className="text-ink-dim mt-3 border-t border-[hsl(var(--clay-rim)/0.35)] pt-3 text-[11px] leading-relaxed">
           <span className="text-ink">{lead.name.split(' · ')[0]}</span> em{' '}
           <span className="text-ink">
             {stages.find((s) => s.id === activeStageId)?.name ?? lead.stageName}

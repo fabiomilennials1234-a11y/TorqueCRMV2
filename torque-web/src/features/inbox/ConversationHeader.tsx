@@ -42,7 +42,7 @@ export function ConversationHeader({ conversation, currentMemberId }: Conversati
 
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-2">
-          <span className="truncate text-sm text-ink">{name}</span>
+          <span className="text-ink truncate text-sm">{name}</span>
           <ChannelBadge
             channel={channelOf(conversation.channel_kind)}
             variant="icon-only"
@@ -52,7 +52,7 @@ export function ConversationHeader({ conversation, currentMemberId }: Conversati
           {isResolved && <Badge tone="success">Resolvida</Badge>}
         </div>
         {conversation.contact_handle && conversation.contact_name && (
-          <p className="font-metric truncate text-2xs text-ink-dim">
+          <p className="font-metric text-2xs text-ink-dim truncate">
             {conversation.contact_handle}
           </p>
         )}

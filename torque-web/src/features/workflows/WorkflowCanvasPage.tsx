@@ -133,8 +133,8 @@ function CanvasInner({ workflowId }: { workflowId: string }) {
   if (workflow.isError || !workflow.data) {
     return (
       <div className="mx-auto max-w-md p-12 text-center">
-        <p className="text-sm text-danger">{friendlyMessage(workflow.error)}</p>
-        <Link to="/workflows" className="mt-4 inline-block text-sm text-accent underline">
+        <p className="text-danger text-sm">{friendlyMessage(workflow.error)}</p>
+        <Link to="/workflows" className="text-accent mt-4 inline-block text-sm underline">
           Voltar
         </Link>
       </div>
@@ -292,15 +292,15 @@ function CanvasEditor({
   return (
     <div className="flex h-[calc(100vh-56px)] min-h-0">
       {/* Palette */}
-      <aside className="flex w-64 shrink-0 flex-col gap-2 overflow-y-auto border-r border-hairline p-4">
+      <aside className="border-hairline flex w-64 shrink-0 flex-col gap-2 overflow-y-auto border-r p-4">
         <Link
           to="/workflows"
-          className="mb-2 inline-flex items-center gap-1.5 text-xs text-ink-dim hover:text-ink-muted"
+          className="text-ink-dim hover:text-ink-muted mb-2 inline-flex items-center gap-1.5 text-xs"
         >
           <ArrowLeft className="h-3.5 w-3.5" />
           Workflows
         </Link>
-        <h3 className="text-xs uppercase tracking-wide text-ink-dim">Nodes disponíveis</h3>
+        <h3 className="text-ink-dim text-xs tracking-wide uppercase">Nodes disponíveis</h3>
         {palette.map((item, i) => (
           <button
             key={i}
@@ -310,17 +310,17 @@ function CanvasEditor({
               e.dataTransfer.setData('application/torque-step', JSON.stringify(item))
               e.dataTransfer.effectAllowed = 'copy'
             }}
-            className="rounded-md bg-elevated/40 p-3 text-left text-xs text-ink shadow-hairline transition hover:bg-elevated/60"
+            className="bg-elevated/40 text-ink shadow-hairline hover:bg-elevated/60 rounded-md p-3 text-left text-xs transition"
           >
             <div className="font-medium">{item.label}</div>
-            <div className="mt-1 text-2xs text-ink-dim">{item.description}</div>
+            <div className="text-2xs text-ink-dim mt-1">{item.description}</div>
           </button>
         ))}
       </aside>
 
       {/* Canvas */}
       <div className="flex min-w-0 flex-1 flex-col">
-        <header className="flex items-center gap-3 border-b border-hairline px-6 py-3">
+        <header className="border-hairline flex items-center gap-3 border-b px-6 py-3">
           <PageHeader
             eyebrow="Workflow"
             title={workflow.name}
@@ -332,7 +332,7 @@ function CanvasEditor({
             </Badge>
             <Link
               to={`/workflows/${workflowId}/executions`}
-              className="text-xs text-accent underline"
+              className="text-accent text-xs underline"
             >
               Execuções
             </Link>
@@ -387,7 +387,7 @@ function CanvasEditor({
       </div>
 
       {/* Inspector */}
-      <aside className="w-80 shrink-0 overflow-y-auto border-l border-hairline p-4">
+      <aside className="border-hairline w-80 shrink-0 overflow-y-auto border-l p-4">
         {selectedStep ? (
           <NodeInspector
             workflowId={workflowId}
@@ -410,7 +410,7 @@ function CanvasEditor({
             isEntry={workflow.entry_step_id === selectedStep.id}
           />
         ) : (
-          <p className="text-xs text-ink-dim">
+          <p className="text-ink-dim text-xs">
             Arraste um node da esquerda para o canvas, ou clique em um node existente para editar.
           </p>
         )}
@@ -462,18 +462,18 @@ function NodeInspector({
   return (
     <div className="space-y-3">
       <div className="flex items-center gap-2">
-        <h3 className="text-sm font-medium text-ink">Node</h3>
+        <h3 className="text-ink text-sm font-medium">Node</h3>
         {isEntry && <Badge tone="success">entry</Badge>}
         <Badge tone="neutral">{step.kind}</Badge>
       </div>
       <div>
-        <label htmlFor={nameInputId} className="mb-1 block text-xs text-ink-muted">
+        <label htmlFor={nameInputId} className="text-ink-muted mb-1 block text-xs">
           Nome
         </label>
         <Input id={nameInputId} value={name} onChange={(e) => setName(e.target.value)} />
       </div>
       <div>
-        <label htmlFor={configInputId} className="mb-1 block text-xs text-ink-muted">
+        <label htmlFor={configInputId} className="text-ink-muted mb-1 block text-xs">
           Config (JSON)
         </label>
         <textarea
@@ -481,7 +481,7 @@ function NodeInspector({
           value={config}
           onChange={(e) => setConfig(e.target.value)}
           rows={10}
-          className="w-full resize-y rounded-md bg-elevated/40 px-3 py-2 font-mono text-xs text-ink shadow-hairline focus:outline-none focus:ring-1 focus:ring-accent/50"
+          className="bg-elevated/40 text-ink shadow-hairline focus:ring-accent/50 w-full resize-y rounded-md px-3 py-2 font-mono text-xs focus:ring-1 focus:outline-none"
         />
       </div>
       {error && (

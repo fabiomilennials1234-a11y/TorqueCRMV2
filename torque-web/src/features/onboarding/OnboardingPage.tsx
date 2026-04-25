@@ -84,7 +84,7 @@ export function OnboardingPage() {
 
   if (!status.data) {
     return (
-      <div className="mx-auto mt-24 max-w-xl px-8 text-sm text-ink-muted">
+      <div className="text-ink-muted mx-auto mt-24 max-w-xl px-8 text-sm">
         Não foi possível carregar o onboarding.
       </div>
     )
@@ -121,12 +121,12 @@ export function OnboardingPage() {
         />
       </div>
 
-      <div className="mt-12 rounded-lg bg-surface p-8 shadow-elev-1">
-        <div className="mb-2 inline-flex items-center gap-2 text-2xs uppercase tracking-[0.12em] text-ink-dim">
+      <div className="bg-surface shadow-elev-1 mt-12 rounded-lg p-8">
+        <div className="text-2xs text-ink-dim mb-2 inline-flex items-center gap-2 tracking-[0.12em] uppercase">
           Passo {currentIndex + 1} de {s.all_steps.length}
         </div>
-        <h2 className="font-display text-2xl text-ink">{copy.title}</h2>
-        <p className="mt-3 max-w-prose text-sm text-ink-muted">{copy.description}</p>
+        <h2 className="font-display text-ink text-2xl">{copy.title}</h2>
+        <p className="text-ink-muted mt-3 max-w-prose text-sm">{copy.description}</p>
 
         <div className="mt-8 flex flex-wrap items-center gap-3">
           <Button

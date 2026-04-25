@@ -40,7 +40,7 @@ export function QuotaMeter({ quota, label, className }: QuotaMeterProps) {
       aria-valuenow={quota.current_usage}
       aria-label={label ?? `uso de ${quota.resource}`}
     >
-      <div className="flex items-baseline justify-between text-[11px] text-ink-muted">
+      <div className="text-ink-muted flex items-baseline justify-between text-[11px]">
         <span>
           {label ?? quota.resource} — <span className="text-ink">{quota.current_usage}</span>
           <span className="text-ink-subtle"> / {quota.effective_limit}</span>
@@ -55,7 +55,7 @@ export function QuotaMeter({ quota, label, className }: QuotaMeterProps) {
           {pct}%
         </span>
       </div>
-      <div className="h-1 overflow-hidden rounded-xs bg-elevated">
+      <div className="bg-elevated h-1 overflow-hidden rounded-xs">
         <div
           className={cn('h-full transition-[width] duration-500', toneClass)}
           style={{ width: `${pct}%` }}

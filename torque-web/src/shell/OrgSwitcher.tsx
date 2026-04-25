@@ -23,21 +23,21 @@ export function OrgSwitcher() {
     <DropdownMenu>
       <DropdownMenuTrigger
         className={cn(
-          'group flex w-full items-center gap-2.5 rounded-md bg-elevated px-2.5 py-2',
+          'group bg-elevated flex w-full items-center gap-2.5 rounded-md px-2.5 py-2',
           'shadow-hairline hover:bg-elevated/80 focus-visible:outline-none',
           'text-left transition-colors'
         )}
       >
-        <div className="font-metric flex h-7 w-7 shrink-0 items-center justify-center rounded-sm bg-accent/15 text-[0.7rem] font-medium text-accent shadow-[inset_0_0_0_1px_hsl(var(--accent)/0.3)]">
+        <div className="font-metric bg-accent/15 text-accent flex h-7 w-7 shrink-0 items-center justify-center rounded-sm text-[0.7rem] font-medium shadow-[inset_0_0_0_1px_hsl(var(--accent)/0.3)]">
           {active.initial}
         </div>
         <div className="min-w-0 flex-1">
-          <div className="truncate text-[0.8125rem] font-medium text-ink">{active.name}</div>
-          <div className="text-2xs uppercase tracking-[0.1em] text-ink-dim">
+          <div className="text-ink truncate text-[0.8125rem] font-medium">{active.name}</div>
+          <div className="text-2xs text-ink-dim tracking-[0.1em] uppercase">
             Plano {active.plan}
           </div>
         </div>
-        <ChevronsUpDown className="h-3.5 w-3.5 shrink-0 text-ink-dim group-hover:text-ink-muted" />
+        <ChevronsUpDown className="text-ink-dim group-hover:text-ink-muted h-3.5 w-3.5 shrink-0" />
       </DropdownMenuTrigger>
       <DropdownMenuContent align="start" className="w-[260px]">
         <DropdownMenuLabel>Organizações</DropdownMenuLabel>
@@ -47,19 +47,19 @@ export function OrgSwitcher() {
             onSelect={() => setActive(org)}
             className="flex items-center gap-2.5"
           >
-            <div className="font-metric flex h-6 w-6 shrink-0 items-center justify-center rounded-sm bg-elevated text-[0.65rem] text-ink-muted shadow-hairline">
+            <div className="font-metric bg-elevated text-ink-muted shadow-hairline flex h-6 w-6 shrink-0 items-center justify-center rounded-sm text-[0.65rem]">
               {org.initial}
             </div>
             <div className="min-w-0 flex-1">
-              <div className="truncate text-[0.8125rem] text-ink">{org.name}</div>
-              <div className="text-2xs uppercase tracking-[0.1em] text-ink-dim">{org.plan}</div>
+              <div className="text-ink truncate text-[0.8125rem]">{org.name}</div>
+              <div className="text-2xs text-ink-dim tracking-[0.1em] uppercase">{org.plan}</div>
             </div>
-            {active.id === org.id && <Check className="h-3.5 w-3.5 text-accent" />}
+            {active.id === org.id && <Check className="text-accent h-3.5 w-3.5" />}
           </DropdownMenuItem>
         ))}
         <DropdownMenuSeparator />
         <DropdownMenuItem className="gap-2.5">
-          <div className="flex h-6 w-6 items-center justify-center rounded-sm bg-elevated shadow-hairline">
+          <div className="bg-elevated shadow-hairline flex h-6 w-6 items-center justify-center rounded-sm">
             <Plus className="h-3.5 w-3.5" />
           </div>
           <span>Nova organização</span>

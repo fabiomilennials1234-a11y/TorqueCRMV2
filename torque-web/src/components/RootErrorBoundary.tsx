@@ -34,15 +34,15 @@ export class RootErrorBoundary extends Component<Props, State> {
   render() {
     if (this.state.hasError) {
       return (
-        <div className="flex h-screen w-screen flex-col items-center justify-center bg-bg px-6 text-center">
-          <h1 className="font-display text-3xl tracking-tightest text-ink">Algo deu errado</h1>
-          <p className="mt-3 max-w-sm text-sm leading-relaxed text-ink-muted">
+        <div className="bg-bg flex h-screen w-screen flex-col items-center justify-center px-6 text-center">
+          <h1 className="font-display tracking-tightest text-ink text-3xl">Algo deu errado</h1>
+          <p className="text-ink-muted mt-3 max-w-sm text-sm leading-relaxed">
             Um erro inesperado impediu a aplicacao de continuar. Tente recarregar a pagina.
           </p>
           <button
             type="button"
             onClick={this.handleReload}
-            className="ease-[var(--ease-out-soft)] mt-8 rounded-md bg-accent px-5 py-2.5 text-sm font-semibold text-bg transition-opacity duration-150 hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-bg"
+            className="bg-accent text-bg focus-visible:ring-accent focus-visible:ring-offset-bg mt-8 rounded-md px-5 py-2.5 text-sm font-semibold transition-opacity duration-150 ease-[var(--ease-out-soft)] hover:opacity-90 focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none"
           >
             Recarregar pagina
           </button>

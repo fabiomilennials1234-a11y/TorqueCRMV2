@@ -56,7 +56,7 @@ export function ScoreMeter({
       </svg>
       {showLabel && (
         <div className="absolute inset-0 flex flex-col items-center justify-center">
-          <span className="font-metric text-[0.8125rem] leading-none text-ink">{clamped}</span>
+          <span className="font-metric text-ink text-[0.8125rem] leading-none">{clamped}</span>
         </div>
       )}
     </div>

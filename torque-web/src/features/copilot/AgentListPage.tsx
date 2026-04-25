@@ -89,35 +89,35 @@ function AgentCard({ agent }: { agent: Agent }) {
   const toggleKill = useSetKillSwitch(agent.id)
 
   return (
-    <article className="group flex flex-col rounded-lg bg-surface p-5 shadow-elev-1 transition-shadow hover:shadow-elev-2">
+    <article className="group bg-surface shadow-elev-1 hover:shadow-elev-2 flex flex-col rounded-lg p-5 transition-shadow">
       <header className="flex items-start justify-between gap-3">
         <div className="min-w-0 flex-1">
           <Link
             to={`/copilot/${agent.id}`}
-            className="inline-flex items-center gap-1 text-base text-ink hover:text-accent"
+            className="text-ink hover:text-accent inline-flex items-center gap-1 text-base"
           >
             {agent.name}
-            <ChevronRight className="h-4 w-4 text-ink-dim transition-transform group-hover:translate-x-0.5" />
+            <ChevronRight className="text-ink-dim h-4 w-4 transition-transform group-hover:translate-x-0.5" />
           </Link>
           {agent.description && (
-            <p className="mt-1 line-clamp-2 text-xs text-ink-muted">{agent.description}</p>
+            <p className="text-ink-muted mt-1 line-clamp-2 text-xs">{agent.description}</p>
           )}
         </div>
         <StatusBadge status={agent.status} killSwitch={agent.kill_switch} />
       </header>
 
-      <dl className="mt-4 grid grid-cols-3 gap-3 text-2xs text-ink-dim">
+      <dl className="text-2xs text-ink-dim mt-4 grid grid-cols-3 gap-3">
         <div>
-          <dt className="uppercase tracking-[0.12em]">Modelo</dt>
-          <dd className="font-metric mt-0.5 truncate text-ink-muted">{agent.model}</dd>
+          <dt className="tracking-[0.12em] uppercase">Modelo</dt>
+          <dd className="font-metric text-ink-muted mt-0.5 truncate">{agent.model}</dd>
         </div>
         <div>
-          <dt className="uppercase tracking-[0.12em]">Temp</dt>
-          <dd className="font-metric mt-0.5 text-ink-muted">{agent.temperature.toFixed(1)}</dd>
+          <dt className="tracking-[0.12em] uppercase">Temp</dt>
+          <dd className="font-metric text-ink-muted mt-0.5">{agent.temperature.toFixed(1)}</dd>
         </div>
         <div>
-          <dt className="uppercase tracking-[0.12em]">Tokens</dt>
-          <dd className="font-metric mt-0.5 text-ink-muted">{agent.max_output_tokens}</dd>
+          <dt className="tracking-[0.12em] uppercase">Tokens</dt>
+          <dd className="font-metric text-ink-muted mt-0.5">{agent.max_output_tokens}</dd>
         </div>
       </dl>
 

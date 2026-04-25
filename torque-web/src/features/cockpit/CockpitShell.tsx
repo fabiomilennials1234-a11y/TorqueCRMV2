@@ -31,7 +31,7 @@ export function CockpitShell() {
       }
       if (Date.now() - lastG < 900 && e.key.toLowerCase() === 'm') {
         e.preventDefault()
-        navigate('/')
+        void navigate('/')
         lastG = 0
       }
     }
@@ -41,13 +41,13 @@ export function CockpitShell() {
 
   useEffect(() => {
     if (mode === 'manager') {
-      navigate('/', { replace: true })
+      void navigate('/', { replace: true })
     }
   }, [mode, navigate])
 
   return (
     <TooltipProvider delayDuration={200} skipDelayDuration={300}>
-      <div className="flex h-screen w-screen flex-col overflow-hidden bg-bg text-ink">
+      <div className="bg-bg text-ink flex h-screen w-screen flex-col overflow-hidden">
         <TopBar onOpenCommand={() => setCommandOpen(true)} />
         <main className="cockpit-theme flex-1 overflow-hidden">
           <Outlet />

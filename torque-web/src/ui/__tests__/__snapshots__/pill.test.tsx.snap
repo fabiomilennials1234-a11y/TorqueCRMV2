@@ -3,7 +3,7 @@
 exports[`Pill > renders active 1`] = `
 <div>
   <button
-    class="inline-flex h-6 items-center gap-1.5 rounded-full px-2.5 text-[0.75rem] font-medium whitespace-nowrap shadow-hairline transition-colors bg-accent/15 text-accent shadow-[inset_0_0_0_1px_hsl(var(--accent)/0.4)]"
+    class="inline-flex h-6 items-center gap-1.5 rounded-full px-2.5 text-[0.75rem] font-medium shadow-hairline whitespace-nowrap transition-colors bg-accent/15 text-accent shadow-[inset_0_0_0_1px_hsl(var(--accent)/0.4)]"
     type="button"
   >
     Hot
@@ -14,7 +14,7 @@ exports[`Pill > renders active 1`] = `
 exports[`Pill > renders idle 1`] = `
 <div>
   <button
-    class="inline-flex h-6 items-center gap-1.5 rounded-full px-2.5 text-[0.75rem] font-medium whitespace-nowrap shadow-hairline transition-colors text-ink-muted hover:bg-elevated/60 hover:text-ink"
+    class="inline-flex h-6 items-center gap-1.5 rounded-full px-2.5 text-[0.75rem] font-medium shadow-hairline whitespace-nowrap transition-colors text-ink-muted hover:bg-elevated/60 hover:text-ink"
     type="button"
   >
     Todos · 24

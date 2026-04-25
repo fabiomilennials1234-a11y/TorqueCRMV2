@@ -41,7 +41,7 @@ export function IntegrationsSection() {
     return (
       <div className="grid gap-3 sm:grid-cols-2">
         {[0, 1, 2, 3].map((k) => (
-          <div key={k} className="h-28 animate-pulse rounded-lg bg-elevated/40 shadow-elev-1" />
+          <div key={k} className="bg-elevated/40 shadow-elev-1 h-28 animate-pulse rounded-lg" />
         ))}
       </div>
     )
@@ -186,7 +186,7 @@ function TinyERPConnectButton() {
             }
           }}
         >
-          <label htmlFor={keyId} className="flex flex-col gap-1 text-sm text-ink-muted">
+          <label htmlFor={keyId} className="text-ink-muted flex flex-col gap-1 text-sm">
             API key TinyERP
             <Input
               id={keyId}
@@ -200,7 +200,7 @@ function TinyERPConnectButton() {
               minLength={10}
             />
           </label>
-          {err && <p className="text-xs text-danger">{err}</p>}
+          {err && <p className="text-danger text-xs">{err}</p>}
           <div className="flex justify-end gap-2">
             <Button variant="ghost" type="button" onClick={() => setOpen(false)}>
               Cancelar
@@ -281,7 +281,7 @@ function MetaConnectButton() {
             }
           }}
         >
-          <label htmlFor={tokenId} className="flex flex-col gap-1 text-sm text-ink-muted">
+          <label htmlFor={tokenId} className="text-ink-muted flex flex-col gap-1 text-sm">
             Access token
             <Input
               id={tokenId}
@@ -295,7 +295,7 @@ function MetaConnectButton() {
               minLength={20}
             />
           </label>
-          <label htmlFor={acctId} className="flex flex-col gap-1 text-sm text-ink-muted">
+          <label htmlFor={acctId} className="text-ink-muted flex flex-col gap-1 text-sm">
             Account ID (opcional)
             <Input
               id={acctId}
@@ -304,7 +304,7 @@ function MetaConnectButton() {
               placeholder="act_1234567890"
             />
           </label>
-          {err && <p className="text-xs text-danger">{err}</p>}
+          {err && <p className="text-danger text-xs">{err}</p>}
           <div className="flex justify-end gap-2">
             <Button variant="ghost" type="button" onClick={() => setOpen(false)}>
               Cancelar
@@ -385,7 +385,7 @@ function SZChatConnectButton() {
             }
           }}
         >
-          <label htmlFor={apiKeyId} className="flex flex-col gap-1 text-sm text-ink-muted">
+          <label htmlFor={apiKeyId} className="text-ink-muted flex flex-col gap-1 text-sm">
             API key
             <Input
               id={apiKeyId}
@@ -398,7 +398,7 @@ function SZChatConnectButton() {
               minLength={16}
             />
           </label>
-          <label htmlFor={channelId} className="flex flex-col gap-1 text-sm text-ink-muted">
+          <label htmlFor={channelId} className="text-ink-muted flex flex-col gap-1 text-sm">
             Channel ID (opcional)
             <Input
               id={channelId}
@@ -407,7 +407,7 @@ function SZChatConnectButton() {
               placeholder="p. ex. wa_main"
             />
           </label>
-          {err && <p className="text-xs text-danger">{err}</p>}
+          {err && <p className="text-danger text-xs">{err}</p>}
           <div className="flex justify-end gap-2">
             <Button variant="ghost" type="button" onClick={() => setOpen(false)}>
               Cancelar
@@ -447,13 +447,13 @@ function ProviderCard({
   const connected = cred?.connected ?? false
   const lastErr = cred?.last_error_text
   return (
-    <div className="flex items-start gap-3 rounded-lg bg-surface p-4 shadow-elev-1 transition-shadow hover:shadow-elev-2">
-      <div className="font-metric flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-elevated text-xs text-ink-muted shadow-hairline">
+    <div className="bg-surface shadow-elev-1 hover:shadow-elev-2 flex items-start gap-3 rounded-lg p-4 transition-shadow">
+      <div className="font-metric bg-elevated text-ink-muted shadow-hairline flex h-10 w-10 shrink-0 items-center justify-center rounded-md text-xs">
         {logo}
       </div>
       <div className="min-w-0 flex-1">
-        <div className="text-sm font-medium text-ink">{name}</div>
-        <div className="text-xs text-ink-muted">{desc}</div>
+        <div className="text-ink text-sm font-medium">{name}</div>
+        <div className="text-ink-muted text-xs">{desc}</div>
         {cred?.external_account_id && (
           <div className="text-ink-subtle mt-1 truncate font-mono text-[11px]">
             {cred.external_account_id}
@@ -478,18 +478,18 @@ function ProviderCard({
         {lastErr && cred?.last_error_at && (
           <div
             className={cn(
-              'mt-2 flex items-start gap-1.5 rounded-sm bg-warning/5 px-2 py-1.5 text-[11px]',
+              'bg-warning/5 mt-2 flex items-start gap-1.5 rounded-sm px-2 py-1.5 text-[11px]',
               'shadow-[inset_0_0_0_1px_hsl(var(--warning)/0.25)]'
             )}
           >
-            <AlertCircle className="mt-0.5 h-3 w-3 shrink-0 text-warning" />
+            <AlertCircle className="text-warning mt-0.5 h-3 w-3 shrink-0" />
             <div className="min-w-0 flex-1">
-              <div className="truncate font-medium text-warning">{lastErr}</div>
+              <div className="text-warning truncate font-medium">{lastErr}</div>
               <div className="text-ink-subtle">{relativeTime(cred.last_error_at)}</div>
             </div>
           </div>
         )}
-        {note && <div className="mt-2 text-[11px] text-ink-muted">{note}</div>}
+        {note && <div className="text-ink-muted mt-2 text-[11px]">{note}</div>}
       </div>
     </div>
   )
@@ -497,13 +497,13 @@ function ProviderCard({
 
 function AmbientCard({ logo, name, desc }: { logo: string; name: string; desc: string }) {
   return (
-    <div className="flex items-start gap-3 rounded-lg bg-surface p-4 shadow-elev-1">
-      <div className="font-metric flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-elevated text-xs text-ink-muted shadow-hairline">
+    <div className="bg-surface shadow-elev-1 flex items-start gap-3 rounded-lg p-4">
+      <div className="font-metric bg-elevated text-ink-muted shadow-hairline flex h-10 w-10 shrink-0 items-center justify-center rounded-md text-xs">
         {logo}
       </div>
       <div className="min-w-0 flex-1">
-        <div className="text-sm font-medium text-ink">{name}</div>
-        <div className="text-xs text-ink-muted">{desc}</div>
+        <div className="text-ink text-sm font-medium">{name}</div>
+        <div className="text-ink-muted text-xs">{desc}</div>
         <div className="mt-2">
           <Badge tone="neutral">gerenciado</Badge>
         </div>

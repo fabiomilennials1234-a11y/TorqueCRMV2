@@ -46,7 +46,7 @@ export function MessageBubble({ message }: MessageBubbleProps) {
   if (isSystem) {
     return (
       <div className="my-2 flex justify-center">
-        <span className="rounded-full bg-elevated/40 px-3 py-1 text-2xs text-ink-dim">
+        <span className="bg-elevated/40 text-2xs text-ink-dim rounded-full px-3 py-1">
           {m.body ?? 'Evento do sistema'}
         </span>
       </div>
@@ -57,7 +57,7 @@ export function MessageBubble({ message }: MessageBubbleProps) {
     <div className={cn('flex w-full', isOutbound ? 'justify-end' : 'justify-start')}>
       <div
         className={cn(
-          'max-w-[72%] rounded-lg px-3 py-2 text-sm shadow-elev-1',
+          'shadow-elev-1 max-w-[72%] rounded-lg px-3 py-2 text-sm',
           isOutbound ? 'bg-accent/15 text-ink' : 'bg-surface text-ink-muted'
         )}
       >
@@ -82,9 +82,9 @@ function MessageBody({ message }: { message: Message }) {
               loading="lazy"
             />
           ) : (
-            <div className="mb-1 h-24 w-48 rounded-md bg-elevated/40" />
+            <div className="bg-elevated/40 mb-1 h-24 w-48 rounded-md" />
           )}
-          {m.body && <figcaption className="text-xs text-ink-muted">{m.body}</figcaption>}
+          {m.body && <figcaption className="text-ink-muted text-xs">{m.body}</figcaption>}
         </figure>
       )
     case 'audio':
@@ -93,7 +93,7 @@ function MessageBody({ message }: { message: Message }) {
           <track kind="captions" />
         </audio>
       ) : (
-        <span className="text-xs text-ink-dim">Áudio indisponível.</span>
+        <span className="text-ink-dim text-xs">Áudio indisponível.</span>
       )
     case 'video':
       return m.media_url ? (
@@ -101,7 +101,7 @@ function MessageBody({ message }: { message: Message }) {
           <track kind="captions" />
         </video>
       ) : (
-        <span className="text-xs text-ink-dim">Vídeo indisponível.</span>
+        <span className="text-ink-dim text-xs">Vídeo indisponível.</span>
       )
     case 'document':
       return (
@@ -109,7 +109,7 @@ function MessageBody({ message }: { message: Message }) {
           href={m.media_url ?? '#'}
           target="_blank"
           rel="noopener noreferrer"
-          className="text-sm text-accent underline"
+          className="text-accent text-sm underline"
         >
           {m.body ?? 'Documento'}
         </a>
@@ -118,11 +118,11 @@ function MessageBody({ message }: { message: Message }) {
       return m.media_url ? (
         <img src={m.media_url} alt="Sticker" className="h-24 w-24 object-contain" />
       ) : (
-        <span className="text-xs text-ink-dim">Sticker indisponível.</span>
+        <span className="text-ink-dim text-xs">Sticker indisponível.</span>
       )
     case 'text':
     default:
-      return <p className="whitespace-pre-wrap break-words">{m.body ?? ''}</p>
+      return <p className="break-words whitespace-pre-wrap">{m.body ?? ''}</p>
   }
 }
 
@@ -139,7 +139,7 @@ function MessageFooter({
   const isOutbound = direction === 'outbound'
 
   return (
-    <div className="mt-1 flex items-center justify-end gap-1 text-2xs text-ink-dim">
+    <div className="text-2xs text-ink-dim mt-1 flex items-center justify-end gap-1">
       <time dateTime={occurredAt}>{formatRelative(new Date(occurredAt))}</time>
       {isOutbound && (
         <span

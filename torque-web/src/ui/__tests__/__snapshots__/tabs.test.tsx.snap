@@ -8,7 +8,7 @@ exports[`Tabs > renders three tabs with first active 1`] = `
   >
     <div
       aria-orientation="horizontal"
-      class="inline-flex items-center gap-1 shadow-hairline-b"
+      class="shadow-hairline-b inline-flex items-center gap-1"
       data-orientation="horizontal"
       role="tablist"
       style="outline: none;"
@@ -17,7 +17,7 @@ exports[`Tabs > renders three tabs with first active 1`] = `
       <button
         aria-controls="radix-:r0:-content-a"
         aria-selected="true"
-        class="relative inline-flex h-9 items-center gap-2 px-3 text-sm font-medium text-ink-muted transition-colors hover:text-ink data-[state=active]:text-ink data-[state=active]:after:absolute data-[state=active]:after:inset-x-0 data-[state=active]:after:-bottom-px data-[state=active]:after:h-px data-[state=active]:after:bg-accent disabled:pointer-events-none disabled:opacity-40"
+        class="text-ink-muted relative inline-flex h-9 items-center gap-2 px-3 text-sm font-medium hover:text-ink transition-colors data-[state=active]:text-ink data-[state=active]:after:absolute data-[state=active]:after:inset-x-0 data-[state=active]:after:-bottom-px data-[state=active]:after:bg-accent data-[state=active]:after:h-px disabled:pointer-events-none disabled:opacity-40"
         data-orientation="horizontal"
         data-radix-collection-item=""
         data-state="active"
@@ -31,7 +31,7 @@ exports[`Tabs > renders three tabs with first active 1`] = `
       <button
         aria-controls="radix-:r0:-content-b"
         aria-selected="false"
-        class="relative inline-flex h-9 items-center gap-2 px-3 text-sm font-medium text-ink-muted transition-colors hover:text-ink data-[state=active]:text-ink data-[state=active]:after:absolute data-[state=active]:after:inset-x-0 data-[state=active]:after:-bottom-px data-[state=active]:after:h-px data-[state=active]:after:bg-accent disabled:pointer-events-none disabled:opacity-40"
+        class="text-ink-muted relative inline-flex h-9 items-center gap-2 px-3 text-sm font-medium hover:text-ink transition-colors data-[state=active]:text-ink data-[state=active]:after:absolute data-[state=active]:after:inset-x-0 data-[state=active]:after:-bottom-px data-[state=active]:after:bg-accent data-[state=active]:after:h-px disabled:pointer-events-none disabled:opacity-40"
         data-orientation="horizontal"
         data-radix-collection-item=""
         data-state="inactive"
@@ -45,7 +45,7 @@ exports[`Tabs > renders three tabs with first active 1`] = `
       <button
         aria-controls="radix-:r0:-content-c"
         aria-selected="false"
-        class="relative inline-flex h-9 items-center gap-2 px-3 text-sm font-medium text-ink-muted transition-colors hover:text-ink data-[state=active]:text-ink data-[state=active]:after:absolute data-[state=active]:after:inset-x-0 data-[state=active]:after:-bottom-px data-[state=active]:after:h-px data-[state=active]:after:bg-accent disabled:pointer-events-none disabled:opacity-40"
+        class="text-ink-muted relative inline-flex h-9 items-center gap-2 px-3 text-sm font-medium hover:text-ink transition-colors data-[state=active]:text-ink data-[state=active]:after:absolute data-[state=active]:after:inset-x-0 data-[state=active]:after:-bottom-px data-[state=active]:after:bg-accent data-[state=active]:after:h-px disabled:pointer-events-none disabled:opacity-40"
         data-orientation="horizontal"
         data-radix-collection-item=""
         data-state="inactive"
@@ -59,7 +59,7 @@ exports[`Tabs > renders three tabs with first active 1`] = `
     </div>
     <div
       aria-labelledby="radix-:r0:-trigger-a"
-      class="mt-4 focus-visible:outline-none data-[state=active]:animate-fade-in"
+      class="data-[state=active]:animate-fade-in mt-4 focus-visible:outline-none"
       data-orientation="horizontal"
       data-state="active"
       id="radix-:r0:-content-a"
@@ -71,7 +71,7 @@ exports[`Tabs > renders three tabs with first active 1`] = `
     </div>
     <div
       aria-labelledby="radix-:r0:-trigger-b"
-      class="mt-4 focus-visible:outline-none data-[state=active]:animate-fade-in"
+      class="data-[state=active]:animate-fade-in mt-4 focus-visible:outline-none"
       data-orientation="horizontal"
       data-state="inactive"
       hidden=""
@@ -81,7 +81,7 @@ exports[`Tabs > renders three tabs with first active 1`] = `
     />
     <div
       aria-labelledby="radix-:r0:-trigger-c"
-      class="mt-4 focus-visible:outline-none data-[state=active]:animate-fade-in"
+      class="data-[state=active]:animate-fade-in mt-4 focus-visible:outline-none"
       data-orientation="horizontal"
       data-state="inactive"
       hidden=""

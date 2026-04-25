@@ -10,7 +10,7 @@ export function AppShell() {
 
   return (
     <TooltipProvider delayDuration={200} skipDelayDuration={300}>
-      <div className="flex h-screen w-screen overflow-hidden bg-bg text-ink">
+      <div className="bg-bg text-ink flex h-screen w-screen overflow-hidden">
         <Sidebar />
         <div className="flex min-w-0 flex-1 flex-col">
           <TopBar onOpenCommand={() => setCommandOpen(true)} />

@@ -25,10 +25,10 @@ export function LeadDrawer({ lead }: { lead: Lead }) {
   return (
     <div className="flex min-h-0 flex-1 flex-col">
       {/* Header */}
-      <div className="shrink-0 px-6 pb-4 pt-5 shadow-hairline-b">
+      <div className="shadow-hairline-b shrink-0 px-6 pt-5 pb-4">
         <div className="flex items-start justify-between">
           <div className="min-w-0 flex-1">
-            <div className="mb-2 inline-flex items-center gap-2 text-2xs font-medium uppercase tracking-[0.14em] text-ink-dim">
+            <div className="text-2xs text-ink-dim mb-2 inline-flex items-center gap-2 font-medium tracking-[0.14em] uppercase">
               <span
                 className="h-1.5 w-1.5 rounded-full"
                 style={{ backgroundColor: stageMeta[lead.stage].color }}
@@ -37,16 +37,16 @@ export function LeadDrawer({ lead }: { lead: Lead }) {
               <span className="text-ink-dim">·</span>
               {lead.source}
             </div>
-            <h2 className="font-display text-[1.5rem] leading-tight tracking-tightest text-ink">
+            <h2 className="font-display tracking-tightest text-ink text-[1.5rem] leading-tight">
               {lead.name}
             </h2>
-            <div className="mt-0.5 text-sm text-ink-muted">{lead.company}</div>
+            <div className="text-ink-muted mt-0.5 text-sm">{lead.company}</div>
           </div>
           <ScoreMeter value={lead.score} size={52} strokeWidth={3} />
         </div>
 
         {/* Stats row */}
-        <div className="mt-5 grid grid-cols-4 gap-px overflow-hidden rounded-md bg-hairline">
+        <div className="bg-hairline mt-5 grid grid-cols-4 gap-px overflow-hidden rounded-md">
           <Stat label="Valor" value={`R$ ${lead.value.toLocaleString('pt-BR')}`} />
           <Stat label="Tempo no stage" value="3d 7h" />
           <Stat label="Último toque" value={formatRelative(lead.lastTouch)} />
@@ -68,7 +68,7 @@ export function LeadDrawer({ lead }: { lead: Lead }) {
             Agendar
           </Button>
           <Button variant="ghost" size="sm" className="gap-1.5">
-            <Sparkles className="h-3.5 w-3.5 text-accent" />
+            <Sparkles className="text-accent h-3.5 w-3.5" />
             Sugestão IA
           </Button>
         </div>
@@ -90,15 +90,15 @@ export function LeadDrawer({ lead }: { lead: Lead }) {
           className="mt-0 min-h-0 flex-1 space-y-6 overflow-y-auto px-6 py-5"
         >
           {/* Copilot suggestion */}
-          <section className="rounded-md bg-accent/5 p-4 shadow-[inset_0_0_0_1px_hsl(var(--accent)/0.2)]">
+          <section className="bg-accent/5 rounded-md p-4 shadow-[inset_0_0_0_1px_hsl(var(--accent)/0.2)]">
             <div className="mb-2 flex items-center gap-2">
-              <Sparkles className="h-3.5 w-3.5 text-accent" />
-              <span className="text-2xs font-medium uppercase tracking-[0.14em] text-accent">
+              <Sparkles className="text-accent h-3.5 w-3.5" />
+              <span className="text-2xs text-accent font-medium tracking-[0.14em] uppercase">
                 Sugestão do Copilot · Mila
               </span>
-              <span className="font-metric ml-auto text-2xs text-ink-dim">há 4min</span>
+              <span className="font-metric text-2xs text-ink-dim ml-auto">há 4min</span>
             </div>
-            <p className="text-sm leading-relaxed text-ink">
+            <p className="text-ink text-sm leading-relaxed">
               Lead respondeu positivamente e pediu prazo. Próxima ação recomendada:{' '}
               <span className="text-accent">enviar termo de proposta com validade de 48h</span> e
               criar task de follow-up para amanhã 9h.
@@ -127,11 +127,11 @@ export function LeadDrawer({ lead }: { lead: Lead }) {
           {/* Ownership */}
           <section>
             <SectionTitle>Responsável</SectionTitle>
-            <div className="flex items-center gap-3 rounded-md bg-elevated/50 p-3">
+            <div className="bg-elevated/50 flex items-center gap-3 rounded-md p-3">
               <Avatar size="lg" fallback={lead.owner.initials} />
               <div className="flex-1">
-                <div className="text-sm font-medium text-ink">{lead.owner.name}</div>
-                <div className="text-xs text-ink-dim">SDR · online agora</div>
+                <div className="text-ink text-sm font-medium">{lead.owner.name}</div>
+                <div className="text-ink-dim text-xs">SDR · online agora</div>
               </div>
               <Button variant="ghost" size="sm">
                 Reatribuir
@@ -148,7 +148,7 @@ export function LeadDrawer({ lead }: { lead: Lead }) {
                   {t}
                 </Badge>
               ))}
-              <button className="inline-flex h-5 items-center gap-1 rounded-xs bg-elevated px-1.5 text-2xs uppercase tracking-[0.08em] text-ink-dim hover:text-ink">
+              <button className="bg-elevated text-2xs text-ink-dim hover:text-ink inline-flex h-5 items-center gap-1 rounded-xs px-1.5 tracking-[0.08em] uppercase">
                 <TagIcon className="h-2.5 w-2.5" />
                 adicionar
               </button>
@@ -176,7 +176,7 @@ export function LeadDrawer({ lead }: { lead: Lead }) {
                       <div className="relative mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center">
                         {i < 5 && (
                           <span
-                            className={`absolute left-1/2 top-5 h-[calc(100%+4px)] w-px -translate-x-1/2 ${done ? 'bg-accent' : 'bg-hairline'}`}
+                            className={`absolute top-5 left-1/2 h-[calc(100%+4px)] w-px -translate-x-1/2 ${done ? 'bg-accent' : 'bg-hairline'}`}
                           />
                         )}
                         <span
@@ -185,7 +185,7 @@ export function LeadDrawer({ lead }: { lead: Lead }) {
                             done
                               ? 'bg-accent'
                               : current
-                                ? 'bg-accent ring-4 ring-accent/20'
+                                ? 'bg-accent ring-accent/20 ring-4'
                                 : 'bg-hairline',
                           ].join(' ')}
                         />
@@ -195,7 +195,7 @@ export function LeadDrawer({ lead }: { lead: Lead }) {
                           className={[
                             'text-sm capitalize',
                             current
-                              ? 'font-medium text-ink'
+                              ? 'text-ink font-medium'
                               : done
                                 ? 'text-ink-muted'
                                 : 'text-ink-dim',
@@ -219,7 +219,7 @@ export function LeadDrawer({ lead }: { lead: Lead }) {
               <ThreadBubble key={i} {...m} />
             ))}
           </div>
-          <div className="shrink-0 rounded-md bg-elevated/60 p-3 shadow-hairline">
+          <div className="bg-elevated/60 shadow-hairline shrink-0 rounded-md p-3">
             <div className="flex items-center gap-2">
               <Input
                 placeholder="Digite uma mensagem…"
@@ -230,10 +230,10 @@ export function LeadDrawer({ lead }: { lead: Lead }) {
                 Enviar
               </Button>
             </div>
-            <div className="mt-2 flex items-center gap-2 text-2xs text-ink-dim">
-              <Sparkles className="h-3 w-3 text-accent" />
+            <div className="text-2xs text-ink-dim mt-2 flex items-center gap-2">
+              <Sparkles className="text-accent h-3 w-3" />
               Copilot sugere:{' '}
-              <span className="italic text-ink-muted">
+              <span className="text-ink-muted italic">
                 "Consigo liberar 10% com antecipação. Fechamos?"
               </span>
             </div>
@@ -243,14 +243,14 @@ export function LeadDrawer({ lead }: { lead: Lead }) {
         <TabsContent value="notes" className="mt-0 px-6 py-5">
           <div className="space-y-3">
             {sampleNotes.map((n, i) => (
-              <div key={i} className="rounded-md bg-elevated/40 p-3 shadow-hairline">
-                <div className="flex items-center gap-2 text-2xs text-ink-dim">
+              <div key={i} className="bg-elevated/40 shadow-hairline rounded-md p-3">
+                <div className="text-2xs text-ink-dim flex items-center gap-2">
                   <Avatar size="xs" fallback={n.by} />
                   <span className="text-ink-muted">{n.author}</span>
                   <span>·</span>
                   <span className="font-metric">{n.at}</span>
                 </div>
-                <p className="mt-2 text-sm leading-relaxed text-ink">{n.text}</p>
+                <p className="text-ink mt-2 text-sm leading-relaxed">{n.text}</p>
               </div>
             ))}
           </div>
@@ -268,7 +268,7 @@ export function LeadDrawer({ lead }: { lead: Lead }) {
 
 function SectionTitle({ children }: { children: React.ReactNode }) {
   return (
-    <h3 className="mb-3 text-2xs font-medium uppercase tracking-[0.14em] text-ink-dim">
+    <h3 className="text-2xs text-ink-dim mb-3 font-medium tracking-[0.14em] uppercase">
       {children}
     </h3>
   )
@@ -277,8 +277,8 @@ function SectionTitle({ children }: { children: React.ReactNode }) {
 function Stat({ label, value }: { label: string; value: string }) {
   return (
     <div className="bg-surface p-3">
-      <div className="text-2xs uppercase tracking-[0.1em] text-ink-dim">{label}</div>
-      <div className="font-metric mt-0.5 text-sm tabular-nums text-ink">{value}</div>
+      <div className="text-2xs text-ink-dim tracking-[0.1em] uppercase">{label}</div>
+      <div className="font-metric text-ink mt-0.5 text-sm tabular-nums">{value}</div>
     </div>
   )
 }
@@ -293,10 +293,10 @@ function InfoRow({
   value: string
 }) {
   return (
-    <div className="group flex items-center gap-3 rounded-sm px-2 py-1.5 transition-colors hover:bg-elevated/50">
-      <Icon className="h-3.5 w-3.5 text-ink-dim" />
-      <span className="w-20 text-xs text-ink-dim">{label}</span>
-      <span className="font-metric flex-1 text-[0.8125rem] text-ink">{value}</span>
+    <div className="group hover:bg-elevated/50 flex items-center gap-3 rounded-sm px-2 py-1.5 transition-colors">
+      <Icon className="text-ink-dim h-3.5 w-3.5" />
+      <span className="text-ink-dim w-20 text-xs">{label}</span>
+      <span className="font-metric text-ink flex-1 text-[0.8125rem]">{value}</span>
     </div>
   )
 }
@@ -351,9 +351,9 @@ function ThreadBubble({
         >
           {text}
         </div>
-        <div className="mt-1 flex items-center gap-1.5 text-2xs text-ink-dim">
+        <div className="text-2xs text-ink-dim mt-1 flex items-center gap-1.5">
           {ai && (
-            <span className="inline-flex items-center gap-1 text-accent">
+            <span className="text-accent inline-flex items-center gap-1">
               <Sparkles className="h-2.5 w-2.5" />
               Mila
             </span>

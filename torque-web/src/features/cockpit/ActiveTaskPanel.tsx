@@ -57,7 +57,7 @@ export function ActiveTaskPanel({ task, lead, hasQueue, firstQueuedId }: ActiveT
             <Icon className="h-4 w-4" strokeWidth={2} />
           </div>
           <div>
-            <div className="text-[10px] uppercase tracking-[0.14em] text-ink-dim">
+            <div className="text-ink-dim text-[10px] tracking-[0.14em] uppercase">
               {KIND_LABEL[task.kind]}
             </div>
             <Chronometer startedAt={task.startedAt} />
@@ -81,11 +81,11 @@ export function ActiveTaskPanel({ task, lead, hasQueue, firstQueuedId }: ActiveT
 
       {/* Title + description */}
       <div className="mt-6">
-        <h1 className="font-display text-[1.875rem] leading-[1.12] tracking-tightest text-ink">
+        <h1 className="font-display tracking-tightest text-ink text-[1.875rem] leading-[1.12]">
           {task.title}
         </h1>
         {task.description && (
-          <p className="mt-3 max-w-prose text-[0.9375rem] leading-relaxed text-ink-muted">
+          <p className="text-ink-muted mt-3 max-w-prose text-[0.9375rem] leading-relaxed">
             {task.description}
           </p>
         )}
@@ -95,12 +95,12 @@ export function ActiveTaskPanel({ task, lead, hasQueue, firstQueuedId }: ActiveT
       <div className="mt-5 flex flex-wrap items-center gap-1.5">
         <button
           type="button"
-          className="inline-flex items-center gap-1.5 rounded-full bg-[hsl(var(--clay-panel-down))] px-3 py-1.5 text-xs text-ink shadow-[var(--clay-shadow-sunken)] transition-colors hover:text-[hsl(var(--accent))]"
+          className="text-ink inline-flex items-center gap-1.5 rounded-full bg-[hsl(var(--clay-panel-down))] px-3 py-1.5 text-xs shadow-[var(--clay-shadow-sunken)] transition-colors hover:text-[hsl(var(--accent))]"
           aria-label={`Abrir lead ${lead.name}`}
         >
           <span className="inline-block h-1.5 w-1.5 rounded-full bg-[hsl(var(--channel-whatsapp))]" />
           <span className="max-w-[220px] truncate">{lead.name}</span>
-          <ExternalLink className="h-3 w-3 text-ink-dim" strokeWidth={1.75} />
+          <ExternalLink className="text-ink-dim h-3 w-3" strokeWidth={1.75} />
         </button>
 
         <ClayChip tone="info" size="sm">
@@ -124,7 +124,7 @@ export function ActiveTaskPanel({ task, lead, hasQueue, firstQueuedId }: ActiveT
       {/* Result note + actions */}
       <div className="mt-6 space-y-3">
         <label className="block">
-          <span className="mb-2 block text-[11px] uppercase tracking-[0.12em] text-ink-dim">
+          <span className="text-ink-dim mb-2 block text-[11px] tracking-[0.12em] uppercase">
             Resultado (opcional)
           </span>
           <textarea
@@ -135,7 +135,7 @@ export function ActiveTaskPanel({ task, lead, hasQueue, firstQueuedId }: ActiveT
             placeholder="Anote o desfecho, próximo passo, ou deixe vazio."
             className={cn(
               'w-full resize-none rounded-[var(--clay-radius-sm)] bg-[hsl(var(--clay-panel-down))] px-3.5 py-2.5',
-              'text-sm text-ink placeholder:text-ink-dim',
+              'text-ink placeholder:text-ink-dim text-sm',
               'shadow-[var(--clay-shadow-sunken)]',
               'transition-shadow focus:shadow-[var(--clay-ring-focus)] focus:outline-none'
             )}
@@ -179,7 +179,7 @@ function Chronometer({ startedAt }: { startedAt: string | null }) {
   }, [])
   if (!startedAt) return null
   return (
-    <div className="mt-0.5 font-mono text-[0.8125rem] tabular-nums text-ink">
+    <div className="text-ink mt-0.5 font-mono text-[0.8125rem] tabular-nums">
       {formatElapsedSince(startedAt)}
     </div>
   )
@@ -191,7 +191,7 @@ function HeatBadge({ heat }: { heat: 1 | 2 | 3 | 4 | 5 }) {
       className="inline-flex h-7 items-center gap-1 rounded-full bg-[hsl(var(--clay-panel-down))] px-2.5 shadow-[var(--clay-shadow-sunken)]"
       aria-label={`Calor ${heat} de 5`}
     >
-      <span className="text-[10px] uppercase tracking-[0.1em] text-ink-dim">Calor</span>
+      <span className="text-ink-dim text-[10px] tracking-[0.1em] uppercase">Calor</span>
       <span className="flex gap-0.5">
         {[1, 2, 3, 4, 5].map((n) => (
           <span
@@ -225,8 +225,8 @@ function EmptyActive({
       <div className="flex h-16 w-16 items-center justify-center rounded-full bg-[hsl(var(--clay-panel))] shadow-[var(--clay-shadow-raised)]">
         <Sparkles className="h-6 w-6 text-[hsl(var(--accent))]" strokeWidth={1.6} />
       </div>
-      <h2 className="mt-6 font-display text-[1.5rem] tracking-tightest text-ink">Respire fundo.</h2>
-      <p className="mt-2 max-w-[320px] text-center text-sm text-ink-muted">
+      <h2 className="font-display tracking-tightest text-ink mt-6 text-[1.5rem]">Respire fundo.</h2>
+      <p className="text-ink-muted mt-2 max-w-[320px] text-center text-sm">
         {hasQueue
           ? 'Sua fila está pronta. Inicie a próxima quando estiver.'
           : 'Nenhuma task na fila. Adicione do backlog ou aguarde atribuições.'}

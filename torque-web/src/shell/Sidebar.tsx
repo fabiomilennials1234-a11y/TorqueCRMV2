@@ -68,13 +68,13 @@ export function Sidebar() {
         'shadow-[inset_-1px_0_0_0_hsl(var(--hairline)/0.5)]'
       )}
     >
-      <div className="flex items-center gap-2.5 px-4 pb-3 pt-4">
+      <div className="flex items-center gap-2.5 px-4 pt-4 pb-3">
         <img
           src={theme === 'dark' ? torqueLogoDark : torqueLogoLight}
           alt="Torque"
           className="h-7 w-auto"
         />
-        <span className="font-metric ml-auto text-2xs tabular-nums text-ink-dim">v1.0</span>
+        <span className="font-metric text-2xs text-ink-dim ml-auto tabular-nums">v1.0</span>
       </div>
 
       <div className="px-3 pb-3">
@@ -116,7 +116,7 @@ export function Sidebar() {
 function NavGroup({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div className="mb-6">
-      <div className="px-2 pb-1.5 pt-2 text-2xs font-medium uppercase tracking-[0.14em] text-ink-dim">
+      <div className="text-2xs text-ink-dim px-2 pt-2 pb-1.5 font-medium tracking-[0.14em] uppercase">
         {label}
       </div>
       <ul className="space-y-1">{children}</ul>
@@ -145,7 +145,7 @@ function SidebarLink({ item }: { item: NavItem }) {
           {({ isActive }) => (
             <>
               {isActive && (
-                <span className="absolute left-0 top-1/2 h-4 w-[2px] -translate-y-1/2 rounded-full bg-accent" />
+                <span className="bg-accent absolute top-1/2 left-0 h-4 w-[2px] -translate-y-1/2 rounded-full" />
               )}
               <Icon
                 className={cn(
@@ -156,7 +156,7 @@ function SidebarLink({ item }: { item: NavItem }) {
               />
               <span className="flex-1 truncate">{item.label}</span>
               {item.badge && (
-                <span className="font-metric text-2xs tabular-nums text-ink-dim">{item.badge}</span>
+                <span className="font-metric text-2xs text-ink-dim tabular-nums">{item.badge}</span>
               )}
             </>
           )}

@@ -12,12 +12,12 @@ exports[`QuotaGauge > renders bar 0% 1`] = `
         class="flex items-center justify-between"
       >
         <span
-          class="text-2xs font-medium text-ink-muted"
+          class="text-2xs text-ink-muted font-medium"
         >
           Leads
         </span>
         <span
-          class="font-metric text-2xs tabular-nums text-ink-muted"
+          class="font-metric text-2xs text-ink-muted tabular-nums"
         >
           0
           <span
@@ -29,10 +29,10 @@ exports[`QuotaGauge > renders bar 0% 1`] = `
         </span>
       </div>
       <div
-        class="relative h-1.5 w-full overflow-hidden rounded-full bg-hairline/40"
+        class="bg-hairline/40 relative h-1.5 w-full overflow-hidden rounded-full"
       >
         <div
-          class="duration-[280ms] ease-[var(--ease-out-soft)] absolute inset-y-0 left-0 rounded-full transition-[width,background-color]"
+          class="absolute inset-y-0 left-0 rounded-full transition-[width,background-color] duration-[280ms] ease-[var(--ease-out-soft)]"
           style="width: 0%; background-color: hsl(var(--success));"
         />
       </div>
@@ -53,12 +53,12 @@ exports[`QuotaGauge > renders bar 50% 1`] = `
         class="flex items-center justify-between"
       >
         <span
-          class="text-2xs font-medium text-ink-muted"
+          class="text-2xs text-ink-muted font-medium"
         >
           Leads
         </span>
         <span
-          class="font-metric text-2xs tabular-nums text-ink-muted"
+          class="font-metric text-2xs text-ink-muted tabular-nums"
         >
           50
           <span
@@ -70,10 +70,10 @@ exports[`QuotaGauge > renders bar 50% 1`] = `
         </span>
       </div>
       <div
-        class="relative h-1.5 w-full overflow-hidden rounded-full bg-hairline/40"
+        class="bg-hairline/40 relative h-1.5 w-full overflow-hidden rounded-full"
       >
         <div
-          class="duration-[280ms] ease-[var(--ease-out-soft)] absolute inset-y-0 left-0 rounded-full transition-[width,background-color]"
+          class="absolute inset-y-0 left-0 rounded-full transition-[width,background-color] duration-[280ms] ease-[var(--ease-out-soft)]"
           style="width: 50%; background-color: hsl(var(--success));"
         />
       </div>
@@ -94,12 +94,12 @@ exports[`QuotaGauge > renders bar 100% 1`] = `
         class="flex items-center justify-between"
       >
         <span
-          class="text-2xs font-medium text-ink-muted"
+          class="text-2xs text-ink-muted font-medium"
         >
           Leads
         </span>
         <span
-          class="font-metric text-2xs tabular-nums text-ink-muted"
+          class="font-metric text-2xs text-ink-muted tabular-nums"
         >
           100
           <span
@@ -111,10 +111,10 @@ exports[`QuotaGauge > renders bar 100% 1`] = `
         </span>
       </div>
       <div
-        class="relative h-1.5 w-full overflow-hidden rounded-full bg-hairline/40"
+        class="bg-hairline/40 relative h-1.5 w-full overflow-hidden rounded-full"
       >
         <div
-          class="duration-[280ms] ease-[var(--ease-out-soft)] absolute inset-y-0 left-0 rounded-full transition-[width,background-color]"
+          class="absolute inset-y-0 left-0 rounded-full transition-[width,background-color] duration-[280ms] ease-[var(--ease-out-soft)]"
           style="width: 100%; background-color: hsl(var(--danger));"
         />
       </div>
@@ -132,11 +132,11 @@ exports[`QuotaGauge > renders inline locked 1`] = `
       class="inline-flex items-center gap-1.5"
     >
       <span
-        class="duration-[280ms] ease-[var(--ease-out-soft)] inline-block h-1.5 w-1.5 rounded-full transition-colors"
+        class="inline-block h-1.5 w-1.5 rounded-full transition-colors duration-[280ms] ease-[var(--ease-out-soft)]"
         style="background-color: hsl(var(--warning));"
       />
       <span
-        class="font-metric text-sm tabular-nums text-ink"
+        class="font-metric text-ink text-sm tabular-nums"
       >
         8
         <span
@@ -147,7 +147,7 @@ exports[`QuotaGauge > renders inline locked 1`] = `
         </span>
       </span>
       <svg
-        class="lucide lucide-lock h-3 w-3 text-ink-dim"
+        class="lucide lucide-lock text-ink-dim h-3 w-3"
         fill="none"
         height="24"
         stroke="currentColor"
@@ -215,7 +215,7 @@ exports[`QuotaGauge > renders ring variant at 72% 1`] = `
         class="absolute inset-0 flex flex-col items-center justify-center"
       >
         <span
-          class="font-metric text-[0.8125rem] tabular-nums leading-none text-ink"
+          class="font-metric text-ink text-[0.8125rem] leading-none tabular-nums"
         >
           72
         </span>

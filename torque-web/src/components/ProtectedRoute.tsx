@@ -10,9 +10,9 @@ export function ProtectedRoute() {
 
   if (isLoading) {
     return (
-      <div className="flex h-screen w-screen items-center justify-center bg-bg">
+      <div className="bg-bg flex h-screen w-screen items-center justify-center">
         <div
-          className="h-8 w-48 animate-shimmer rounded bg-surface bg-gradient-to-r from-surface via-elevated to-surface bg-[length:200%_100%]"
+          className="animate-shimmer bg-surface from-surface via-elevated to-surface h-8 w-48 rounded bg-gradient-to-r bg-[length:200%_100%]"
           aria-label="Carregando..."
         />
       </div>

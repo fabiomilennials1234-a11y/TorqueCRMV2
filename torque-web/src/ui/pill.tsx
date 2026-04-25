@@ -15,7 +15,7 @@ export function Pill({
       type="button"
       className={cn(
         'inline-flex h-6 items-center gap-1.5 rounded-full px-2.5 text-[0.75rem] font-medium',
-        'whitespace-nowrap shadow-hairline transition-colors',
+        'shadow-hairline whitespace-nowrap transition-colors',
         active
           ? 'bg-accent/15 text-accent shadow-[inset_0_0_0_1px_hsl(var(--accent)/0.4)]'
           : 'text-ink-muted hover:bg-elevated/60 hover:text-ink',

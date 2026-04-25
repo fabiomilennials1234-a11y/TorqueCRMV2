@@ -75,19 +75,19 @@ function NoSubscription() {
   }
 
   return (
-    <div className="mt-6 rounded-lg bg-surface p-8 shadow-elev-1">
-      <h2 className="font-display text-xl text-ink">Você ainda não tem uma assinatura ativa</h2>
-      <p className="mt-2 text-sm text-ink-muted">
+    <div className="bg-surface shadow-elev-1 mt-6 rounded-lg p-8">
+      <h2 className="font-display text-ink text-xl">Você ainda não tem uma assinatura ativa</h2>
+      <p className="text-ink-muted mt-2 text-sm">
         Escolha um plano e gere a cobrança PIX. Após o pagamento, sua organização é habilitada
         automaticamente.
       </p>
 
-      <div className="mt-6 flex items-center justify-between rounded-md bg-elevated/40 px-5 py-4 shadow-hairline">
+      <div className="bg-elevated/40 shadow-hairline mt-6 flex items-center justify-between rounded-md px-5 py-4">
         <div>
-          <div className="text-sm text-ink">{PLAN.label}</div>
-          <div className="text-xs text-ink-muted">Assinatura mensal</div>
+          <div className="text-ink text-sm">{PLAN.label}</div>
+          <div className="text-ink-muted text-xs">Assinatura mensal</div>
         </div>
-        <div className="font-metric text-lg text-ink">{formatMoney(PLAN.monthlyCents, 'BRL')}</div>
+        <div className="font-metric text-ink text-lg">{formatMoney(PLAN.monthlyCents, 'BRL')}</div>
       </div>
 
       <div className="mt-6 flex gap-2">
@@ -102,7 +102,7 @@ function NoSubscription() {
       </div>
 
       {startedId && (
-        <p className="mt-4 text-xs text-ink-dim">
+        <p className="text-ink-dim mt-4 text-xs">
           Cobrança {startedId} gerada. Aguardando confirmação do pagamento.
         </p>
       )}
@@ -115,11 +115,11 @@ function ActiveSubscription({ subscription }: { subscription: Subscription }) {
   return (
     <div className="mt-6 space-y-4">
       <div className="flex items-center gap-3">
-        <h2 className="font-display text-xl text-ink">{subscription.plan_id}</h2>
+        <h2 className="font-display text-ink text-xl">{subscription.plan_id}</h2>
         <StatusBadge status={subscription.status} />
       </div>
 
-      <div className="rounded-lg bg-surface p-6 shadow-elev-1">
+      <div className="bg-surface shadow-elev-1 rounded-lg p-6">
         <Row label="Valor" value={formatMoney(subscription.amount_cents, subscription.currency)} />
         <Row label="Provedor" value={subscription.provider} />
         {subscription.current_period_end && (
@@ -131,12 +131,12 @@ function ActiveSubscription({ subscription }: { subscription: Subscription }) {
       </div>
 
       {subscription.status === 'pending' && subscription.pix_qr_code && (
-        <div className="rounded-lg bg-surface p-6 shadow-elev-1">
-          <h3 className="font-display text-lg text-ink">Pague via PIX</h3>
-          <p className="mt-1 text-xs text-ink-muted">
+        <div className="bg-surface shadow-elev-1 rounded-lg p-6">
+          <h3 className="font-display text-ink text-lg">Pague via PIX</h3>
+          <p className="text-ink-muted mt-1 text-xs">
             Copie o código abaixo ou escaneie o QR no app do seu banco.
           </p>
-          <pre className="mt-3 max-w-full overflow-x-auto rounded-md bg-elevated/40 p-3 font-mono text-xs text-ink">
+          <pre className="bg-elevated/40 text-ink mt-3 max-w-full overflow-x-auto rounded-md p-3 font-mono text-xs">
             {subscription.pix_qr_code}
           </pre>
         </div>

@@ -6,7 +6,7 @@ exports[`EmptyState > renders title only 1`] = `
     class="flex flex-col items-center justify-center px-6 py-16 text-center"
   >
     <h3
-      class="font-display text-lg tracking-tightest text-ink"
+      class="font-display tracking-tightest text-ink text-lg"
     >
       Nenhum lead
     </h3>
@@ -20,10 +20,10 @@ exports[`EmptyState > renders with icon + description + action 1`] = `
     class="flex flex-col items-center justify-center px-6 py-16 text-center"
   >
     <div
-      class="mx-auto mb-4 flex h-11 w-11 items-center justify-center rounded-md bg-elevated shadow-hairline"
+      class="bg-elevated shadow-hairline mx-auto mb-4 flex h-11 w-11 items-center justify-center rounded-md"
     >
       <svg
-        class="lucide lucide-inbox h-5 w-5 text-ink-dim"
+        class="lucide lucide-inbox text-ink-dim h-5 w-5"
         fill="none"
         height="24"
         stroke="currentColor"
@@ -43,12 +43,12 @@ exports[`EmptyState > renders with icon + description + action 1`] = `
       </svg>
     </div>
     <h3
-      class="font-display text-lg tracking-tightest text-ink"
+      class="font-display tracking-tightest text-ink text-lg"
     >
       Inbox vazia
     </h3>
     <p
-      class="mx-auto mt-2 max-w-sm text-sm text-ink-muted"
+      class="text-ink-muted mx-auto mt-2 max-w-sm text-sm"
     >
       Você respondeu todas as conversas — hora de prospectar.
     </p>

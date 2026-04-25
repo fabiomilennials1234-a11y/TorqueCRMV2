@@ -1,6 +1,8 @@
 import type { Config } from 'tailwindcss'
-import animate from 'tailwindcss-animate'
 
+// Tailwind v4: tailwindcss-animate descontinuado, substituido por
+// tw-animate-css importado direto em src/styles/globals.css.
+// Config legacy preservada via @config directive na globals.css.
 const config: Config = {
   darkMode: 'class',
   content: ['./index.html', './src/**/*.{ts,tsx}'],
@@ -132,7 +134,7 @@ const config: Config = {
       },
     },
   },
-  plugins: [animate],
+  plugins: [],
 }
 
 export default config

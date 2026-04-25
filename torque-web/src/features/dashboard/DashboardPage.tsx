@@ -25,7 +25,7 @@ export function DashboardPage() {
 
   return (
     <div className="relative">
-      <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-accent/40 to-transparent" />
+      <div className="via-accent/40 absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent to-transparent" />
 
       <div className="mx-auto max-w-[1400px] px-8">
         <PageHeader
@@ -59,7 +59,7 @@ export function DashboardPage() {
 
         <div className="mt-8 grid gap-6 lg:grid-cols-3">
           {/* Pipeline snapshot — clay */}
-          <Card className="tactile-surface !rounded-xl !shadow-clay-1 hover:!shadow-clay-2 lg:col-span-2">
+          <Card className="tactile-surface !shadow-clay-1 hover:!shadow-clay-2 !rounded-xl lg:col-span-2">
             <CardHeader>
               <CardTitle>Funil · WhatsApp</CardTitle>
               <div className="flex items-center gap-2">
@@ -75,17 +75,17 @@ export function DashboardPage() {
                 {hot.map((l) => (
                   <div
                     key={l.id}
-                    className="group -mx-2 flex cursor-pointer items-center gap-3 rounded-md px-2 py-2 transition-colors hover:bg-elevated/50"
+                    className="group hover:bg-elevated/50 -mx-2 flex cursor-pointer items-center gap-3 rounded-md px-2 py-2 transition-colors"
                   >
-                    <div className="flex h-2 w-2 shrink-0 rounded-full bg-accent shadow-[0_0_0_3px_hsl(var(--accent)/0.15)]" />
+                    <div className="bg-accent flex h-2 w-2 shrink-0 rounded-full shadow-[0_0_0_3px_hsl(var(--accent)/0.15)]" />
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-2">
-                        <span className="truncate text-sm text-ink">{l.name}</span>
-                        <span className="text-2xs uppercase tracking-[0.1em] text-ink-dim">
+                        <span className="text-ink truncate text-sm">{l.name}</span>
+                        <span className="text-2xs text-ink-dim tracking-[0.1em] uppercase">
                           {l.company}
                         </span>
                       </div>
-                      <div className="mt-0.5 flex items-center gap-2 text-2xs text-ink-dim">
+                      <div className="text-2xs text-ink-dim mt-0.5 flex items-center gap-2">
                         <span className="font-metric tabular-nums">{formatCurrency(l.value)}</span>
                         <span>·</span>
                         <span>{formatShort(l.stage)}</span>
@@ -93,7 +93,7 @@ export function DashboardPage() {
                         <span>último toque {formatRelative(l.lastTouch)}</span>
                       </div>
                     </div>
-                    <div className="font-metric text-sm tabular-nums text-accent">{l.score}</div>
+                    <div className="font-metric text-accent text-sm tabular-nums">{l.score}</div>
                     <Avatar size="sm" fallback={l.owner.initials} />
                   </div>
                 ))}
@@ -101,29 +101,29 @@ export function DashboardPage() {
             </CardBody>
             <CardFooter className="flex items-center justify-between">
               <span className="inline-flex items-center gap-2">
-                <Flame className="h-3 w-3 text-accent" />5 leads quentes na sua operação
+                <Flame className="text-accent h-3 w-3" />5 leads quentes na sua operação
               </span>
-              <button type="button" className="flex items-center gap-1 text-ink hover:text-accent">
+              <button type="button" className="text-ink hover:text-accent flex items-center gap-1">
                 abrir tudo <ArrowUpRight className="h-3 w-3" />
               </button>
             </CardFooter>
           </Card>
 
           {/* Live activity — clay */}
-          <Card className="tactile-surface !rounded-xl !shadow-clay-1 hover:!shadow-clay-2">
+          <Card className="tactile-surface !shadow-clay-1 hover:!shadow-clay-2 !rounded-xl">
             <CardHeader>
               <CardTitle>Atividade em tempo real</CardTitle>
-              <div className="flex items-center gap-1.5 text-2xs text-ink-dim">
+              <div className="text-2xs text-ink-dim flex items-center gap-1.5">
                 <span className="relative flex h-2 w-2">
-                  <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-success opacity-75" />
-                  <span className="relative inline-flex h-2 w-2 rounded-full bg-success" />
+                  <span className="bg-success absolute inline-flex h-full w-full animate-ping rounded-full opacity-75" />
+                  <span className="bg-success relative inline-flex h-2 w-2 rounded-full" />
                 </span>
                 ao vivo
               </div>
             </CardHeader>
             <CardBody className="pr-3">
               <ol className="relative space-y-4">
-                <div className="absolute bottom-1 left-[7px] top-1 w-px bg-hairline" />
+                <div className="bg-hairline absolute top-1 bottom-1 left-[7px] w-px" />
                 {activity.map((a, i) => (
                   <ActivityRow key={i} {...a} />
                 ))}
@@ -155,9 +155,9 @@ export function DashboardPage() {
           />
         </div>
 
-        <div className="mb-10 mt-10 flex items-center justify-between pt-6 text-2xs text-ink-dim shadow-[inset_0_1px_0_0_hsl(var(--hairline))]">
+        <div className="text-2xs text-ink-dim mt-10 mb-10 flex items-center justify-between pt-6 shadow-[inset_0_1px_0_0_hsl(var(--hairline))]">
           <div className="flex items-center gap-3">
-            <Trophy className="h-3 w-3 text-accent" />
+            <Trophy className="text-accent h-3 w-3" />
             <span className="font-metric">
               Rafael Bento lidera o mês com R$ 340k em funil movimentado
             </span>
@@ -193,15 +193,15 @@ function Kpi({
     : value.toLocaleString('pt-BR', { maximumFractionDigits: 1 })
 
   return (
-    <div className="tactile-kpi ease-[var(--ease-out-soft)] rounded-xl p-6 shadow-clay-1 transition-shadow duration-200 hover:shadow-clay-2">
-      <div className="text-2xs font-medium uppercase tracking-[0.14em] text-ink-dim">{label}</div>
+    <div className="tactile-kpi shadow-clay-1 hover:shadow-clay-2 rounded-xl p-6 transition-shadow duration-200 ease-[var(--ease-out-soft)]">
+      <div className="text-2xs text-ink-dim font-medium tracking-[0.14em] uppercase">{label}</div>
       <div className="mt-3 flex items-end justify-between gap-4">
         <div className="flex items-baseline gap-1">
-          {currency && <span className="font-metric text-sm text-ink-dim">R$</span>}
-          <span className="font-display text-[1.9rem] tabular-nums leading-none tracking-tightest text-ink">
+          {currency && <span className="font-metric text-ink-dim text-sm">R$</span>}
+          <span className="font-display tracking-tightest text-ink text-[1.9rem] leading-none tabular-nums">
             {display}
           </span>
-          {suffix && <span className="font-metric pb-1 text-sm text-ink-dim">{suffix}</span>}
+          {suffix && <span className="font-metric text-ink-dim pb-1 text-sm">{suffix}</span>}
         </div>
         <Sparkline data={spark} width={100} height={28} />
       </div>
@@ -212,7 +212,7 @@ function Kpi({
         ].join(' ')}
       >
         {up ? <ArrowUpRight className="h-3 w-3" /> : <ArrowDownRight className="h-3 w-3" />}
-        {(delta * 100).toFixed(1)}%<span className="ml-1 text-ink-dim">vs semana passada</span>
+        {(delta * 100).toFixed(1)}%<span className="text-ink-dim ml-1">vs semana passada</span>
       </div>
     </div>
   )
@@ -248,9 +248,9 @@ function StageBar() {
           <div key={d.label}>
             <div className="flex items-center gap-1.5">
               <span className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: d.color }} />
-              <span className="text-2xs uppercase tracking-[0.1em] text-ink-dim">{d.label}</span>
+              <span className="text-2xs text-ink-dim tracking-[0.1em] uppercase">{d.label}</span>
             </div>
-            <div className="font-metric mt-0.5 text-sm tabular-nums text-ink">{d.n}</div>
+            <div className="font-metric text-ink mt-0.5 text-sm tabular-nums">{d.n}</div>
           </div>
         ))}
       </div>
@@ -283,16 +283,16 @@ function ActivityRow({
             : 'bg-ink-dim'
   return (
     <li className="relative pl-6">
-      <span className={`absolute left-1 top-1.5 h-1.5 w-1.5 rounded-full ${dot} ring-4 ring-bg`} />
+      <span className={`absolute top-1.5 left-1 h-1.5 w-1.5 rounded-full ${dot} ring-bg ring-4`} />
       <div className="flex items-baseline justify-between gap-3">
         <div className="min-w-0 flex-1">
-          <div className="text-sm text-ink">
+          <div className="text-ink text-sm">
             <span className="font-medium">{who}</span>{' '}
             <span className="text-ink-muted">{text}</span>
           </div>
-          {meta && <div className="mt-0.5 text-2xs text-ink-dim">{meta}</div>}
+          {meta && <div className="text-2xs text-ink-dim mt-0.5">{meta}</div>}
         </div>
-        <time className="font-metric text-2xs tabular-nums text-ink-dim">{formatRelative(at)}</time>
+        <time className="font-metric text-2xs text-ink-dim tabular-nums">{formatRelative(at)}</time>
       </div>
     </li>
   )
@@ -314,21 +314,21 @@ function ShortcutCard({
   return (
     <a
       href={to}
-      className="tactile-surface ease-[var(--ease-out-soft)] group relative flex items-center gap-4 rounded-xl p-4 shadow-clay-1 transition-all duration-200 hover:-translate-y-px hover:shadow-clay-2 active:translate-y-0 active:shadow-clay-pressed"
+      className="tactile-surface group shadow-clay-1 hover:shadow-clay-2 active:shadow-clay-pressed relative flex items-center gap-4 rounded-xl p-4 transition-all duration-200 ease-[var(--ease-out-soft)] hover:-translate-y-px active:translate-y-0"
     >
       <div
         className={[
-          'flex h-10 w-10 items-center justify-center rounded-lg shadow-clay-pressed',
+          'shadow-clay-pressed flex h-10 w-10 items-center justify-center rounded-lg',
           tone === 'warning' ? 'bg-warning/10 text-warning' : 'bg-elevated/80 text-ink-muted',
         ].join(' ')}
       >
         <Icon className="h-4 w-4" strokeWidth={1.75} />
       </div>
       <div className="min-w-0 flex-1">
-        <div className="text-sm font-medium text-ink">{title}</div>
-        <div className="text-xs text-ink-dim">{subtitle}</div>
+        <div className="text-ink text-sm font-medium">{title}</div>
+        <div className="text-ink-dim text-xs">{subtitle}</div>
       </div>
-      <ArrowUpRight className="h-4 w-4 text-ink-dim transition-transform duration-200 group-hover:-translate-y-0.5 group-hover:translate-x-0.5 group-hover:text-ink" />
+      <ArrowUpRight className="text-ink-dim group-hover:text-ink h-4 w-4 transition-transform duration-200 group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
     </a>
   )
 }

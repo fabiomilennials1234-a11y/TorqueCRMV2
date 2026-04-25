@@ -6,7 +6,7 @@ export function Kbd({ className, children, ...props }: HTMLAttributes<HTMLSpanEl
     <kbd
       className={cn(
         'inline-flex h-[18px] min-w-[18px] items-center justify-center rounded-xs px-1',
-        'font-mono text-[0.6875rem] font-medium text-ink-muted',
+        'text-ink-muted font-mono text-[0.6875rem] font-medium',
         'bg-elevated/70 shadow-hairline',
         className
       )}

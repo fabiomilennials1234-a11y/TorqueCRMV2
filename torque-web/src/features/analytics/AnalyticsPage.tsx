@@ -27,14 +27,14 @@ export function AnalyticsPage() {
       />
 
       <div className="mt-6 flex flex-wrap items-center gap-1.5">
-        <span className="pr-1 text-2xs uppercase tracking-[0.12em] text-ink-dim">Segmento</span>
+        <span className="text-2xs text-ink-dim pr-1 tracking-[0.12em] uppercase">Segmento</span>
         {['Todos', 'Inbound', 'Outbound', 'Indicação'].map((s, i) => (
           <Pill key={s} active={i === 1}>
             {s}
           </Pill>
         ))}
-        <div className="mx-2 h-4 w-px bg-hairline" />
-        <span className="pr-1 text-2xs uppercase tracking-[0.12em] text-ink-dim">Funil</span>
+        <div className="bg-hairline mx-2 h-4 w-px" />
+        <span className="text-2xs text-ink-dim pr-1 tracking-[0.12em] uppercase">Funil</span>
         {['Todos', 'WhatsApp', 'Confirmação', 'Propostas'].map((s, i) => (
           <Pill key={s} active={i === 0}>
             {s}
@@ -47,7 +47,7 @@ export function AnalyticsPage() {
         <Card>
           <CardHeader>
             <CardTitle>Receita fechada · Abril</CardTitle>
-            <div className="font-metric flex items-center gap-1.5 text-xs text-success">
+            <div className="font-metric text-success flex items-center gap-1.5 text-xs">
               <ArrowUpRight className="h-3 w-3" />
               +18.4% vs mês anterior
             </div>
@@ -55,10 +55,10 @@ export function AnalyticsPage() {
           <CardBody>
             <div className="flex items-baseline gap-3">
               <span className="font-metric text-ink-dim">R$</span>
-              <span className="font-display text-[3.25rem] tabular-nums leading-none tracking-tightest text-ink">
+              <span className="font-display tracking-tightest text-ink text-[3.25rem] leading-none tabular-nums">
                 2,4M
               </span>
-              <span className="text-sm text-ink-muted">vs R$ 2,1M · Mar</span>
+              <span className="text-ink-muted text-sm">vs R$ 2,1M · Mar</span>
             </div>
 
             {/* Full-width chart mock */}
@@ -66,7 +66,7 @@ export function AnalyticsPage() {
               <AreaChart />
             </div>
 
-            <div className="mt-6 grid grid-cols-4 gap-px overflow-hidden rounded bg-hairline">
+            <div className="bg-hairline mt-6 grid grid-cols-4 gap-px overflow-hidden rounded">
               {[
                 { l: 'Meta', v: 'R$ 2,2M', t: 'up', d: '+9%' },
                 { l: 'Realizado', v: 'R$ 2,4M', t: 'up', d: '109%' },
@@ -74,8 +74,8 @@ export function AnalyticsPage() {
                 { l: 'Win rate', v: '28.4%', t: 'up', d: '+2.1pp' },
               ].map((k) => (
                 <div key={k.l} className="bg-surface p-4">
-                  <div className="text-2xs uppercase tracking-[0.12em] text-ink-dim">{k.l}</div>
-                  <div className="font-metric mt-1 text-lg tabular-nums text-ink">{k.v}</div>
+                  <div className="text-2xs text-ink-dim tracking-[0.12em] uppercase">{k.l}</div>
+                  <div className="font-metric text-ink mt-1 text-lg tabular-nums">{k.v}</div>
                   <div className="font-metric text-2xs text-success">{k.d}</div>
                 </div>
               ))}
@@ -194,12 +194,12 @@ function Funnel() {
       {steps.map((s, i) => (
         <div key={s.label}>
           <div className="mb-1 flex items-baseline justify-between">
-            <span className="text-sm text-ink-muted">{s.label}</span>
-            <span className="font-metric text-sm tabular-nums text-ink">
+            <span className="text-ink-muted text-sm">{s.label}</span>
+            <span className="font-metric text-ink text-sm tabular-nums">
               {s.value.toLocaleString('pt-BR')}
             </span>
           </div>
-          <div className="relative h-8 rounded-xs bg-elevated/50">
+          <div className="bg-elevated/50 relative h-8 rounded-xs">
             <div
               className="absolute inset-y-0 left-0 rounded-xs"
               style={{
@@ -207,7 +207,7 @@ function Funnel() {
                 background: `linear-gradient(90deg, hsl(var(--stage-${i + 1})) 0%, hsl(var(--stage-${i + 1})/0.6) 100%)`,
               }}
             />
-            <span className="font-metric absolute inset-y-0 right-2 flex items-center text-2xs tabular-nums text-ink-dim">
+            <span className="font-metric text-2xs text-ink-dim absolute inset-y-0 right-2 flex items-center tabular-nums">
               {s.pct.toFixed(1)}%
             </span>
           </div>
@@ -255,7 +255,7 @@ function RankingTable() {
   return (
     <table className="w-full text-sm">
       <thead>
-        <tr className="text-2xs uppercase tracking-[0.12em] text-ink-dim">
+        <tr className="text-2xs text-ink-dim tracking-[0.12em] uppercase">
           <th className="px-5 py-2 text-left font-medium">#</th>
           <th className="px-5 py-2 text-left font-medium">Vendedor</th>
           <th className="px-3 py-2 text-right font-medium">Ganhos</th>
@@ -268,28 +268,28 @@ function RankingTable() {
         {members.map((m, i) => (
           <tr
             key={m.name}
-            className="shadow-[inset_0_1px_0_0_hsl(var(--hairline))] transition-colors hover:bg-elevated/40"
+            className="hover:bg-elevated/40 shadow-[inset_0_1px_0_0_hsl(var(--hairline))] transition-colors"
           >
             <td className="px-5 py-3">
               <span
-                className={`font-metric inline-flex h-5 min-w-5 items-center justify-center rounded-xs text-2xs ${i === 0 ? 'bg-accent text-bg' : 'bg-elevated text-ink-muted shadow-hairline'}`}
+                className={`font-metric text-2xs inline-flex h-5 min-w-5 items-center justify-center rounded-xs ${i === 0 ? 'bg-accent text-bg' : 'bg-elevated text-ink-muted shadow-hairline'}`}
               >
                 {i + 1}
               </span>
             </td>
             <td className="px-5 py-3">
               <div className="flex items-center gap-2.5">
-                <div className="font-metric flex h-7 w-7 items-center justify-center rounded-full bg-elevated text-2xs text-ink-muted">
+                <div className="font-metric bg-elevated text-2xs text-ink-muted flex h-7 w-7 items-center justify-center rounded-full">
                   {m.initials}
                 </div>
                 <span className="text-ink">{m.name}</span>
               </div>
             </td>
-            <td className="font-metric px-3 py-3 text-right tabular-nums text-ink">{m.won}</td>
-            <td className="font-metric px-3 py-3 text-right tabular-nums text-ink">
+            <td className="font-metric text-ink px-3 py-3 text-right tabular-nums">{m.won}</td>
+            <td className="font-metric text-ink px-3 py-3 text-right tabular-nums">
               R$ {m.revenue.toLocaleString('pt-BR')}
             </td>
-            <td className="font-metric px-3 py-3 text-right tabular-nums text-ink-muted">
+            <td className="font-metric text-ink-muted px-3 py-3 text-right tabular-nums">
               {m.response}
             </td>
             <td className="px-5 py-3 text-right">
@@ -315,14 +315,14 @@ function UTMList() {
       {sources.map((s) => (
         <div key={s.name}>
           <div className="flex items-baseline justify-between">
-            <span className="font-metric text-sm text-ink">{s.name}</span>
-            <div className="font-metric flex items-center gap-4 text-xs tabular-nums text-ink-muted">
+            <span className="font-metric text-ink text-sm">{s.name}</span>
+            <div className="font-metric text-ink-muted flex items-center gap-4 text-xs tabular-nums">
               <span>{s.leads} leads</span>
               <span className="text-success">{s.won} ganhos</span>
             </div>
           </div>
-          <div className="mt-1 h-1 overflow-hidden rounded-full bg-hairline">
-            <div className="h-full rounded-full bg-ink-muted" style={{ width: `${s.pct}%` }} />
+          <div className="bg-hairline mt-1 h-1 overflow-hidden rounded-full">
+            <div className="bg-ink-muted h-full rounded-full" style={{ width: `${s.pct}%` }} />
           </div>
         </div>
       ))}

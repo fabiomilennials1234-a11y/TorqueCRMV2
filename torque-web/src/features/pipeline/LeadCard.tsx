@@ -20,15 +20,15 @@ export function LeadCard({ lead, onClick }: { lead: Lead; onClick: () => void })
       className={cn(
         'group relative cursor-pointer rounded-xl p-3',
         'tactile-surface shadow-clay-1',
-        'ease-[var(--ease-out-soft)] transition-all duration-200',
-        'hover:-translate-y-px hover:shadow-clay-2',
-        'active:translate-y-0 active:scale-[0.985] active:shadow-clay-pressed',
+        'transition-all duration-200 ease-[var(--ease-out-soft)]',
+        'hover:shadow-clay-2 hover:-translate-y-px',
+        'active:shadow-clay-pressed active:translate-y-0 active:scale-[0.985]',
         'focus-visible:outline-none'
       )}
     >
       {/* Left accent bar appears on hot leads */}
       {lead.score >= 80 && (
-        <span className="absolute bottom-2 left-0 top-2 w-[2px] rounded-full bg-accent" />
+        <span className="bg-accent absolute top-2 bottom-2 left-0 w-[2px] rounded-full" />
       )}
 
       <div className="flex items-start justify-between gap-2">
@@ -36,15 +36,15 @@ export function LeadCard({ lead, onClick }: { lead: Lead; onClick: () => void })
           <div className="flex items-center gap-1.5">
             {lead.unread && lead.unread > 0 && (
               <span className="relative flex h-1.5 w-1.5 shrink-0">
-                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-accent opacity-60" />
-                <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-accent" />
+                <span className="bg-accent absolute inline-flex h-full w-full animate-ping rounded-full opacity-60" />
+                <span className="bg-accent relative inline-flex h-1.5 w-1.5 rounded-full" />
               </span>
             )}
-            <h4 className="truncate text-[0.875rem] font-medium leading-tight text-ink">
+            <h4 className="text-ink truncate text-[0.875rem] leading-tight font-medium">
               {lead.name}
             </h4>
           </div>
-          <div className="mt-0.5 truncate text-2xs uppercase tracking-[0.1em] text-ink-dim">
+          <div className="text-2xs text-ink-dim mt-0.5 truncate tracking-[0.1em] uppercase">
             {lead.company}
           </div>
         </div>
@@ -54,7 +54,7 @@ export function LeadCard({ lead, onClick }: { lead: Lead; onClick: () => void })
       {/* Value */}
       <div className="mt-2 flex items-baseline gap-1">
         <span className="text-2xs text-ink-dim">R$</span>
-        <span className="font-metric text-[0.9375rem] tabular-nums text-ink">
+        <span className="font-metric text-ink text-[0.9375rem] tabular-nums">
           {lead.value.toLocaleString('pt-BR', { maximumFractionDigits: 0 })}
         </span>
       </div>
@@ -73,7 +73,7 @@ export function LeadCard({ lead, onClick }: { lead: Lead; onClick: () => void })
 
       {/* Footer */}
       <div className="mt-3 flex items-center justify-between gap-2 pt-2 shadow-[inset_0_1px_0_0_hsl(var(--hairline))]">
-        <div className="flex items-center gap-2 text-2xs text-ink-dim">
+        <div className="text-2xs text-ink-dim flex items-center gap-2">
           {lead.notesCount ? (
             <span className="inline-flex items-center gap-1">
               <StickyNote className="h-3 w-3" />
@@ -81,13 +81,13 @@ export function LeadCard({ lead, onClick }: { lead: Lead; onClick: () => void })
             </span>
           ) : null}
           {lead.tasksDue ? (
-            <span className="inline-flex items-center gap-1 text-warning">
+            <span className="text-warning inline-flex items-center gap-1">
               <CheckCircle2 className="h-3 w-3" />
               {lead.tasksDue}
             </span>
           ) : null}
           {lead.unread ? (
-            <span className="inline-flex items-center gap-1 text-accent">
+            <span className="text-accent inline-flex items-center gap-1">
               <MessageSquare className="h-3 w-3" />
               {lead.unread}
             </span>

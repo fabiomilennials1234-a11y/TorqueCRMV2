@@ -75,10 +75,10 @@ export function ConversationList(props: ConversationListProps) {
       aria-label="Lista de conversas"
       className="flex w-[340px] shrink-0 flex-col shadow-[inset_-1px_0_0_0_hsl(var(--hairline))]"
     >
-      <div className="shrink-0 px-4 pb-3 pt-4">
-        <h2 className="mb-3 font-display text-xl tracking-tightest text-ink">Conversas</h2>
+      <div className="shrink-0 px-4 pt-4 pb-3">
+        <h2 className="font-display tracking-tightest text-ink mb-3 text-xl">Conversas</h2>
         <div className="relative">
-          <Search className="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-ink-dim" />
+          <Search className="text-ink-dim absolute top-1/2 left-3 h-3.5 w-3.5 -translate-y-1/2" />
           <Input
             placeholder="Buscar por nome ou telefone…"
             className="h-8 pl-9"
@@ -107,7 +107,7 @@ export function ConversationList(props: ConversationListProps) {
           query={query}
           isEmpty={() => filtered.length === 0}
           emptyFallback={
-            <div className="px-6 py-12 text-center text-sm text-ink-muted">
+            <div className="text-ink-muted px-6 py-12 text-center text-sm">
               {search ? (
                 <>
                   Nenhuma conversa bate com "<span className="text-ink">{search}</span>".
@@ -169,14 +169,14 @@ function ConversationRow({ conversation, active, separator, onClick }: Conversat
             {name}
           </span>
         </div>
-        {lastAt && <span className="font-metric shrink-0 text-2xs text-ink-dim">{lastAt}</span>}
+        {lastAt && <span className="font-metric text-2xs text-ink-dim shrink-0">{lastAt}</span>}
       </div>
       <div className="mt-1 flex items-center justify-between gap-2">
-        <p className="truncate text-xs text-ink-dim">{preview}</p>
+        <p className="text-ink-dim truncate text-xs">{preview}</p>
         {c.unread_count > 0 && (
           <span
             aria-label={`${c.unread_count} mensagens não lidas`}
-            className="font-metric text-background shrink-0 rounded-full bg-accent px-1.5 text-2xs tabular-nums"
+            className="font-metric text-background bg-accent text-2xs shrink-0 rounded-full px-1.5 tabular-nums"
           >
             {c.unread_count > 99 ? '99+' : c.unread_count}
           </span>

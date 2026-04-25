@@ -64,22 +64,22 @@ export function Toaster() {
   return (
     <div
       aria-live="polite"
-      className="pointer-events-none fixed bottom-4 right-4 z-50 flex w-80 flex-col gap-2"
+      className="pointer-events-none fixed right-4 bottom-4 z-50 flex w-80 flex-col gap-2"
     >
       {toasts.map((t) => (
         <div
           key={t.id}
           role={t.level === 'error' ? 'alert' : 'status'}
           className={cn(
-            'pointer-events-auto flex items-start gap-3 rounded-md bg-elevated p-3 shadow-hairline',
+            'bg-elevated shadow-hairline pointer-events-auto flex items-start gap-3 rounded-md p-3',
             t.level === 'error' && 'shadow-[inset_0_0_0_1px_hsl(var(--danger)/0.5)]'
           )}
         >
           <Icon level={t.level} />
           <div className="min-w-0 flex-1">
-            <p className="text-sm leading-snug text-ink">{t.message}</p>
+            <p className="text-ink text-sm leading-snug">{t.message}</p>
             {t.context && (
-              <p className="mt-0.5 text-2xs uppercase tracking-[0.14em] text-ink-dim">
+              <p className="text-2xs text-ink-dim mt-0.5 tracking-[0.14em] uppercase">
                 {t.context}
               </p>
             )}
@@ -88,7 +88,7 @@ export function Toaster() {
             type="button"
             aria-label="Fechar notificação"
             onClick={() => setToasts((prev) => prev.filter((x) => x.id !== t.id))}
-            className="rounded-sm text-ink-dim transition hover:text-ink"
+            className="text-ink-dim hover:text-ink rounded-sm transition"
           >
             <X className="h-3.5 w-3.5" />
           </button>

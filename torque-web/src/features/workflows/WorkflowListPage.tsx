@@ -70,17 +70,17 @@ function WorkflowTable({ workflows }: { workflows: Workflow[] }) {
           <button
             type="button"
             onClick={() => navigate(`/workflows/${w.id}`)}
-            className="block w-full cursor-pointer rounded-lg bg-surface p-4 text-left shadow-elev-1 transition hover:shadow-elev-2"
+            className="bg-surface shadow-elev-1 hover:shadow-elev-2 block w-full cursor-pointer rounded-lg p-4 text-left transition"
           >
             <div className="flex items-center gap-3">
               <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-2">
-                  <span className="font-medium text-ink">{w.name}</span>
+                  <span className="text-ink font-medium">{w.name}</span>
                   <Badge tone={w.status === 'active' ? 'success' : 'neutral'}>{w.status}</Badge>
                   <Badge tone="neutral">{triggerLabels[w.trigger]}</Badge>
                 </div>
                 {w.description && (
-                  <p className="mt-1 truncate text-xs text-ink-dim">{w.description}</p>
+                  <p className="text-ink-dim mt-1 truncate text-xs">{w.description}</p>
                 )}
               </div>
             </div>
@@ -104,7 +104,7 @@ function NewWorkflowButton() {
     const created = await create.mutateAsync({ name: trimmed, trigger: 'manual' })
     setName('')
     setOpen(false)
-    navigate(`/workflows/${created.id}`)
+    void navigate(`/workflows/${created.id}`)
   }
 
   if (!open) {

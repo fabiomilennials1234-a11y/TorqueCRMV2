@@ -75,15 +75,15 @@ export function CreateCampaignModal({ onClose }: { onClose: () => void }) {
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-ink/60 p-4">
+    <div className="bg-ink/60 fixed inset-0 z-50 flex items-center justify-center p-4">
       <div
         role="dialog"
         aria-modal="true"
         aria-labelledby="campaign-modal-title"
-        className="w-full max-w-lg rounded-xl bg-surface p-6 shadow-elev-2"
+        className="bg-surface shadow-elev-2 w-full max-w-lg rounded-xl p-6"
       >
         <div className="mb-4 flex items-center gap-2">
-          <h2 id="campaign-modal-title" className="font-fraunces text-lg text-ink">
+          <h2 id="campaign-modal-title" className="font-fraunces text-ink text-lg">
             Nova campanha
           </h2>
           <div className="ml-auto flex items-center gap-1.5">
@@ -99,7 +99,7 @@ export function CreateCampaignModal({ onClose }: { onClose: () => void }) {
         {step === 1 && (
           <div className="space-y-3">
             <div>
-              <label htmlFor={nameId} className="mb-1 block text-xs text-ink-muted">
+              <label htmlFor={nameId} className="text-ink-muted mb-1 block text-xs">
                 Nome
               </label>
               <Input
@@ -110,7 +110,7 @@ export function CreateCampaignModal({ onClose }: { onClose: () => void }) {
               />
             </div>
             <div>
-              <label htmlFor={descId} className="mb-1 block text-xs text-ink-muted">
+              <label htmlFor={descId} className="text-ink-muted mb-1 block text-xs">
                 Descrição (opcional)
               </label>
               <Input
@@ -120,7 +120,7 @@ export function CreateCampaignModal({ onClose }: { onClose: () => void }) {
               />
             </div>
             <div>
-              <label htmlFor={tplId} className="mb-1 block text-xs text-ink-muted">
+              <label htmlFor={tplId} className="text-ink-muted mb-1 block text-xs">
                 Template da mensagem
               </label>
               <textarea
@@ -129,7 +129,7 @@ export function CreateCampaignModal({ onClose }: { onClose: () => void }) {
                 onChange={(e) => setTemplate(e.target.value)}
                 rows={5}
                 placeholder="Olá {{nome}}, temos uma oferta..."
-                className="w-full resize-y rounded-md bg-elevated/40 px-3 py-2 text-sm text-ink shadow-hairline placeholder:text-ink-dim focus:outline-none focus:ring-1 focus:ring-accent/50"
+                className="bg-elevated/40 text-ink shadow-hairline placeholder:text-ink-dim focus:ring-accent/50 w-full resize-y rounded-md px-3 py-2 text-sm focus:ring-1 focus:outline-none"
               />
             </div>
           </div>
@@ -137,7 +137,7 @@ export function CreateCampaignModal({ onClose }: { onClose: () => void }) {
 
         {step === 2 && (
           <div className="space-y-3">
-            <p className="text-xs text-ink-dim">
+            <p className="text-ink-dim text-xs">
               Defina um filtro sobre atributos do lead (DSL compartilhada com gatilhos de Copilot).
             </p>
             <div className="grid grid-cols-3 gap-2">
@@ -149,7 +149,7 @@ export function CreateCampaignModal({ onClose }: { onClose: () => void }) {
               <select
                 value={op}
                 onChange={(e) => setOp(e.target.value as typeof op)}
-                className="rounded-md bg-elevated/40 px-2 py-2 text-sm text-ink shadow-hairline focus:outline-none focus:ring-1 focus:ring-accent/50"
+                className="bg-elevated/40 text-ink shadow-hairline focus:ring-accent/50 rounded-md px-2 py-2 text-sm focus:ring-1 focus:outline-none"
               >
                 <option value="eq">eq</option>
                 <option value="in">in (CSV)</option>
@@ -164,8 +164,8 @@ export function CreateCampaignModal({ onClose }: { onClose: () => void }) {
                 />
               )}
             </div>
-            <div className="rounded-md bg-elevated/30 p-3 text-2xs text-ink-dim">
-              <span className="mr-2 font-semibold text-ink-muted">Preview:</span>
+            <div className="bg-elevated/30 text-2xs text-ink-dim rounded-md p-3">
+              <span className="text-ink-muted mr-2 font-semibold">Preview:</span>
               <code className="font-mono">{JSON.stringify(audienceQuery)}</code>
             </div>
           </div>
@@ -174,7 +174,7 @@ export function CreateCampaignModal({ onClose }: { onClose: () => void }) {
         {step === 3 && (
           <div className="space-y-3">
             <div>
-              <label htmlFor={scheduleId} className="mb-1 block text-xs text-ink-muted">
+              <label htmlFor={scheduleId} className="text-ink-muted mb-1 block text-xs">
                 Agendar (opcional)
               </label>
               <Input
@@ -183,22 +183,22 @@ export function CreateCampaignModal({ onClose }: { onClose: () => void }) {
                 value={scheduledAt}
                 onChange={(e) => setScheduledAt(e.target.value)}
               />
-              <p className="mt-1 text-2xs text-ink-dim">
+              <p className="text-2xs text-ink-dim mt-1">
                 Deixe vazio para ficar em draft — você pode lançar manualmente depois.
               </p>
             </div>
-            <div className="rounded-md bg-elevated/30 p-3 text-xs">
+            <div className="bg-elevated/30 rounded-md p-3 text-xs">
               <div className="flex items-center gap-2">
                 <Badge tone="neutral">Nome</Badge>
-                <span className="truncate text-ink">{name}</span>
+                <span className="text-ink truncate">{name}</span>
               </div>
               <div className="mt-1.5 flex items-center gap-2">
                 <Badge tone="neutral">Template</Badge>
-                <span className="truncate text-ink-dim">{template.slice(0, 60)}…</span>
+                <span className="text-ink-dim truncate">{template.slice(0, 60)}…</span>
               </div>
               <div className="mt-1.5 flex items-center gap-2">
                 <Badge tone="neutral">Audiência</Badge>
-                <code className="truncate font-mono text-2xs text-ink-dim">
+                <code className="text-2xs text-ink-dim truncate font-mono">
                   {JSON.stringify(audienceQuery)}
                 </code>
               </div>

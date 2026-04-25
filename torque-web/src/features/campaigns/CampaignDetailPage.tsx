@@ -48,8 +48,8 @@ function CampaignDetailInner({ campaignId }: { campaignId: string }) {
   if (query.isError || !query.data) {
     return (
       <div className="mx-auto max-w-md p-12 text-center">
-        <p className="text-sm text-danger">{friendlyMessage(query.error)}</p>
-        <Link to="/campaigns" className="mt-4 inline-block text-sm text-accent underline">
+        <p className="text-danger text-sm">{friendlyMessage(query.error)}</p>
+        <Link to="/campaigns" className="text-accent mt-4 inline-block text-sm underline">
           Voltar
         </Link>
       </div>
@@ -62,7 +62,7 @@ function CampaignDetailInner({ campaignId }: { campaignId: string }) {
     <div className="mx-auto max-w-5xl px-8 py-8">
       <Link
         to="/campaigns"
-        className="mb-3 inline-flex items-center gap-1.5 text-xs text-ink-dim hover:text-ink-muted"
+        className="text-ink-dim hover:text-ink-muted mb-3 inline-flex items-center gap-1.5 text-xs"
       >
         <ArrowLeft className="h-3.5 w-3.5" />
         Campanhas
@@ -83,7 +83,7 @@ function CampaignDetailInner({ campaignId }: { campaignId: string }) {
       </div>
 
       <section className="mt-8">
-        <h2 className="mb-3 text-sm font-medium text-ink">Destinatários</h2>
+        <h2 className="text-ink mb-3 text-sm font-medium">Destinatários</h2>
         {recipients.isLoading ? (
           <Skeleton className="h-24" />
         ) : (recipients.data ?? []).length === 0 ? (
@@ -96,9 +96,9 @@ function CampaignDetailInner({ campaignId }: { campaignId: string }) {
             {recipients.data!.map((r) => (
               <li
                 key={r.id}
-                className="flex items-center justify-between rounded-md bg-elevated/30 px-3 py-2 text-xs"
+                className="bg-elevated/30 flex items-center justify-between rounded-md px-3 py-2 text-xs"
               >
-                <span className="font-mono text-ink">{r.lead_id.slice(0, 8)}</span>
+                <span className="text-ink font-mono">{r.lead_id.slice(0, 8)}</span>
                 <div className="flex items-center gap-2">
                   <Badge tone={recipientTone(r.status)}>{r.status}</Badge>
                   {r.sent_at && (
@@ -184,8 +184,8 @@ function StatCard({
   tone: 'success' | 'danger' | 'neutral'
 }) {
   return (
-    <div className="rounded-lg bg-surface p-3 shadow-elev-1">
-      <div className="text-2xs uppercase tracking-wide text-ink-dim">{label}</div>
+    <div className="bg-surface shadow-elev-1 rounded-lg p-3">
+      <div className="text-2xs text-ink-dim tracking-wide uppercase">{label}</div>
       <div className="mt-2">
         <Badge tone={tone}>{value}</Badge>
       </div>
@@ -195,8 +195,8 @@ function StatCard({
 
 function NumberCard({ label, value, danger }: { label: string; value: number; danger?: boolean }) {
   return (
-    <div className="rounded-lg bg-surface p-3 shadow-elev-1">
-      <div className="text-2xs uppercase tracking-wide text-ink-dim">{label}</div>
+    <div className="bg-surface shadow-elev-1 rounded-lg p-3">
+      <div className="text-2xs text-ink-dim tracking-wide uppercase">{label}</div>
       <div
         className={
           'font-fraunces mt-2 text-2xl ' + (danger && value > 0 ? 'text-danger' : 'text-ink')

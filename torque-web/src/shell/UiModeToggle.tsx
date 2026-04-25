@@ -30,9 +30,9 @@ export function UiModeToggle({ variant = 'appshell', className }: UiModeTogglePr
     if (next === 'salesperson' && !canSwitchToSalesperson) return
     await setMode(next)
     if (next === 'salesperson' && !location.pathname.startsWith('/cockpit')) {
-      navigate('/cockpit', { replace: false })
+      void navigate('/cockpit', { replace: false })
     } else if (next === 'manager' && location.pathname.startsWith('/cockpit')) {
-      navigate('/', { replace: false })
+      void navigate('/', { replace: false })
     }
   }
 

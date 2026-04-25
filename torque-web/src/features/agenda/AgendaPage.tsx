@@ -87,7 +87,7 @@ export function AgendaPage() {
         <div className="mt-6 space-y-6">
           {groups.map(([day, items]) => (
             <section key={day}>
-              <h2 className="mb-2 text-xs uppercase tracking-wide text-ink-dim">{day}</h2>
+              <h2 className="text-ink-dim mb-2 text-xs tracking-wide uppercase">{day}</h2>
               <ul className="space-y-1.5">
                 {items.map((m) => (
                   <MeetingRow key={m.id} meeting={m} />
@@ -112,15 +112,15 @@ function MeetingRow({ meeting }: { meeting: Meeting }) {
     { hour: '2-digit', minute: '2-digit' }
   )}`
   return (
-    <li className="flex items-center gap-3 rounded-md bg-surface px-3 py-2 shadow-hairline">
-      <span className="font-mono text-2xs text-ink-dim">{time}</span>
+    <li className="bg-surface shadow-hairline flex items-center gap-3 rounded-md px-3 py-2">
+      <span className="text-2xs text-ink-dim font-mono">{time}</span>
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-2">
-          <span className="truncate text-sm text-ink">{meeting.title}</span>
+          <span className="text-ink truncate text-sm">{meeting.title}</span>
           <Badge tone={statusTone[meeting.status]}>{meeting.status}</Badge>
         </div>
         {meeting.location && (
-          <div className="truncate text-2xs text-ink-dim">{meeting.location}</div>
+          <div className="text-2xs text-ink-dim truncate">{meeting.location}</div>
         )}
       </div>
       <Button
@@ -158,12 +158,12 @@ function CreateMeetingModal({ onClose }: { onClose: () => void }) {
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-ink/60 p-4">
+    <div className="bg-ink/60 fixed inset-0 z-50 flex items-center justify-center p-4">
       <form
         onSubmit={(e) => void handleSubmit(e)}
-        className="w-full max-w-md rounded-xl bg-surface p-6 shadow-elev-2"
+        className="bg-surface shadow-elev-2 w-full max-w-md rounded-xl p-6"
       >
-        <h2 className="font-fraunces mb-4 text-lg text-ink">Nova reunião</h2>
+        <h2 className="font-fraunces text-ink mb-4 text-lg">Nova reunião</h2>
         <div className="space-y-3">
           <Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Título" />
           <Input
