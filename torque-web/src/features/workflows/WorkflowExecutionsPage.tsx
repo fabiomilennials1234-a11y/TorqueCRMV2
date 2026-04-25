@@ -53,7 +53,7 @@ function ExecutionsInner({ workflowId }: { workflowId: string }) {
   if (workflow.isError || !workflow.data) {
     return (
       <div className="mx-auto max-w-md p-12 text-center">
-        <p className="text-sm text-danger">Workflow indisponível.</p>
+        <p className="text-danger text-sm">Workflow indisponível.</p>
       </div>
     )
   }
@@ -62,7 +62,7 @@ function ExecutionsInner({ workflowId }: { workflowId: string }) {
     <div className="mx-auto max-w-5xl px-8 py-8">
       <Link
         to={`/workflows/${workflowId}`}
-        className="mb-3 inline-flex items-center gap-1.5 text-xs text-ink-dim hover:text-ink-muted"
+        className="text-ink-dim hover:text-ink-muted mb-3 inline-flex items-center gap-1.5 text-xs"
       >
         <ArrowLeft className="h-3.5 w-3.5" />
         Voltar ao canvas
@@ -129,15 +129,15 @@ function RunsList({
               type="button"
               onClick={() => onSelect(run.id)}
               className={
-                'block w-full rounded-md px-3 py-2 text-left text-xs shadow-hairline transition ' +
+                'shadow-hairline block w-full rounded-md px-3 py-2 text-left text-xs transition ' +
                 (isActive ? 'bg-surface shadow-elev-1' : 'bg-elevated/30 hover:bg-elevated/60')
               }
             >
               <div className="flex items-center gap-2">
                 <Badge tone={statusTone[run.status]}>{run.status}</Badge>
-                <span className="truncate text-ink-dim">{run.trigger_source}</span>
+                <span className="text-ink-dim truncate">{run.trigger_source}</span>
               </div>
-              <div className="mt-0.5 text-2xs text-ink-dim">
+              <div className="text-2xs text-ink-dim mt-0.5">
                 {new Date(run.created_at).toLocaleString('pt-BR')}
               </div>
             </button>
@@ -153,7 +153,7 @@ function RunTimeline({ runId }: { runId: string | null }) {
 
   if (!runId) {
     return (
-      <div className="rounded-md bg-elevated/20 p-4 text-xs text-ink-dim">
+      <div className="bg-elevated/20 text-ink-dim rounded-md p-4 text-xs">
         Selecione uma execução à esquerda para ver o trace.
       </div>
     )
@@ -161,7 +161,7 @@ function RunTimeline({ runId }: { runId: string | null }) {
   if (steps.isLoading) return <Skeleton className="h-40 w-full" />
   const data = steps.data ?? []
   if (data.length === 0) {
-    return <p className="text-xs text-ink-dim">Sem steps registrados.</p>
+    return <p className="text-ink-dim text-xs">Sem steps registrados.</p>
   }
   return (
     <ol className="space-y-2">
@@ -188,15 +188,15 @@ function TimelineStep({ step, ord }: { step: WorkflowRunStep; ord: number }) {
   }, [step.output, step.error_payload, step.status])
 
   return (
-    <li className="rounded-md bg-surface p-3 shadow-elev-1">
+    <li className="bg-surface shadow-elev-1 rounded-md p-3">
       <div className="flex items-center gap-2 text-xs">
-        <span className="font-mono text-ink-dim">#{ord}</span>
+        <span className="text-ink-dim font-mono">#{ord}</span>
         <Badge tone={statusTone[step.status]}>{step.status}</Badge>
-        <span className="font-mono text-2xs text-ink-dim">{step.step_id.slice(0, 8)}</span>
-        {duration != null && <span className="ml-auto text-2xs text-ink-dim">{duration} ms</span>}
+        <span className="text-2xs text-ink-dim font-mono">{step.step_id.slice(0, 8)}</span>
+        {duration != null && <span className="text-2xs text-ink-dim ml-auto">{duration} ms</span>}
       </div>
       {outputPreview && (
-        <pre className="mt-2 overflow-x-auto rounded bg-elevated/40 p-2 font-mono text-2xs text-ink">
+        <pre className="bg-elevated/40 text-2xs text-ink mt-2 overflow-x-auto rounded p-2 font-mono">
           {outputPreview}
         </pre>
       )}

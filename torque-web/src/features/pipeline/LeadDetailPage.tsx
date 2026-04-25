@@ -35,21 +35,21 @@ export function LeadDetailPage() {
           <div className="grid gap-4 lg:grid-cols-[1fr_320px]">
             <Card className="p-6">
               <div className="mb-4 flex items-center gap-3">
-                <div className="flex h-11 w-11 items-center justify-center rounded-md bg-elevated shadow-hairline">
-                  <User className="h-5 w-5 text-ink-muted" strokeWidth={1.5} />
+                <div className="bg-elevated shadow-hairline flex h-11 w-11 items-center justify-center rounded-md">
+                  <User className="text-ink-muted h-5 w-5" strokeWidth={1.5} />
                 </div>
                 <div>
-                  <h1 className="font-display text-xl leading-tight tracking-tightest text-ink">
+                  <h1 className="font-display tracking-tightest text-ink text-xl leading-tight">
                     {lead.name}
                   </h1>
-                  {lead.company && <p className="text-sm text-ink-muted">{lead.company}</p>}
+                  {lead.company && <p className="text-ink-muted text-sm">{lead.company}</p>}
                 </div>
               </div>
 
               <dl className="grid gap-3 text-sm">
                 {lead.email && (
                   <div className="flex items-center gap-2">
-                    <dt className="w-20 text-ink-dim">
+                    <dt className="text-ink-dim w-20">
                       <Mail className="inline h-3.5 w-3.5" />
                     </dt>
                     <dd>{lead.email}</dd>
@@ -57,7 +57,7 @@ export function LeadDetailPage() {
                 )}
                 {lead.phone && (
                   <div className="flex items-center gap-2">
-                    <dt className="w-20 text-ink-dim">
+                    <dt className="text-ink-dim w-20">
                       <Phone className="inline h-3.5 w-3.5" />
                     </dt>
                     <dd className="font-metric tabular-nums">{lead.phone}</dd>
@@ -65,10 +65,10 @@ export function LeadDetailPage() {
                 )}
                 {lead.rating != null && (
                   <div className="flex items-center gap-2">
-                    <dt className="w-20 text-ink-dim">
+                    <dt className="text-ink-dim w-20">
                       <Star className="inline h-3.5 w-3.5" />
                     </dt>
-                    <dd className="flex items-center gap-1 text-ink">
+                    <dd className="text-ink flex items-center gap-1">
                       {Array.from({ length: 5 }, (_, i) => (
                         <Star
                           key={i}
@@ -85,7 +85,7 @@ export function LeadDetailPage() {
             </Card>
 
             <Card className="p-5">
-              <h2 className="mb-3 text-2xs font-medium uppercase tracking-[0.14em] text-ink-dim">
+              <h2 className="text-2xs text-ink-dim mb-3 font-medium tracking-[0.14em] uppercase">
                 Metadados
               </h2>
               <dl className="grid gap-2 text-sm">

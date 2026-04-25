@@ -102,11 +102,11 @@ export function StepProgress({
               {!isLast && (
                 <div className="relative mx-1 h-px flex-1">
                   {/* Track */}
-                  <div className="absolute inset-0 bg-hairline" />
+                  <div className="bg-hairline absolute inset-0" />
                   {/* Fill */}
                   <div
                     className={cn(
-                      'duration-[280ms] ease-[var(--ease-in-out-precise)] absolute inset-y-0 left-0 bg-success transition-[width]'
+                      'bg-success absolute inset-y-0 left-0 transition-[width] duration-[280ms] ease-[var(--ease-in-out-precise)]'
                     )}
                     style={{
                       width: completedSteps.includes(i) ? '100%' : '0%',
@@ -120,7 +120,7 @@ export function StepProgress({
             {!isMinimal && (
               <span
                 className={cn(
-                  'duration-[280ms] ease-[var(--ease-in-out-precise)] mt-2 text-2xs font-medium transition-colors',
+                  'text-2xs mt-2 font-medium transition-colors duration-[280ms] ease-[var(--ease-in-out-precise)]',
                   state === 'completed' && 'text-success',
                   state === 'current' && 'text-ink',
                   state === 'future' && 'text-ink-dim'

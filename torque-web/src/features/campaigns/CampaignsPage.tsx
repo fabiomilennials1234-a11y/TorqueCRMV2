@@ -62,7 +62,7 @@ export function CampaignsPage() {
         }
       />
 
-      <div className="mt-4 inline-flex rounded-md bg-elevated/40 p-1 shadow-hairline">
+      <div className="bg-elevated/40 shadow-hairline mt-4 inline-flex rounded-md p-1">
         <button
           type="button"
           className={
@@ -117,16 +117,16 @@ function CampaignGrid({ campaigns }: { campaigns: Campaign[] }) {
         <li key={c.id}>
           <Link
             to={`/campaigns/${c.id}`}
-            className="block rounded-lg bg-surface p-4 shadow-elev-1 transition hover:shadow-elev-2"
+            className="bg-surface shadow-elev-1 hover:shadow-elev-2 block rounded-lg p-4 transition"
           >
             <div className="flex items-center gap-2">
-              <span className="font-medium text-ink">{c.name}</span>
+              <span className="text-ink font-medium">{c.name}</span>
               <Badge tone={statusTone[c.status]}>{c.status}</Badge>
             </div>
             {c.description && (
-              <p className="mt-1 truncate text-2xs text-ink-dim">{c.description}</p>
+              <p className="text-2xs text-ink-dim mt-1 truncate">{c.description}</p>
             )}
-            <dl className="mt-3 grid grid-cols-4 gap-2 text-2xs">
+            <dl className="text-2xs mt-3 grid grid-cols-4 gap-2">
               <Stat label="Enfileirados" value={c.stats_queued} />
               <Stat label="Enviados" value={c.stats_sent} />
               <Stat label="Falhas" value={c.stats_failed} tone="danger" />
@@ -141,7 +141,7 @@ function CampaignGrid({ campaigns }: { campaigns: Campaign[] }) {
 
 function Stat({ label, value, tone }: { label: string; value: number; tone?: 'danger' }) {
   return (
-    <div className="rounded-md bg-elevated/30 px-2 py-1.5">
+    <div className="bg-elevated/30 rounded-md px-2 py-1.5">
       <dt className="text-ink-dim">{label}</dt>
       <dd
         className={

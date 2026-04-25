@@ -105,7 +105,7 @@ function Toolbar({
   return (
     <div className="mt-4 flex flex-wrap items-center gap-2">
       <div className="relative max-w-sm flex-1">
-        <Search className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-ink-dim" />
+        <Search className="text-ink-dim absolute top-1/2 left-2.5 h-3.5 w-3.5 -translate-y-1/2" />
         <Input
           placeholder="Buscar por nome ou SKU…"
           className="pl-8"
@@ -113,7 +113,7 @@ function Toolbar({
           onChange={(e) => onSearchChange(e.target.value)}
         />
       </div>
-      <label className="flex items-center gap-2 text-sm text-ink-muted">
+      <label className="text-ink-muted flex items-center gap-2 text-sm">
         <input
           type="checkbox"
           checked={activeOnly}
@@ -166,7 +166,7 @@ function NewProductForm({
 
   return (
     <form
-      className="mt-3 flex w-full flex-wrap items-end gap-2 rounded-lg bg-surface p-4 shadow-elev-1"
+      className="bg-surface shadow-elev-1 mt-3 flex w-full flex-wrap items-end gap-2 rounded-lg p-4"
       onSubmit={(e) => {
         e.preventDefault()
         if (!valid) return
@@ -179,13 +179,13 @@ function NewProductForm({
       }}
     >
       <div className="flex-1">
-        <label htmlFor={nameId} className="mb-1 block text-xs text-ink-muted">
+        <label htmlFor={nameId} className="text-ink-muted mb-1 block text-xs">
           Nome
         </label>
         <Input id={nameId} value={name} onChange={(e) => setName(e.target.value)} required />
       </div>
       <div className="w-32">
-        <label htmlFor={priceId} className="mb-1 block text-xs text-ink-muted">
+        <label htmlFor={priceId} className="text-ink-muted mb-1 block text-xs">
           Preço (R$)
         </label>
         <Input
@@ -196,7 +196,7 @@ function NewProductForm({
         />
       </div>
       <div className="w-40">
-        <label htmlFor={skuId} className="mb-1 block text-xs text-ink-muted">
+        <label htmlFor={skuId} className="text-ink-muted mb-1 block text-xs">
           SKU (opcional)
         </label>
         <Input id={skuId} value={sku} onChange={(e) => setSku(e.target.value)} />
@@ -215,10 +215,10 @@ function NewProductForm({
 
 function ProductTable({ items }: { items: Product[] }) {
   return (
-    <div className="mt-6 overflow-hidden rounded-lg bg-surface shadow-elev-1">
+    <div className="bg-surface shadow-elev-1 mt-6 overflow-hidden rounded-lg">
       <table className="w-full text-sm">
         <thead>
-          <tr className="text-2xs uppercase tracking-[0.12em] text-ink-dim">
+          <tr className="text-2xs text-ink-dim tracking-[0.12em] uppercase">
             <th className="px-5 py-3 text-left font-medium">Produto</th>
             <th className="px-5 py-3 text-left font-medium">SKU</th>
             <th className="px-5 py-3 text-right font-medium">Preço</th>
@@ -241,16 +241,16 @@ function ProductRow({ product, separator }: { product: Product; separator: boole
   return (
     <tr
       className={
-        'transition-colors hover:bg-elevated/40' +
+        'hover:bg-elevated/40 transition-colors' +
         (separator ? ' shadow-[inset_0_1px_0_0_hsl(var(--hairline))]' : '')
       }
     >
       <td className="px-5 py-3">
-        <div className="text-sm text-ink">{product.name}</div>
-        {product.description && <div className="text-xs text-ink-dim">{product.description}</div>}
+        <div className="text-ink text-sm">{product.name}</div>
+        {product.description && <div className="text-ink-dim text-xs">{product.description}</div>}
       </td>
-      <td className="font-metric px-5 py-3 text-xs text-ink-muted">{product.sku ?? '—'}</td>
-      <td className="font-metric px-5 py-3 text-right text-sm text-ink">
+      <td className="font-metric text-ink-muted px-5 py-3 text-xs">{product.sku ?? '—'}</td>
+      <td className="font-metric text-ink px-5 py-3 text-right text-sm">
         {formatMoney(product.price_cents, product.currency)}
       </td>
       <td className="px-5 py-3">

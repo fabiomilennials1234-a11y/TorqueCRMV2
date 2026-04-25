@@ -20,7 +20,7 @@ export function DropdownMenuContent({
       <RD.Content
         sideOffset={sideOffset}
         className={cn(
-          'z-50 min-w-[12rem] overflow-hidden rounded-md bg-elevated/90 p-1 backdrop-blur-xl',
+          'bg-elevated/90 z-50 min-w-[12rem] overflow-hidden rounded-md p-1 backdrop-blur-xl',
           'shadow-elev-3 shadow-hairline',
           'data-[state=open]:animate-scale-in',
           className
@@ -39,8 +39,8 @@ export function DropdownMenuItem({
   return (
     <RD.Item
       className={cn(
-        'relative flex cursor-pointer select-none items-center gap-2 rounded-sm px-2 py-1.5 text-sm text-ink-muted',
-        'outline-none data-[highlighted]:bg-elevated/80 data-[highlighted]:text-ink',
+        'text-ink-muted relative flex cursor-pointer items-center gap-2 rounded-sm px-2 py-1.5 text-sm select-none',
+        'data-[highlighted]:bg-elevated/80 data-[highlighted]:text-ink outline-none',
         'data-[disabled]:pointer-events-none data-[disabled]:opacity-40',
         inset && 'pl-8',
         className
@@ -60,15 +60,15 @@ export function DropdownMenuCheckboxItem({
     <RD.CheckboxItem
       {...(checked !== undefined ? { checked } : {})}
       className={cn(
-        'relative flex cursor-pointer select-none items-center gap-2 rounded-sm py-1.5 pl-7 pr-2 text-sm text-ink-muted',
-        'outline-none data-[highlighted]:bg-elevated/80 data-[highlighted]:text-ink',
+        'text-ink-muted relative flex cursor-pointer items-center gap-2 rounded-sm py-1.5 pr-2 pl-7 text-sm select-none',
+        'data-[highlighted]:bg-elevated/80 data-[highlighted]:text-ink outline-none',
         className
       )}
       {...props}
     >
       <span className="absolute left-2 flex h-3.5 w-3.5 items-center justify-center">
         <RD.ItemIndicator>
-          <Check className="h-3 w-3 text-accent" />
+          <Check className="text-accent h-3 w-3" />
         </RD.ItemIndicator>
       </span>
       {children}
@@ -82,7 +82,7 @@ export function DropdownMenuLabel({
 }: ComponentPropsWithoutRef<typeof RD.Label>) {
   return (
     <RD.Label
-      className={cn('px-2 pb-1 pt-2 text-2xs uppercase tracking-[0.1em] text-ink-dim', className)}
+      className={cn('text-2xs text-ink-dim px-2 pt-2 pb-1 tracking-[0.1em] uppercase', className)}
       {...props}
     />
   )
@@ -92,7 +92,7 @@ export function DropdownMenuSeparator({
   className,
   ...props
 }: ComponentPropsWithoutRef<typeof RD.Separator>) {
-  return <RD.Separator className={cn('-mx-1 my-1 h-px bg-hairline', className)} {...props} />
+  return <RD.Separator className={cn('bg-hairline -mx-1 my-1 h-px', className)} {...props} />
 }
 
 export function DropdownMenuShortcut({
@@ -101,7 +101,7 @@ export function DropdownMenuShortcut({
 }: React.HTMLAttributes<HTMLSpanElement>) {
   return (
     <span
-      className={cn('ml-auto font-mono text-2xs tracking-wider text-ink-dim', className)}
+      className={cn('text-2xs text-ink-dim ml-auto font-mono tracking-wider', className)}
       {...props}
     />
   )
@@ -116,8 +116,8 @@ export function DropdownMenuSubTrigger({
   return (
     <RD.SubTrigger
       className={cn(
-        'flex cursor-pointer select-none items-center gap-2 rounded-sm px-2 py-1.5 text-sm text-ink-muted',
-        'outline-none data-[highlighted]:bg-elevated/80 data-[highlighted]:text-ink',
+        'text-ink-muted flex cursor-pointer items-center gap-2 rounded-sm px-2 py-1.5 text-sm select-none',
+        'data-[highlighted]:bg-elevated/80 data-[highlighted]:text-ink outline-none',
         inset && 'pl-8',
         className
       )}
@@ -136,7 +136,7 @@ export function DropdownMenuSubContent({
   return (
     <RD.SubContent
       className={cn(
-        'z-50 min-w-[10rem] overflow-hidden rounded-md bg-elevated p-1 shadow-elev-3 shadow-hairline',
+        'bg-elevated shadow-elev-3 shadow-hairline z-50 min-w-[10rem] overflow-hidden rounded-md p-1',
         'data-[state=open]:animate-scale-in',
         className
       )}

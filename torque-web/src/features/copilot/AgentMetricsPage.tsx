@@ -41,8 +41,8 @@ export function AgentMetricsPage() {
   if (agent.isError || !agent.data) {
     return (
       <div className="mx-auto max-w-md p-12 text-center">
-        <p className="text-sm text-danger">{friendlyMessage(agent.error)}</p>
-        <Link to="/copilot" className="mt-4 inline-block text-sm text-accent underline">
+        <p className="text-danger text-sm">{friendlyMessage(agent.error)}</p>
+        <Link to="/copilot" className="text-accent mt-4 inline-block text-sm underline">
           Voltar
         </Link>
       </div>
@@ -53,7 +53,7 @@ export function AgentMetricsPage() {
     <div className="mx-auto max-w-5xl px-8 py-8">
       <Link
         to={`/copilot/${id}`}
-        className="mb-3 inline-flex items-center gap-1.5 text-xs text-ink-dim hover:text-ink-muted"
+        className="text-ink-dim hover:text-ink-muted mb-3 inline-flex items-center gap-1.5 text-xs"
       >
         <ArrowLeft className="h-3.5 w-3.5" />
         Voltar ao agente
@@ -64,7 +64,7 @@ export function AgentMetricsPage() {
         description={`Performance do agente — janela ${windowKey}`}
       />
 
-      <div className="mt-4 inline-flex rounded-md bg-elevated/40 p-1 shadow-hairline">
+      <div className="bg-elevated/40 shadow-hairline mt-4 inline-flex rounded-md p-1">
         {(['7d', '30d', '90d'] as const).map((w) => (
           <button
             key={w}
@@ -83,7 +83,7 @@ export function AgentMetricsPage() {
       {metrics.isLoading ? (
         <MetricsSkeleton noHeader />
       ) : metrics.isError || !metrics.data ? (
-        <p className="mt-6 text-sm text-danger">{friendlyMessage(metrics.error)}</p>
+        <p className="text-danger mt-6 text-sm">{friendlyMessage(metrics.error)}</p>
       ) : (
         <MetricsContent data={metrics.data} />
       )}
@@ -116,15 +116,15 @@ function MetricsContent({
     <div className="mt-6 space-y-8">
       <section className="grid grid-cols-1 gap-3 md:grid-cols-4">
         {kpis.map((k) => (
-          <div key={k.label} className="rounded-lg bg-surface p-4 shadow-elev-1">
-            <div className="text-2xs uppercase tracking-wide text-ink-dim">{k.label}</div>
-            <div className="font-fraunces mt-2 text-2xl text-ink">{k.value}</div>
+          <div key={k.label} className="bg-surface shadow-elev-1 rounded-lg p-4">
+            <div className="text-2xs text-ink-dim tracking-wide uppercase">{k.label}</div>
+            <div className="font-fraunces text-ink mt-2 text-2xl">{k.value}</div>
           </div>
         ))}
       </section>
 
       <section>
-        <h2 className="mb-2 text-sm font-medium text-ink">Sessões por estado</h2>
+        <h2 className="text-ink mb-2 text-sm font-medium">Sessões por estado</h2>
         <SessionsStateBar buckets={data.sessions_by_state} />
       </section>
     </div>
@@ -145,7 +145,7 @@ function SessionsStateBar({ buckets }: { buckets: Record<string, number> }) {
   return (
     <div>
       <div
-        className="flex h-4 w-full overflow-hidden rounded-full bg-elevated/40"
+        className="bg-elevated/40 flex h-4 w-full overflow-hidden rounded-full"
         role="img"
         aria-label={`${total} sessões`}
       >
@@ -163,7 +163,7 @@ function SessionsStateBar({ buckets }: { buckets: Record<string, number> }) {
           )
         })}
       </div>
-      <ul className="mt-3 flex flex-wrap gap-4 text-2xs text-ink-dim">
+      <ul className="text-2xs text-ink-dim mt-3 flex flex-wrap gap-4">
         {order.map((segment) => {
           const n = buckets[segment.key] ?? 0
           return (

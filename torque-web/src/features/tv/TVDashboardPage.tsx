@@ -39,9 +39,9 @@ export function TVDashboardPage() {
   const current = widgetOrder[widgetIdx]!
 
   return (
-    <div className="min-h-screen bg-ink text-surface">
+    <div className="bg-ink text-surface min-h-screen">
       <div className="flex h-screen flex-col items-center justify-center gap-6 px-12">
-        <div className="text-2xs uppercase tracking-[0.3em] text-surface/50">
+        <div className="text-2xs text-surface/50 tracking-[0.3em] uppercase">
           Torque · {new Date().toLocaleDateString('pt-BR')}
         </div>
         {current === 'proposals' && <ProposalsWidget range={range} />}
@@ -67,15 +67,15 @@ function ProposalsWidget({ range }: { range: { since: string; until: string } })
   const data = q.data
   return (
     <div className="flex flex-col items-center gap-4 text-center">
-      <span className="text-xs uppercase tracking-[0.3em] text-surface/50">Propostas (30d)</span>
-      <span className="font-fraunces text-7xl text-surface">
+      <span className="text-surface/50 text-xs tracking-[0.3em] uppercase">Propostas (30d)</span>
+      <span className="font-fraunces text-surface text-7xl">
         {data ? data.sent_in_window.toLocaleString('pt-BR') : '—'}
       </span>
-      <span className="text-sm text-surface/70">
+      <span className="text-surface/70 text-sm">
         enviadas · {data?.accepted_in_window ?? 0} aceitas
       </span>
       {data && (
-        <span className="mt-3 font-mono text-2xl text-accent">
+        <span className="text-accent mt-3 font-mono text-2xl">
           {(data.won_amount_cents / 100).toLocaleString('pt-BR', {
             style: 'currency',
             currency: 'BRL',
@@ -91,18 +91,18 @@ function RankingWidget({ range }: { range: { since: string; until: string } }) {
   const top = (q.data?.data ?? []).slice(0, 5)
   return (
     <div className="w-full max-w-xl space-y-3">
-      <div className="text-center text-xs uppercase tracking-[0.3em] text-surface/50">
+      <div className="text-surface/50 text-center text-xs tracking-[0.3em] uppercase">
         Top 5 · Últimos 30 dias
       </div>
       {top.length === 0 ? (
-        <p className="text-center text-surface/60">Ainda sem fechamentos.</p>
+        <p className="text-surface/60 text-center">Ainda sem fechamentos.</p>
       ) : (
         <ol className="space-y-2">
           {top.map((e, i) => (
-            <li key={e.member_id} className="flex items-center gap-3 rounded-lg bg-surface/10 p-3">
-              <span className="font-fraunces w-8 text-xl text-accent">#{i + 1}</span>
-              <span className="flex-1 text-surface">{e.member_name}</span>
-              <span className="font-mono text-surface">
+            <li key={e.member_id} className="bg-surface/10 flex items-center gap-3 rounded-lg p-3">
+              <span className="font-fraunces text-accent w-8 text-xl">#{i + 1}</span>
+              <span className="text-surface flex-1">{e.member_name}</span>
+              <span className="text-surface font-mono">
                 {(e.revenue_cents / 100).toLocaleString('pt-BR', {
                   style: 'currency',
                   currency: 'BRL',
@@ -121,11 +121,11 @@ function LeadsWidget({ range }: { range: { since: string; until: string } }) {
   const data = q.data
   return (
     <div className="flex flex-col items-center gap-4 text-center">
-      <span className="text-xs uppercase tracking-[0.3em] text-surface/50">Leads no período</span>
-      <span className="font-fraunces text-7xl text-surface">
+      <span className="text-surface/50 text-xs tracking-[0.3em] uppercase">Leads no período</span>
+      <span className="font-fraunces text-surface text-7xl">
         {data ? data.in_window.toLocaleString('pt-BR') : '—'}
       </span>
-      <div className="mt-2 flex gap-6 text-sm text-surface/70">
+      <div className="text-surface/70 mt-2 flex gap-6 text-sm">
         <span>{data?.assigned ?? 0} atribuídos</span>
         <span>{data?.unassigned ?? 0} sem dono</span>
       </div>

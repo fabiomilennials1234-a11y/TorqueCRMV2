@@ -26,7 +26,7 @@ export function CockpitHeader() {
           className="h-7 w-auto drop-shadow-[0_1px_2px_rgb(0_0_0_/_0.5)]"
         />
         <div className="hidden h-5 w-px bg-[hsl(var(--clay-rim)/0.5)] md:block" />
-        <span className="hidden text-[0.6875rem] font-medium uppercase tracking-[0.18em] text-ink-dim md:block">
+        <span className="text-ink-dim hidden text-[0.6875rem] font-medium tracking-[0.18em] uppercase md:block">
           Cockpit
         </span>
       </div>
@@ -40,10 +40,10 @@ export function CockpitHeader() {
           <button
             type="button"
             aria-label="Notificações"
-            className="relative flex h-9 w-9 items-center justify-center rounded-full bg-[hsl(var(--clay-panel))] text-ink-muted shadow-[var(--clay-shadow-raised)] transition-[box-shadow,transform] hover:-translate-y-[1px] hover:text-ink active:translate-y-[0.5px] active:shadow-[var(--clay-shadow-sunken)]"
+            className="text-ink-muted hover:text-ink relative flex h-9 w-9 items-center justify-center rounded-full bg-[hsl(var(--clay-panel))] shadow-[var(--clay-shadow-raised)] transition-[box-shadow,transform] hover:-translate-y-[1px] active:translate-y-[0.5px] active:shadow-[var(--clay-shadow-sunken)]"
           >
             <Bell className="h-4 w-4" strokeWidth={1.75} />
-            <span className="absolute right-2 top-2 h-1.5 w-1.5 rounded-full bg-[hsl(var(--accent))] shadow-[0_0_6px_0_hsl(var(--accent))]" />
+            <span className="absolute top-2 right-2 h-1.5 w-1.5 rounded-full bg-[hsl(var(--accent))] shadow-[0_0_6px_0_hsl(var(--accent))]" />
           </button>
         </Tooltip>
 
@@ -57,14 +57,14 @@ function CockpitSearch() {
   return (
     <button
       type="button"
-      className="group flex h-9 min-w-0 max-w-[380px] flex-1 items-center gap-2.5 rounded-full bg-[hsl(var(--clay-panel-down))] px-3.5 text-left shadow-[var(--clay-shadow-sunken)] transition-[box-shadow] hover:shadow-[var(--clay-ring-focus)]"
+      className="group flex h-9 max-w-[380px] min-w-0 flex-1 items-center gap-2.5 rounded-full bg-[hsl(var(--clay-panel-down))] px-3.5 text-left shadow-[var(--clay-shadow-sunken)] transition-[box-shadow] hover:shadow-[var(--clay-ring-focus)]"
       aria-label="Abrir busca"
     >
-      <Search className="h-3.5 w-3.5 text-ink-dim" strokeWidth={2} />
-      <span className="flex-1 truncate text-[0.8125rem] text-ink-dim">
+      <Search className="text-ink-dim h-3.5 w-3.5" strokeWidth={2} />
+      <span className="text-ink-dim flex-1 truncate text-[0.8125rem]">
         Buscar leads, conversas, ações…
       </span>
-      <kbd className="hidden items-center rounded-md bg-[hsl(var(--clay-panel))] px-1.5 py-0.5 font-mono text-[10px] text-ink-dim shadow-[inset_0_1px_0_0_hsl(var(--clay-rim)/0.5)] sm:inline-flex">
+      <kbd className="text-ink-dim hidden items-center rounded-md bg-[hsl(var(--clay-panel))] px-1.5 py-0.5 font-mono text-[10px] shadow-[inset_0_1px_0_0_hsl(var(--clay-rim)/0.5)] sm:inline-flex">
         ⌘K
       </kbd>
     </button>
@@ -88,8 +88,8 @@ function CockpitUserMenu() {
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-[220px]">
         <div className="px-2 py-2">
-          <div className="text-sm font-medium text-ink">{user.displayName || '—'}</div>
-          <div className="text-xs text-ink-dim">{user.email}</div>
+          <div className="text-ink text-sm font-medium">{user.displayName || '—'}</div>
+          <div className="text-ink-dim text-xs">{user.email}</div>
         </div>
         <DropdownMenuSeparator />
         <DropdownMenuLabel>Conta</DropdownMenuLabel>

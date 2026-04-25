@@ -25,16 +25,16 @@ function BarGauge({ current, limit, label }: Pick<QuotaGaugeProps, 'current' | '
     <div className="flex flex-col gap-1.5">
       {label && (
         <div className="flex items-center justify-between">
-          <span className="text-2xs font-medium text-ink-muted">{label}</span>
-          <span className="font-metric text-2xs tabular-nums text-ink-muted">
+          <span className="text-2xs text-ink-muted font-medium">{label}</span>
+          <span className="font-metric text-2xs text-ink-muted tabular-nums">
             {current}
             <span className="text-ink-dim"> / {limit}</span>
           </span>
         </div>
       )}
-      <div className="relative h-1.5 w-full overflow-hidden rounded-full bg-hairline/40">
+      <div className="bg-hairline/40 relative h-1.5 w-full overflow-hidden rounded-full">
         <div
-          className="duration-[280ms] ease-[var(--ease-out-soft)] absolute inset-y-0 left-0 rounded-full transition-[width,background-color]"
+          className="absolute inset-y-0 left-0 rounded-full transition-[width,background-color] duration-[280ms] ease-[var(--ease-out-soft)]"
           style={{
             width: `${pct}%`,
             backgroundColor: `hsl(var(${hsl}))`,
@@ -89,7 +89,7 @@ function RingGauge({ current, limit }: Pick<QuotaGaugeProps, 'current' | 'limit'
         />
       </svg>
       <div className="absolute inset-0 flex flex-col items-center justify-center">
-        <span className="font-metric text-[0.8125rem] tabular-nums leading-none text-ink">
+        <span className="font-metric text-ink text-[0.8125rem] leading-none tabular-nums">
           {current}
         </span>
       </div>
@@ -109,14 +109,14 @@ function InlineGauge({
   return (
     <span className="inline-flex items-center gap-1.5">
       <span
-        className="duration-[280ms] ease-[var(--ease-out-soft)] inline-block h-1.5 w-1.5 rounded-full transition-colors"
+        className="inline-block h-1.5 w-1.5 rounded-full transition-colors duration-[280ms] ease-[var(--ease-out-soft)]"
         style={{ backgroundColor: `hsl(var(${hsl}))` }}
       />
-      <span className="font-metric text-sm tabular-nums text-ink">
+      <span className="font-metric text-ink text-sm tabular-nums">
         {current}
         <span className="text-ink-dim"> / {limit}</span>
       </span>
-      {canAdd === false && <Lock className="h-3 w-3 text-ink-dim" strokeWidth={1.75} />}
+      {canAdd === false && <Lock className="text-ink-dim h-3 w-3" strokeWidth={1.75} />}
     </span>
   )
 }
@@ -124,8 +124,8 @@ function InlineGauge({
 /* ─── Shared lock overlay ─── */
 function LockOverlay() {
   return (
-    <div className="pointer-events-none absolute inset-0 flex items-center justify-center rounded-[inherit] bg-bg/60">
-      <Lock className="h-3.5 w-3.5 text-ink-dim" strokeWidth={1.75} />
+    <div className="bg-bg/60 pointer-events-none absolute inset-0 flex items-center justify-center rounded-[inherit]">
+      <Lock className="text-ink-dim h-3.5 w-3.5" strokeWidth={1.75} />
     </div>
   )
 }

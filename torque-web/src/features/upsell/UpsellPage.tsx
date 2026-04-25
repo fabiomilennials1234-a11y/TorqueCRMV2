@@ -35,14 +35,14 @@ export function UpsellPage() {
       ) : (
         <ul className="mt-6 grid grid-cols-1 gap-2 md:grid-cols-2">
           {query.items.map((lead: Lead) => (
-            <li key={lead.id} className="rounded-lg bg-surface p-3 shadow-elev-1">
+            <li key={lead.id} className="bg-surface shadow-elev-1 rounded-lg p-3">
               <div className="flex items-center gap-2">
-                <span className="font-medium text-ink">{lead.name}</span>
+                <span className="text-ink font-medium">{lead.name}</span>
                 {lead.segment && <Badge tone="neutral">{lead.segment}</Badge>}
                 {lead.origin && <Badge tone="neutral">{lead.origin}</Badge>}
               </div>
-              {lead.company && <div className="mt-1 text-2xs text-ink-dim">{lead.company}</div>}
-              <div className="mt-1 text-2xs text-ink-dim">
+              {lead.company && <div className="text-2xs text-ink-dim mt-1">{lead.company}</div>}
+              <div className="text-2xs text-ink-dim mt-1">
                 Atualizado: {new Date(lead.updated_at).toLocaleString('pt-BR')}
               </div>
             </li>

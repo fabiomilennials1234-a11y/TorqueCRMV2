@@ -57,12 +57,12 @@ export function QueuePanel({ tasks, inProgressId }: QueuePanelProps) {
     <section className="flex h-full min-h-0 flex-col" aria-label="Tasks a fazer">
       <header className="flex items-center justify-between px-1 pb-4">
         <div className="flex items-baseline gap-2">
-          <h2 className="font-display text-[1.25rem] leading-none tracking-tightest text-ink">
+          <h2 className="font-display tracking-tightest text-ink text-[1.25rem] leading-none">
             Tasks a fazer
           </h2>
-          <span className="font-mono text-xs tabular-nums text-ink-dim">{tasks.length}</span>
+          <span className="text-ink-dim font-mono text-xs tabular-nums">{tasks.length}</span>
         </div>
-        <ArrowDownUp className="h-3.5 w-3.5 text-ink-dim" strokeWidth={1.75} aria-hidden />
+        <ArrowDownUp className="text-ink-dim h-3.5 w-3.5" strokeWidth={1.75} aria-hidden />
       </header>
 
       {tasks.length === 0 ? (
@@ -93,17 +93,17 @@ export function QueuePanel({ tasks, inProgressId }: QueuePanelProps) {
                 >
                   <div className="flex items-start gap-2.5">
                     <GripVertical
-                      className="mt-0.5 h-3.5 w-3.5 shrink-0 text-ink-dim opacity-0 transition-opacity group-hover:opacity-100"
+                      className="text-ink-dim mt-0.5 h-3.5 w-3.5 shrink-0 opacity-0 transition-opacity group-hover:opacity-100"
                       strokeWidth={1.75}
                       aria-hidden
                     />
                     <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[hsl(var(--clay-panel-down))] shadow-[var(--clay-shadow-sunken)]">
-                      <Icon className="h-3.5 w-3.5 text-ink-muted" strokeWidth={1.75} />
+                      <Icon className="text-ink-muted h-3.5 w-3.5" strokeWidth={1.75} />
                     </div>
 
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-1.5">
-                        <span className="font-mono text-[10px] tabular-nums text-ink-dim">
+                        <span className="text-ink-dim font-mono text-[10px] tabular-nums">
                           {String(idx + 1).padStart(2, '0')}
                         </span>
                         {t.priority === 'urgent' && (
@@ -114,7 +114,7 @@ export function QueuePanel({ tasks, inProgressId }: QueuePanelProps) {
                           />
                         )}
                       </div>
-                      <p className="clamp-2 mt-0.5 text-[13px] leading-snug text-ink">{t.title}</p>
+                      <p className="clamp-2 text-ink mt-0.5 text-[13px] leading-snug">{t.title}</p>
                       <div className="mt-2 flex items-center gap-1.5">
                         <ClayChip tone={priorityTone(t.priority)} size="xs">
                           {t.priority}
@@ -143,7 +143,7 @@ export function QueuePanel({ tasks, inProgressId }: QueuePanelProps) {
                           e.stopPropagation()
                           startTask(t.id)
                         }}
-                        className="rounded-full p-1 text-ink-dim hover:text-[hsl(var(--accent))]"
+                        className="text-ink-dim rounded-full p-1 hover:text-[hsl(var(--accent))]"
                       >
                         <Play className="h-3 w-3" strokeWidth={2} />
                       </button>
@@ -154,7 +154,7 @@ export function QueuePanel({ tasks, inProgressId }: QueuePanelProps) {
                           e.stopPropagation()
                           dequeueTask(t.id)
                         }}
-                        className="rounded-full p-1 text-ink-dim hover:text-[hsl(var(--danger))]"
+                        className="text-ink-dim rounded-full p-1 hover:text-[hsl(var(--danger))]"
                       >
                         <X className="h-3 w-3" strokeWidth={2} />
                       </button>
@@ -174,11 +174,11 @@ function EmptyQueue() {
   return (
     <div className="flex flex-1 flex-col items-center justify-center gap-3 px-6 text-center">
       <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[hsl(var(--clay-panel))] shadow-[var(--clay-shadow-sunken)]">
-        <Check className="h-4 w-4 text-ink-dim" strokeWidth={1.75} />
+        <Check className="text-ink-dim h-4 w-4" strokeWidth={1.75} />
       </div>
       <div>
-        <p className="text-sm text-ink">Fila limpa</p>
-        <p className="mt-1 text-xs text-ink-dim">Arraste tasks do backlog para priorizar.</p>
+        <p className="text-ink text-sm">Fila limpa</p>
+        <p className="text-ink-dim mt-1 text-xs">Arraste tasks do backlog para priorizar.</p>
       </div>
       <ClayButton variant="ghost" size="sm">
         Pegar da lista em aberto

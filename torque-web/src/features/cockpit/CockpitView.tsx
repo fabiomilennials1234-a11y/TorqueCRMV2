@@ -41,7 +41,7 @@ export function CockpitView() {
   }
   if (isError) {
     return (
-      <div className="flex h-full items-center justify-center text-sm text-ink-muted">
+      <div className="text-ink-muted flex h-full items-center justify-center text-sm">
         Não foi possível carregar o cockpit.
       </div>
     )

@@ -52,7 +52,7 @@ export function PerformancePage() {
         description="Ranking, metas, comissões e premiações."
       />
 
-      <div className="mt-4 inline-flex rounded-md bg-elevated/40 p-1 shadow-hairline">
+      <div className="bg-elevated/40 shadow-hairline mt-4 inline-flex rounded-md p-1">
         {(Object.keys(tabLabel) as Tab[]).map((t) => (
           <button
             key={t}
@@ -87,13 +87,13 @@ function RankingTab() {
 
   return (
     <div>
-      <div className="mb-3 inline-flex rounded-md bg-elevated/40 p-1 shadow-hairline">
+      <div className="bg-elevated/40 shadow-hairline mb-3 inline-flex rounded-md p-1">
         {([7, 30, 90] as const).map((n) => (
           <button
             key={n}
             type="button"
             className={
-              'rounded px-3 py-1 text-2xs ' +
+              'text-2xs rounded px-3 py-1 ' +
               (n === days ? 'bg-surface text-ink shadow-elev-1' : 'text-ink-dim')
             }
             onClick={() => setDays(n)}
@@ -121,20 +121,20 @@ function RankingBars({ entries }: { entries: RankingEntry[] }) {
       {entries.map((e, idx) => {
         const pct = max === 0 ? 0 : (e.revenue_cents / max) * 100
         return (
-          <li key={e.member_id} className="rounded-lg bg-surface p-3 shadow-elev-1">
+          <li key={e.member_id} className="bg-surface shadow-elev-1 rounded-lg p-3">
             <div className="flex items-center gap-2 text-xs">
-              <span className="w-6 font-mono text-ink-dim">#{idx + 1}</span>
-              <span className="flex-1 font-medium text-ink">{e.member_name}</span>
+              <span className="text-ink-dim w-6 font-mono">#{idx + 1}</span>
+              <span className="text-ink flex-1 font-medium">{e.member_name}</span>
               <span className="text-2xs text-ink-dim">{e.deals_won} deals</span>
-              <span className="font-mono text-ink">
+              <span className="text-ink font-mono">
                 {(e.revenue_cents / 100).toLocaleString('pt-BR', {
                   style: 'currency',
                   currency: 'BRL',
                 })}
               </span>
             </div>
-            <div className="mt-2 h-2 overflow-hidden rounded-full bg-elevated/40">
-              <div className="h-full bg-accent/60" style={{ width: `${pct}%` }} />
+            <div className="bg-elevated/40 mt-2 h-2 overflow-hidden rounded-full">
+              <div className="bg-accent/60 h-full" style={{ width: `${pct}%` }} />
             </div>
           </li>
         )
@@ -176,19 +176,19 @@ function GoalRow({ goal }: { goal: Goal }) {
     return `${s} → ${e}`
   }, [goal])
   return (
-    <li className="rounded-lg bg-surface p-3 shadow-elev-1">
+    <li className="bg-surface shadow-elev-1 rounded-lg p-3">
       <div className="flex items-center gap-2 text-xs">
         <Badge tone="neutral">{goal.metric}</Badge>
         {goal.member_id ? (
-          <span className="font-mono text-2xs text-ink-dim">
+          <span className="text-2xs text-ink-dim font-mono">
             member: {goal.member_id.slice(0, 8)}
           </span>
         ) : (
           <Badge tone="neutral">org</Badge>
         )}
-        <span className="ml-auto font-mono text-ink">{goal.target.toLocaleString('pt-BR')}</span>
+        <span className="text-ink ml-auto font-mono">{goal.target.toLocaleString('pt-BR')}</span>
       </div>
-      <div className="mt-1 text-2xs text-ink-dim">{periodLabel}</div>
+      <div className="text-2xs text-ink-dim mt-1">{periodLabel}</div>
     </li>
   )
 }
@@ -233,11 +233,11 @@ function CommissionsTab() {
 
 function CommissionRow({ commission }: { commission: Commission }) {
   return (
-    <li className="flex items-center justify-between rounded-md bg-elevated/30 px-3 py-2 text-xs">
-      <span className="font-mono text-ink-dim">{commission.member_id.slice(0, 8)}</span>
+    <li className="bg-elevated/30 flex items-center justify-between rounded-md px-3 py-2 text-xs">
+      <span className="text-ink-dim font-mono">{commission.member_id.slice(0, 8)}</span>
       <div className="flex items-center gap-2">
-        <span className="font-mono text-2xs text-ink-dim">{commission.percentage.toFixed(2)}%</span>
-        <span className="font-mono text-ink">
+        <span className="text-2xs text-ink-dim font-mono">{commission.percentage.toFixed(2)}%</span>
+        <span className="text-ink font-mono">
           {(commission.amount_cents / 100).toLocaleString('pt-BR', {
             style: 'currency',
             currency: commission.currency,
@@ -251,9 +251,9 @@ function CommissionRow({ commission }: { commission: Commission }) {
 
 function AmountCard({ label, value }: { label: string; value: number }) {
   return (
-    <div className="rounded-lg bg-surface p-3 shadow-elev-1">
-      <div className="text-2xs uppercase tracking-wide text-ink-dim">{label}</div>
-      <div className="font-fraunces mt-2 text-2xl text-ink">
+    <div className="bg-surface shadow-elev-1 rounded-lg p-3">
+      <div className="text-2xs text-ink-dim tracking-wide uppercase">{label}</div>
+      <div className="font-fraunces text-ink mt-2 text-2xl">
         {(value / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
       </div>
     </div>
@@ -285,14 +285,14 @@ function AwardsTab() {
 
 function AwardRow({ award }: { award: Award }) {
   return (
-    <li className="rounded-lg bg-surface p-3 shadow-elev-1">
+    <li className="bg-surface shadow-elev-1 rounded-lg p-3">
       <div className="flex items-center gap-2">
-        <span className="font-medium text-ink">{award.title}</span>
+        <span className="text-ink font-medium">{award.title}</span>
         {award.awarded_at && (
           <Badge tone="success">{new Date(award.awarded_at).toLocaleDateString('pt-BR')}</Badge>
         )}
       </div>
-      {award.description && <p className="mt-1 text-xs text-ink-dim">{award.description}</p>}
+      {award.description && <p className="text-ink-dim mt-1 text-xs">{award.description}</p>}
     </li>
   )
 }

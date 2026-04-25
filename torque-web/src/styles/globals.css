@@ -5,9 +5,14 @@
 @import '@fontsource/inter/700.css';
 @import '@fontsource/jetbrains-mono/400.css';
 
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+/* Tailwind v4: substituicao das tres @tailwind directives por single import.
+ * Engine novo (Oxide). Plugin tailwindcss-animate aposentado em v4 →
+ * substituido por tw-animate-css que reexporta as mesmas utilities animate-*.
+ * @config aponta pro tailwind.config.ts legacy (v4 mantem support pra
+ * extends de cores/tipografia/keyframes ja definidos). */
+@import 'tailwindcss';
+@import 'tw-animate-css';
+@config '../../tailwind.config.ts';
 
 /* ------------------------------------------------------------------
  * Torque — Design Tokens

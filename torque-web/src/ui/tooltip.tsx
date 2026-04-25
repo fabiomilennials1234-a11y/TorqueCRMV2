@@ -26,7 +26,7 @@ export function Tooltip({
           side={side}
           sideOffset={6}
           className={cn(
-            'z-50 select-none rounded-sm bg-elevated px-2 py-1 text-xs text-ink shadow-elev-2',
+            'bg-elevated text-ink shadow-elev-2 z-50 rounded-sm px-2 py-1 text-xs select-none',
             'data-[state=delayed-open]:animate-scale-in',
             'flex items-center gap-2'
           )}

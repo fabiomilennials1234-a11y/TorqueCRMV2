@@ -27,16 +27,16 @@ export function Avatar({
   return (
     <RA.Root
       className={cn(
-        'font-metric relative inline-flex shrink-0 select-none overflow-hidden rounded-full uppercase',
+        'font-metric relative inline-flex shrink-0 overflow-hidden rounded-full uppercase select-none',
         sizes[size],
-        ring && 'shadow-hairline ring-2 ring-bg',
+        ring && 'shadow-hairline ring-bg ring-2',
         className
       )}
       {...props}
     >
       {src && <RA.Image src={src} alt={fallback} className="h-full w-full object-cover" />}
       <RA.Fallback
-        className="flex h-full w-full items-center justify-center bg-elevated text-ink-muted"
+        className="bg-elevated text-ink-muted flex h-full w-full items-center justify-center"
         delayMs={200}
       >
         {fallback.slice(0, 2)}

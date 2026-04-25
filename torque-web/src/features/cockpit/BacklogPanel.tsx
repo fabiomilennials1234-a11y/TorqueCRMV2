@@ -58,8 +58,8 @@ export function BacklogPanel({ backlog, missed }: BacklogPanelProps) {
     <ClayPanel variant="surface" size="none" className="flex min-h-0 flex-1 flex-col p-4">
       <header className="flex items-center justify-between pb-3">
         <div className="flex items-baseline gap-2">
-          <h3 className="text-[0.8125rem] font-medium text-ink">Tasks em aberto</h3>
-          <span className="font-mono text-[10px] tabular-nums text-ink-dim">{backlog.length}</span>
+          <h3 className="text-ink text-[0.8125rem] font-medium">Tasks em aberto</h3>
+          <span className="text-ink-dim font-mono text-[10px] tabular-nums">{backlog.length}</span>
         </div>
       </header>
 
@@ -70,9 +70,9 @@ export function BacklogPanel({ backlog, missed }: BacklogPanelProps) {
             type="button"
             onClick={() => setFilter(f)}
             className={cn(
-              'h-6 rounded-full px-2.5 text-[10px] uppercase tracking-[0.08em] transition-colors',
+              'h-6 rounded-full px-2.5 text-[10px] tracking-[0.08em] uppercase transition-colors',
               filter === f
-                ? 'bg-[hsl(var(--clay-panel-up))] text-ink shadow-[var(--clay-shadow-raised)]'
+                ? 'text-ink bg-[hsl(var(--clay-panel-up))] shadow-[var(--clay-shadow-raised)]'
                 : 'text-ink-dim hover:text-ink'
             )}
           >
@@ -84,7 +84,7 @@ export function BacklogPanel({ backlog, missed }: BacklogPanelProps) {
       <div className="flex min-h-0 flex-1 flex-col gap-1.5 overflow-y-auto pr-1">
         {missed.length > 0 && (
           <div className="mb-2">
-            <div className="mb-1.5 flex items-center gap-1.5 px-1 text-[10px] uppercase tracking-[0.1em] text-[hsl(var(--danger))]">
+            <div className="mb-1.5 flex items-center gap-1.5 px-1 text-[10px] tracking-[0.1em] text-[hsl(var(--danger))] uppercase">
               <AlertTriangle className="h-3 w-3" strokeWidth={2} />
               Atrasadas perdidas · {missed.length}
             </div>
@@ -100,7 +100,7 @@ export function BacklogPanel({ backlog, missed }: BacklogPanelProps) {
         )}
 
         {filtered.length === 0 ? (
-          <p className="px-1 py-6 text-center text-xs text-ink-dim">Nada por aqui. Respire.</p>
+          <p className="text-ink-dim px-1 py-6 text-center text-xs">Nada por aqui. Respire.</p>
         ) : (
           filtered.map((t) => (
             <BacklogRow key={t.id} task={t} onEnqueue={() => enqueueTask(t.id)} />
@@ -144,8 +144,8 @@ function BacklogRow({
           task.priority === 'low' && 'bg-[hsl(var(--ink-dim))]'
         )}
       />
-      <Icon className="h-3 w-3 shrink-0 text-ink-dim" strokeWidth={1.75} aria-hidden />
-      <p className="clamp-1 min-w-0 flex-1 text-[12px] leading-tight text-ink">{task.title}</p>
+      <Icon className="text-ink-dim h-3 w-3 shrink-0" strokeWidth={1.75} aria-hidden />
+      <p className="clamp-1 text-ink min-w-0 flex-1 text-[12px] leading-tight">{task.title}</p>
       {task.dueAt && (
         <span
           className={cn(
@@ -166,7 +166,7 @@ function BacklogRow({
         aria-label={variant === 'missed' ? 'Reabrir na fila' : 'Adicionar à fila'}
         className={cn(
           'opacity-0 transition-opacity group-hover:opacity-100',
-          'rounded-full p-1 text-ink-dim hover:text-[hsl(var(--accent))]'
+          'text-ink-dim rounded-full p-1 hover:text-[hsl(var(--accent))]'
         )}
       >
         <ArrowLeftCircle className="h-3.5 w-3.5" strokeWidth={1.75} />

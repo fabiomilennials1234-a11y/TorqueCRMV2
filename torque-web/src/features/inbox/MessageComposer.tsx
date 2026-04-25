@@ -76,7 +76,7 @@ export function MessageComposer({ conversationId, contactName, disabled }: Messa
   }
 
   return (
-    <div className="relative shrink-0 border-t border-hairline px-6 py-3">
+    <div className="border-hairline relative shrink-0 border-t px-6 py-3">
       {showTemplates && (
         <TemplatePicker onPick={handleTemplate} onDismiss={() => setShowTemplates(false)} />
       )}
@@ -105,7 +105,7 @@ export function MessageComposer({ conversationId, contactName, disabled }: Messa
               : 'Digite uma mensagem… (Enter envia, Shift+Enter quebra linha)'
           }
           rows={1}
-          className="flex-1 resize-none rounded-md bg-elevated/40 px-3 py-2 text-sm text-ink shadow-hairline placeholder:text-ink-dim focus:outline-none focus:ring-1 focus:ring-accent/50"
+          className="bg-elevated/40 text-ink shadow-hairline placeholder:text-ink-dim focus:ring-accent/50 flex-1 resize-none rounded-md px-3 py-2 text-sm focus:ring-1 focus:outline-none"
         />
 
         <Button
@@ -141,18 +141,18 @@ function TemplatePicker({
     <div
       role="dialog"
       aria-label="Escolher template"
-      className="absolute bottom-full left-6 mb-2 w-80 rounded-lg bg-surface p-2 shadow-elev-2"
+      className="bg-surface shadow-elev-2 absolute bottom-full left-6 mb-2 w-80 rounded-lg p-2"
     >
       <div className="flex items-center justify-between px-2 py-1">
-        <span className="text-xs text-ink-muted">Templates</span>
+        <span className="text-ink-muted text-xs">Templates</span>
         <Button variant="ghost" size="xs" onClick={onDismiss}>
           Fechar
         </Button>
       </div>
       <ul className="max-h-72 overflow-y-auto">
-        {query.isLoading && <li className="px-3 py-2 text-xs text-ink-dim">Carregando…</li>}
+        {query.isLoading && <li className="text-ink-dim px-3 py-2 text-xs">Carregando…</li>}
         {query.isSuccess && query.data.length === 0 && (
-          <li className="px-3 py-4 text-center text-xs text-ink-dim">
+          <li className="text-ink-dim px-3 py-4 text-center text-xs">
             Nenhum template ativo. Admins podem criar em Configurações.
           </li>
         )}
@@ -162,10 +162,10 @@ function TemplatePicker({
               <button
                 type="button"
                 onClick={() => onPick(t)}
-                className="flex w-full flex-col items-start rounded-md px-3 py-2 text-left hover:bg-elevated/40"
+                className="hover:bg-elevated/40 flex w-full flex-col items-start rounded-md px-3 py-2 text-left"
               >
-                <span className="text-sm text-ink">{t.name}</span>
-                <span className="line-clamp-2 text-xs text-ink-dim">{t.body}</span>
+                <span className="text-ink text-sm">{t.name}</span>
+                <span className="text-ink-dim line-clamp-2 text-xs">{t.body}</span>
               </button>
             </li>
           ))}

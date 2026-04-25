@@ -17,22 +17,22 @@ export function PageHeader({
   return (
     <header
       className={cn(
-        'flex items-start justify-between gap-6 pb-6 pt-8',
+        'flex items-start justify-between gap-6 pt-8 pb-6',
         'shadow-hairline-b',
         className
       )}
     >
       <div className="min-w-0">
         {eyebrow && (
-          <div className="mb-2 text-2xs font-medium uppercase tracking-[0.14em] text-ink-dim">
+          <div className="text-2xs text-ink-dim mb-2 font-medium tracking-[0.14em] uppercase">
             {eyebrow}
           </div>
         )}
-        <h1 className="font-display text-[2rem] leading-[1.05] tracking-tightest text-ink">
+        <h1 className="font-display tracking-tightest text-ink text-[2rem] leading-[1.05]">
           {title}
         </h1>
         {description && (
-          <p className="mt-2 max-w-2xl text-[0.9375rem] leading-relaxed text-ink-muted">
+          <p className="text-ink-muted mt-2 max-w-2xl text-[0.9375rem] leading-relaxed">
             {description}
           </p>
         )}

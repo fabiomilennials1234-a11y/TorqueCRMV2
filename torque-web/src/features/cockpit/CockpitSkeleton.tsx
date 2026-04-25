@@ -25,7 +25,7 @@ function ShimmerBlock({ className = '' }: { className?: string }) {
         className
       }
     >
-      <div className="h-full w-full animate-shimmer rounded-[inherit] bg-gradient-to-r from-transparent via-[hsl(var(--clay-panel-up)/0.5)] to-transparent bg-[length:200%_100%]" />
+      <div className="animate-shimmer h-full w-full rounded-[inherit] bg-gradient-to-r from-transparent via-[hsl(var(--clay-panel-up)/0.5)] to-transparent bg-[length:200%_100%]" />
     </div>
   )
 }

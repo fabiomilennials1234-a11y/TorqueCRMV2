@@ -103,13 +103,13 @@ function Metric({
   danger?: boolean
 }) {
   return (
-    <div className="rounded-lg bg-surface p-4 shadow-elev-1">
-      <div className="mb-2 flex items-center gap-2 text-2xs uppercase tracking-[0.12em] text-ink-dim">
+    <div className="bg-surface shadow-elev-1 rounded-lg p-4">
+      <div className="text-2xs text-ink-dim mb-2 flex items-center gap-2 tracking-[0.12em] uppercase">
         <Icon className="h-3 w-3" strokeWidth={1.75} />
         {label}
       </div>
       <div className={`font-metric text-2xl ${danger ? 'text-warning' : 'text-ink'}`}>{value}</div>
-      <div className="mt-1 text-xs text-ink-dim">{subvalue}</div>
+      <div className="text-ink-dim mt-1 text-xs">{subvalue}</div>
     </div>
   )
 }
@@ -137,10 +137,10 @@ function OrganizationsTable() {
     return <EmptyState title="Nenhuma organização ainda" description="Sistema em estado inicial." />
   }
   return (
-    <div className="overflow-hidden rounded-lg bg-surface shadow-elev-1">
+    <div className="bg-surface shadow-elev-1 overflow-hidden rounded-lg">
       <table className="w-full text-sm">
         <thead>
-          <tr className="text-2xs uppercase tracking-[0.12em] text-ink-dim">
+          <tr className="text-2xs text-ink-dim tracking-[0.12em] uppercase">
             <th className="px-5 py-3 text-left font-medium">Organização</th>
             <th className="px-5 py-3 text-left font-medium">Plano</th>
             <th className="px-5 py-3 text-left font-medium">Status</th>
@@ -154,22 +154,22 @@ function OrganizationsTable() {
             <tr
               key={o.id}
               className={
-                'transition-colors hover:bg-elevated/40' +
+                'hover:bg-elevated/40 transition-colors' +
                 (i > 0 ? ' shadow-[inset_0_1px_0_0_hsl(var(--hairline))]' : '')
               }
             >
               <td className="px-5 py-3">
-                <div className="text-sm text-ink">{o.name}</div>
+                <div className="text-ink text-sm">{o.name}</div>
                 <div className="font-metric text-2xs text-ink-dim">{o.slug}</div>
               </td>
-              <td className="px-5 py-3 text-ink-muted">{o.plan_id ?? '—'}</td>
+              <td className="text-ink-muted px-5 py-3">{o.plan_id ?? '—'}</td>
               <td className="px-5 py-3">
                 <Badge tone={o.payment_status === 'active' ? 'success' : 'warning'}>
                   {o.payment_status}
                 </Badge>
               </td>
-              <td className="font-metric px-5 py-3 text-right text-ink">{o.member_count}</td>
-              <td className="font-metric px-5 py-3 text-right text-ink">{o.lead_count}</td>
+              <td className="font-metric text-ink px-5 py-3 text-right">{o.member_count}</td>
+              <td className="font-metric text-ink px-5 py-3 text-right">{o.lead_count}</td>
               <td className="px-5 py-3 text-right">
                 <Button
                   variant="ghost"

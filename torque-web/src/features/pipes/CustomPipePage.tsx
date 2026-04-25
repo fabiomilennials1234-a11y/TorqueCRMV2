@@ -51,8 +51,8 @@ function CustomPipeInner({ pipeId }: { pipeId: string }) {
   if (!pipe) {
     return (
       <div className="mx-auto max-w-md p-12 text-center">
-        <p className="text-sm text-danger">Pipe não encontrado ou fora do tenant.</p>
-        <Link to="/pipeline" className="mt-4 inline-block text-sm text-accent underline">
+        <p className="text-danger text-sm">Pipe não encontrado ou fora do tenant.</p>
+        <Link to="/pipeline" className="text-accent mt-4 inline-block text-sm underline">
           Voltar
         </Link>
       </div>
@@ -65,7 +65,7 @@ function CustomPipeInner({ pipeId }: { pipeId: string }) {
     <div className="mx-auto max-w-6xl px-8 py-8">
       <Link
         to="/pipeline"
-        className="mb-3 inline-flex items-center gap-1.5 text-xs text-ink-dim hover:text-ink-muted"
+        className="text-ink-dim hover:text-ink-muted mb-3 inline-flex items-center gap-1.5 text-xs"
       >
         <ArrowLeft className="h-3.5 w-3.5" />
         Todos os pipes
@@ -86,10 +86,10 @@ function CustomPipeInner({ pipeId }: { pipeId: string }) {
           {ordered.map((s) => (
             <div
               key={s.id}
-              className="min-w-[220px] flex-1 rounded-lg bg-surface p-3 shadow-elev-1"
+              className="bg-surface shadow-elev-1 min-w-[220px] flex-1 rounded-lg p-3"
             >
               <div className="mb-2 flex items-center gap-2">
-                <span className="truncate text-sm font-medium text-ink">{s.name}</span>
+                <span className="text-ink truncate text-sm font-medium">{s.name}</span>
                 <Badge tone="neutral" className="ml-auto">
                   {entriesByStage.get(s.id) ?? 0}
                 </Badge>

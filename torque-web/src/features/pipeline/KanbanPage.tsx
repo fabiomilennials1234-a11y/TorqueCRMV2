@@ -58,20 +58,20 @@ export function KanbanPage() {
   return (
     <div className="flex h-[calc(100vh-56px)] flex-col">
       {/* Toolbar */}
-      <div className="shrink-0 px-8 pb-4 pt-6 shadow-hairline-b">
+      <div className="shadow-hairline-b shrink-0 px-8 pt-6 pb-4">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div className="min-w-0">
-            <div className="mb-1 flex items-center gap-2.5 text-2xs font-medium uppercase tracking-[0.14em] text-ink-dim">
+            <div className="text-2xs text-ink-dim mb-1 flex items-center gap-2.5 font-medium tracking-[0.14em] uppercase">
               <TorqueMark size={14} />
               Funis
               <span className="text-ink-dim">/</span>
               <span className="text-accent">WhatsApp · Qualificação</span>
             </div>
             <div className="flex items-baseline gap-4">
-              <h1 className="font-display text-[1.75rem] leading-none tracking-tightest text-ink">
+              <h1 className="font-display tracking-tightest text-ink text-[1.75rem] leading-none">
                 WhatsApp · Qualificação
               </h1>
-              <div className="font-metric text-xs tabular-nums text-ink-dim">
+              <div className="font-metric text-ink-dim text-xs tabular-nums">
                 {totals.count} cards · R${' '}
                 {totals.value.toLocaleString('pt-BR', { maximumFractionDigits: 0 })} no funil ·{' '}
                 {totals.won} vendidos
@@ -85,11 +85,11 @@ export function KanbanPage() {
             <Button variant="ghost" size="icon">
               <List className="h-4 w-4" strokeWidth={1.75} />
             </Button>
-            <div className="mx-2 h-5 w-px bg-hairline" />
+            <div className="bg-hairline mx-2 h-5 w-px" />
             <Button variant="secondary" size="sm" className="gap-1.5">
               <Filter className="h-3.5 w-3.5" />
               Filtros
-              <span className="font-metric ml-1 flex h-4 min-w-4 items-center justify-center rounded-xs bg-accent px-1 text-[0.625rem] text-bg">
+              <span className="font-metric bg-accent text-bg ml-1 flex h-4 min-w-4 items-center justify-center rounded-xs px-1 text-[0.625rem]">
                 2
               </span>
             </Button>
@@ -109,15 +109,15 @@ export function KanbanPage() {
           <Pill active={filter === null} onClick={() => setFilter(null)}>
             Todos · {seedLeads.length}
           </Pill>
-          <div className="mx-1 h-4 w-px bg-hairline" />
-          <span className="pr-1 text-2xs uppercase tracking-[0.12em] text-ink-dim">Tag</span>
+          <div className="bg-hairline mx-1 h-4 w-px" />
+          <span className="text-2xs text-ink-dim pr-1 tracking-[0.12em] uppercase">Tag</span>
           {['Hot', 'Decisor', 'BANT ok', 'ICP fit', 'Enterprise'].map((t) => (
             <Pill key={t} active={filter === t} onClick={() => setFilter(filter === t ? null : t)}>
               {t}
             </Pill>
           ))}
-          <div className="mx-1 h-4 w-px bg-hairline" />
-          <span className="pr-1 text-2xs uppercase tracking-[0.12em] text-ink-dim">
+          <div className="bg-hairline mx-1 h-4 w-px" />
+          <span className="text-2xs text-ink-dim pr-1 tracking-[0.12em] uppercase">
             Responsável
           </span>
           {['Maíra Duarte', 'Rafael Bento'].map((t) => (
@@ -130,7 +130,7 @@ export function KanbanPage() {
 
       {/* Board */}
       <div className="relative min-h-0 flex-1 overflow-x-auto overflow-y-hidden">
-        <div className="flex h-full min-w-max gap-4 px-8 pb-8 pt-5">
+        <div className="flex h-full min-w-max gap-4 px-8 pt-5 pb-8">
           {stageOrder.map((s) => (
             <KanbanColumn
               key={s}
@@ -142,9 +142,9 @@ export function KanbanPage() {
           ))}
 
           {/* Add column card */}
-          <button className="ease-[var(--ease-out-soft)] flex h-full w-[72px] shrink-0 flex-col items-center justify-center rounded-xl bg-surface/30 text-ink-dim shadow-clay-1 transition-all duration-200 hover:bg-surface/50 hover:text-ink-muted hover:shadow-clay-2">
+          <button className="bg-surface/30 text-ink-dim shadow-clay-1 hover:bg-surface/50 hover:text-ink-muted hover:shadow-clay-2 flex h-full w-[72px] shrink-0 flex-col items-center justify-center rounded-xl transition-all duration-200 ease-[var(--ease-out-soft)]">
             <Plus className="mb-2 h-4 w-4" />
-            <span className="text-2xs uppercase tracking-[0.14em] [writing-mode:vertical-rl]">
+            <span className="text-2xs tracking-[0.14em] uppercase [writing-mode:vertical-rl]">
               Novo estágio
             </span>
           </button>

@@ -67,8 +67,8 @@ export function AgentPlaygroundPage() {
   if (query.isError || !query.data) {
     return (
       <div className="mx-auto max-w-md p-12 text-center">
-        <p className="text-sm text-danger">{friendlyMessage(query.error)}</p>
-        <Link to="/copilot" className="mt-4 inline-block text-sm text-accent underline">
+        <p className="text-danger text-sm">{friendlyMessage(query.error)}</p>
+        <Link to="/copilot" className="text-accent mt-4 inline-block text-sm underline">
           Voltar
         </Link>
       </div>
@@ -169,7 +169,7 @@ function PlaygroundInner({
       <aside className="flex min-h-0 flex-col overflow-y-auto py-6">
         <Link
           to="/copilot"
-          className="mb-3 inline-flex items-center gap-1.5 text-xs text-ink-dim hover:text-ink-muted"
+          className="text-ink-dim hover:text-ink-muted mb-3 inline-flex items-center gap-1.5 text-xs"
         >
           <ArrowLeft className="h-3.5 w-3.5" />
           Agentes
@@ -185,7 +185,7 @@ function PlaygroundInner({
           {agent.kill_switch && <Badge tone="danger">Kill-switch</Badge>}
           <Link
             to={`/copilot/${agentId}/metrics`}
-            className="ml-auto text-xs text-accent underline"
+            className="text-accent ml-auto text-xs underline"
           >
             Métricas
           </Link>
@@ -199,7 +199,7 @@ function PlaygroundInner({
           }}
         >
           <div>
-            <label htmlFor={nameId} className="mb-1 block text-xs text-ink-muted">
+            <label htmlFor={nameId} className="text-ink-muted mb-1 block text-xs">
               Nome
             </label>
             <Input
@@ -209,7 +209,7 @@ function PlaygroundInner({
             />
           </div>
           <div>
-            <label htmlFor={promptId} className="mb-1 block text-xs text-ink-muted">
+            <label htmlFor={promptId} className="text-ink-muted mb-1 block text-xs">
               System prompt
             </label>
             <textarea
@@ -217,14 +217,14 @@ function PlaygroundInner({
               rows={10}
               value={draft.system_prompt ?? ''}
               onChange={(e) => setDraft((d) => ({ ...d, system_prompt: e.target.value }))}
-              className="w-full resize-y rounded-md bg-elevated/40 px-3 py-2 text-sm text-ink shadow-hairline placeholder:text-ink-dim focus:outline-none focus:ring-1 focus:ring-accent/50"
+              className="bg-elevated/40 text-ink shadow-hairline placeholder:text-ink-dim focus:ring-accent/50 w-full resize-y rounded-md px-3 py-2 text-sm focus:ring-1 focus:outline-none"
             />
-            <p className="mt-1 text-2xs text-ink-dim">
+            <p className="text-2xs text-ink-dim mt-1">
               10 a 16.000 caracteres. Define tom, regras de negócio, restrições.
             </p>
           </div>
           <div>
-            <label htmlFor={modelId} className="mb-1 block text-xs text-ink-muted">
+            <label htmlFor={modelId} className="text-ink-muted mb-1 block text-xs">
               Modelo
             </label>
             <Input
@@ -232,13 +232,13 @@ function PlaygroundInner({
               value={draft.model ?? ''}
               onChange={(e) => setDraft((d) => ({ ...d, model: e.target.value }))}
             />
-            <p className="mt-1 text-2xs text-ink-dim">
+            <p className="text-2xs text-ink-dim mt-1">
               Qualquer identifier aceito pelo OpenRouter (ex.: anthropic/claude-sonnet-4).
             </p>
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label htmlFor={tempId} className="mb-1 block text-xs text-ink-muted">
+              <label htmlFor={tempId} className="text-ink-muted mb-1 block text-xs">
                 Temperatura
               </label>
               <Input
@@ -252,7 +252,7 @@ function PlaygroundInner({
               />
             </div>
             <div>
-              <label htmlFor={tokensId} className="mb-1 block text-xs text-ink-muted">
+              <label htmlFor={tokensId} className="text-ink-muted mb-1 block text-xs">
                 Max tokens
               </label>
               <Input
@@ -292,7 +292,7 @@ function PlaygroundInner({
       </aside>
 
       {/* Chat pane */}
-      <section className="flex min-h-0 flex-col overflow-hidden rounded-lg bg-surface shadow-elev-1">
+      <section className="bg-surface shadow-elev-1 flex min-h-0 flex-col overflow-hidden rounded-lg">
         <ChatTranscript
           conversation={conversation}
           pending={stream.state === 'streaming' ? stream.pending : ''}
@@ -301,14 +301,14 @@ function PlaygroundInner({
         {stream.state === 'error' && stream.error && (
           <div
             role="alert"
-            className="border-t border-danger/30 bg-danger/10 px-6 py-2 text-xs text-danger"
+            className="border-danger/30 bg-danger/10 text-danger border-t px-6 py-2 text-xs"
           >
             {stream.error.code}: {stream.error.message}
           </div>
         )}
 
         <form
-          className="flex items-end gap-2 border-t border-hairline px-6 py-3"
+          className="border-hairline flex items-end gap-2 border-t px-6 py-3"
           onSubmit={(e) => {
             e.preventDefault()
             void handleSend()
@@ -325,7 +325,7 @@ function PlaygroundInner({
             }}
             placeholder="Mensagem do usuário — Enter envia, Shift+Enter quebra linha"
             rows={2}
-            className="flex-1 resize-none rounded-md bg-elevated/40 px-3 py-2 text-sm text-ink shadow-hairline placeholder:text-ink-dim focus:outline-none focus:ring-1 focus:ring-accent/50"
+            className="bg-elevated/40 text-ink shadow-hairline placeholder:text-ink-dim focus:ring-accent/50 flex-1 resize-none rounded-md px-3 py-2 text-sm focus:ring-1 focus:outline-none"
             disabled={stream.state === 'streaming'}
           />
           {stream.state === 'streaming' ? (
@@ -361,7 +361,7 @@ function ChatTranscript({ conversation, pending }: { conversation: ChatTurn[]; p
   return (
     <div ref={scrollRef} className="flex-1 space-y-3 overflow-y-auto px-6 py-4">
       {conversation.length === 0 && !pending && (
-        <div className="flex h-full items-center justify-center text-sm text-ink-dim">
+        <div className="text-ink-dim flex h-full items-center justify-center text-sm">
           Envie uma mensagem para testar o agente.
         </div>
       )}
@@ -387,13 +387,13 @@ function TranscriptBubble({
     <div className={isUser ? 'flex justify-end' : 'flex justify-start'}>
       <div
         className={
-          'max-w-[72%] rounded-lg px-3 py-2 text-sm shadow-elev-1 ' +
+          'shadow-elev-1 max-w-[72%] rounded-lg px-3 py-2 text-sm ' +
           (isUser ? 'bg-accent/15 text-ink' : 'bg-elevated/40 text-ink-muted')
         }
       >
-        <p className="whitespace-pre-wrap break-words">{content}</p>
+        <p className="break-words whitespace-pre-wrap">{content}</p>
         {streaming && (
-          <span className="ml-1 inline-block h-3 w-0.5 animate-pulse bg-ink align-text-bottom" />
+          <span className="bg-ink ml-1 inline-block h-3 w-0.5 animate-pulse align-text-bottom" />
         )}
       </div>
     </div>
@@ -445,23 +445,23 @@ function KnowledgePanel({
   }
 
   return (
-    <section className="mt-8 border-t border-hairline pt-6">
+    <section className="border-hairline mt-8 border-t pt-6">
       <div className="mb-3 flex items-center gap-2">
-        <Book className="h-4 w-4 text-ink-muted" />
-        <h3 className="text-sm font-medium text-ink">Base de conhecimento</h3>
+        <Book className="text-ink-muted h-4 w-4" />
+        <h3 className="text-ink text-sm font-medium">Base de conhecimento</h3>
       </div>
-      <p className="mb-3 text-2xs text-ink-dim">
+      <p className="text-2xs text-ink-dim mb-3">
         Ligue uma coleção para injetar contexto recuperado (topK=5) no system prompt antes de cada
         mensagem.
       </p>
 
       <div className="space-y-2">
-        <label htmlFor={collectionSelectId} className="block text-xs text-ink-muted">
+        <label htmlFor={collectionSelectId} className="text-ink-muted block text-xs">
           Coleção ativa
         </label>
         <select
           id={collectionSelectId}
-          className="w-full rounded-md bg-elevated/40 px-3 py-2 text-sm text-ink shadow-hairline focus:outline-none focus:ring-1 focus:ring-accent/50"
+          className="bg-elevated/40 text-ink shadow-hairline focus:ring-accent/50 w-full rounded-md px-3 py-2 text-sm focus:ring-1 focus:outline-none"
           value={collectionId ?? ''}
           onChange={(e) => void handleBind(e.target.value)}
           disabled={bind.isPending || collections.isLoading}
@@ -509,7 +509,7 @@ function KnowledgePanel({
 
       {collectionId && (
         <div className="mt-6 space-y-3">
-          <h4 className="text-xs font-medium text-ink-muted">Fontes</h4>
+          <h4 className="text-ink-muted text-xs font-medium">Fontes</h4>
           {sources.isLoading ? (
             <Skeleton className="h-12 w-full" />
           ) : (sources.data ?? []).length === 0 ? (
@@ -519,9 +519,9 @@ function KnowledgePanel({
               {sources.data!.map((s) => (
                 <li
                   key={s.id}
-                  className="flex items-center justify-between rounded-md bg-elevated/30 px-3 py-2 text-xs"
+                  className="bg-elevated/30 flex items-center justify-between rounded-md px-3 py-2 text-xs"
                 >
-                  <span className="truncate pr-2 text-ink">{s.title}</span>
+                  <span className="text-ink truncate pr-2">{s.title}</span>
                   <Badge
                     tone={
                       s.status === 'ready'
@@ -549,7 +549,7 @@ function KnowledgePanel({
               onChange={(e) => setSourceContent(e.target.value)}
               rows={4}
               placeholder="Cole o texto aqui — será dividido em chunks e embeddado."
-              className="w-full resize-y rounded-md bg-elevated/40 px-3 py-2 text-xs text-ink shadow-hairline placeholder:text-ink-dim focus:outline-none focus:ring-1 focus:ring-accent/50"
+              className="bg-elevated/40 text-ink shadow-hairline placeholder:text-ink-dim focus:ring-accent/50 w-full resize-y rounded-md px-3 py-2 text-xs focus:ring-1 focus:outline-none"
             />
             <Button
               type="submit"
@@ -609,12 +609,12 @@ function TTSPanel({
   }
 
   return (
-    <section className="mt-8 border-t border-hairline pt-6">
+    <section className="border-hairline mt-8 border-t pt-6">
       <div className="mb-3 flex items-center gap-2">
-        <Volume2 className="h-4 w-4 text-ink-muted" />
-        <h3 className="text-sm font-medium text-ink">Voz (TTS)</h3>
+        <Volume2 className="text-ink-muted h-4 w-4" />
+        <h3 className="text-ink text-sm font-medium">Voz (TTS)</h3>
       </div>
-      <p className="mb-3 text-2xs text-ink-dim">
+      <p className="text-2xs text-ink-dim mb-3">
         Quando habilitado, respostas do agente são renderizadas como áudio (ElevenLabs). Preview não
         consome quota da conversa real.
       </p>
@@ -627,13 +627,13 @@ function TTSPanel({
           onChange={(e) => onEnabledChange(e.target.checked)}
           className="h-4 w-4"
         />
-        <label htmlFor={enabledId} className="text-xs text-ink-muted">
+        <label htmlFor={enabledId} className="text-ink-muted text-xs">
           Habilitar síntese de voz
         </label>
       </div>
 
       <div className="mt-3">
-        <label htmlFor={voiceIdField} className="mb-1 block text-xs text-ink-muted">
+        <label htmlFor={voiceIdField} className="text-ink-muted mb-1 block text-xs">
           Voice ID (ElevenLabs)
         </label>
         <Input
@@ -642,7 +642,7 @@ function TTSPanel({
           onChange={(e) => onVoiceIdChange(e.target.value)}
           placeholder="Ex: 21m00Tcm4TlvDq8ikWAM"
         />
-        <p className="mt-1 text-2xs text-ink-dim">
+        <p className="text-2xs text-ink-dim mt-1">
           Deixe vazio para desvincular. O ID fica em elevenlabs.io → Voice Library.
         </p>
       </div>
@@ -661,7 +661,7 @@ function TTSPanel({
       </div>
 
       {error && (
-        <p role="alert" className="mt-2 text-2xs text-danger">
+        <p role="alert" className="text-2xs text-danger mt-2">
           {error}
         </p>
       )}
@@ -720,12 +720,12 @@ function TriggersPanel({ agentId }: { agentId: string }) {
   }
 
   return (
-    <section className="mt-8 border-t border-hairline pt-6">
+    <section className="border-hairline mt-8 border-t pt-6">
       <div className="mb-3 flex items-center gap-2">
-        <Zap className="h-4 w-4 text-ink-muted" />
-        <h3 className="text-sm font-medium text-ink">Gatilhos de ativação</h3>
+        <Zap className="text-ink-muted h-4 w-4" />
+        <h3 className="text-ink text-sm font-medium">Gatilhos de ativação</h3>
       </div>
-      <p className="mb-3 text-2xs text-ink-dim">
+      <p className="text-2xs text-ink-dim mb-3">
         Regras priorizadas que atribuem este agent a novas conversas quando o lead bate o filtro.
         Menor prioridade ganha (1 = mais alta).
       </p>
@@ -754,7 +754,7 @@ function TriggersPanel({ agentId }: { agentId: string }) {
           Novo gatilho
         </Button>
       ) : (
-        <form className="mt-3 space-y-2 rounded-md bg-elevated/20 p-3" onSubmit={handleCreate}>
+        <form className="bg-elevated/20 mt-3 space-y-2 rounded-md p-3" onSubmit={handleCreate}>
           <Input
             value={name}
             onChange={(e) => setName(e.target.value)}
@@ -767,7 +767,7 @@ function TriggersPanel({ agentId }: { agentId: string }) {
               placeholder="Campo (origin, segment, tags, ...)"
             />
             <select
-              className="rounded-md bg-elevated/40 px-2 py-2 text-sm text-ink shadow-hairline focus:outline-none focus:ring-1 focus:ring-accent/50"
+              className="bg-elevated/40 text-ink shadow-hairline focus:ring-accent/50 rounded-md px-2 py-2 text-sm focus:ring-1 focus:outline-none"
               value={op}
               onChange={(e) => setOp(e.target.value as typeof op)}
             >
@@ -852,14 +852,14 @@ function TriggerRow({
   }, [trigger.filter])
 
   return (
-    <li className="flex items-center justify-between rounded-md bg-elevated/30 px-3 py-2 text-xs">
+    <li className="bg-elevated/30 flex items-center justify-between rounded-md px-3 py-2 text-xs">
       <div className="min-w-0 flex-1 pr-2">
         <div className="flex items-center gap-2">
-          <span className="font-medium text-ink">{trigger.name}</span>
+          <span className="text-ink font-medium">{trigger.name}</span>
           <Badge tone="neutral">p{trigger.priority}</Badge>
           {!trigger.is_active && <Badge tone="neutral">inativo</Badge>}
         </div>
-        <div className="mt-0.5 truncate text-2xs text-ink-dim">{summary}</div>
+        <div className="text-2xs text-ink-dim mt-0.5 truncate">{summary}</div>
       </div>
       <div className="flex items-center gap-1">
         <Button

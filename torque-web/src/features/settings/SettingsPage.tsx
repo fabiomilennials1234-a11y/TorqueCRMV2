@@ -117,14 +117,14 @@ export function SettingsPage() {
                 <div
                   className={cn(
                     'text-sm',
-                    active === s.key ? 'font-medium text-ink' : 'text-ink-muted'
+                    active === s.key ? 'text-ink font-medium' : 'text-ink-muted'
                   )}
                 >
                   {s.label}
                 </div>
                 <div className="text-2xs text-ink-dim">{s.description}</div>
               </div>
-              {active === s.key && <ChevronRight className="mt-1 h-3 w-3 text-ink-dim" />}
+              {active === s.key && <ChevronRight className="text-ink-dim mt-1 h-3 w-3" />}
             </button>
           ))}
         </nav>
@@ -229,7 +229,7 @@ function OrgSection() {
         </Field>
         <Field label="Fuso horário">
           <select
-            className="h-9 w-full rounded-md bg-elevated/60 px-3 text-sm text-ink shadow-hairline"
+            className="bg-elevated/60 text-ink shadow-hairline h-9 w-full rounded-md px-3 text-sm"
             value={draft.timezone}
             onChange={(e) => setDraft({ ...draft, timezone: e.target.value })}
           >
@@ -270,7 +270,7 @@ function TeamSection() {
     <div className="space-y-4">
       <div className="flex items-center gap-2">
         <div className="relative max-w-sm flex-1">
-          <Search className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-ink-dim" />
+          <Search className="text-ink-dim absolute top-1/2 left-2.5 h-3.5 w-3.5 -translate-y-1/2" />
           <Input
             placeholder="Buscar membro…"
             className="pl-8"
@@ -278,7 +278,7 @@ function TeamSection() {
             onChange={(e) => setQuery(e.target.value)}
           />
         </div>
-        <label className="flex items-center gap-2 text-xs text-ink-muted">
+        <label className="text-ink-muted flex items-center gap-2 text-xs">
           <input
             type="checkbox"
             checked={includeInactive}
@@ -332,10 +332,10 @@ function TeamSection() {
       )}
 
       {members.isSuccess && filtered.length > 0 && (
-        <div className="overflow-hidden rounded-lg bg-surface shadow-elev-1">
+        <div className="bg-surface shadow-elev-1 overflow-hidden rounded-lg">
           <table className="w-full text-sm">
             <thead>
-              <tr className="text-2xs uppercase tracking-[0.12em] text-ink-dim">
+              <tr className="text-2xs text-ink-dim tracking-[0.12em] uppercase">
                 <th className="px-5 py-3 text-left font-medium">Membro</th>
                 <th className="px-5 py-3 text-left font-medium">Papel</th>
                 <th className="px-5 py-3 text-left font-medium">Status</th>
@@ -373,7 +373,7 @@ function InviteForm({
 
   return (
     <form
-      className="flex flex-wrap items-end gap-2 rounded-lg bg-surface p-4 shadow-elev-1"
+      className="bg-surface shadow-elev-1 flex flex-wrap items-end gap-2 rounded-lg p-4"
       onSubmit={(e) => {
         e.preventDefault()
         if (!valid) return
@@ -381,7 +381,7 @@ function InviteForm({
       }}
     >
       <div className="min-w-[200px] flex-1">
-        <label htmlFor={emailId} className="mb-1 block text-xs text-ink-muted">
+        <label htmlFor={emailId} className="text-ink-muted mb-1 block text-xs">
           E-mail do usuário
         </label>
         <Input
@@ -393,7 +393,7 @@ function InviteForm({
         />
       </div>
       <div className="min-w-[200px] flex-1">
-        <label htmlFor={nameId} className="mb-1 block text-xs text-ink-muted">
+        <label htmlFor={nameId} className="text-ink-muted mb-1 block text-xs">
           Nome de exibição
         </label>
         <Input
@@ -404,12 +404,12 @@ function InviteForm({
         />
       </div>
       <div className="w-36">
-        <label htmlFor={roleId} className="mb-1 block text-xs text-ink-muted">
+        <label htmlFor={roleId} className="text-ink-muted mb-1 block text-xs">
           Papel
         </label>
         <select
           id={roleId}
-          className="h-9 w-full rounded-md bg-elevated/60 px-3 text-sm text-ink shadow-hairline"
+          className="bg-elevated/60 text-ink shadow-hairline h-9 w-full rounded-md px-3 text-sm"
           value={role}
           onChange={(e) => setRole(e.target.value as MemberRole)}
         >
@@ -437,7 +437,7 @@ function MemberRow({ member, separator }: { member: TeamMember; separator: boole
   return (
     <tr
       className={cn(
-        'transition-colors hover:bg-elevated/40',
+        'hover:bg-elevated/40 transition-colors',
         separator && 'shadow-[inset_0_1px_0_0_hsl(var(--hairline))]'
       )}
     >
@@ -445,7 +445,7 @@ function MemberRow({ member, separator }: { member: TeamMember; separator: boole
         <div className="flex items-center gap-3">
           <Avatar size="md" fallback={initials(member.display_name)} />
           <div>
-            <div className="text-sm text-ink">{member.display_name}</div>
+            <div className="text-ink text-sm">{member.display_name}</div>
             <div className="font-metric text-2xs text-ink-dim">{member.email}</div>
           </div>
         </div>
@@ -453,7 +453,7 @@ function MemberRow({ member, separator }: { member: TeamMember; separator: boole
       <td className="px-5 py-3">
         {editing ? (
           <select
-            className="h-7 rounded-md bg-elevated/60 px-2 text-xs text-ink shadow-hairline"
+            className="bg-elevated/60 text-ink shadow-hairline h-7 rounded-md px-2 text-xs"
             defaultValue={member.role}
             onChange={(e) => {
               const next = e.target.value as MemberRole
@@ -471,13 +471,13 @@ function MemberRow({ member, separator }: { member: TeamMember; separator: boole
       </td>
       <td className="px-5 py-3">
         {member.is_active ? (
-          <span className="inline-flex items-center gap-1.5 text-xs text-success">
-            <span className="h-1.5 w-1.5 rounded-full bg-success" />
+          <span className="text-success inline-flex items-center gap-1.5 text-xs">
+            <span className="bg-success h-1.5 w-1.5 rounded-full" />
             ativo
           </span>
         ) : (
-          <span className="inline-flex items-center gap-1.5 text-xs text-ink-dim">
-            <span className="h-1.5 w-1.5 rounded-full bg-ink-dim" />
+          <span className="text-ink-dim inline-flex items-center gap-1.5 text-xs">
+            <span className="bg-ink-dim h-1.5 w-1.5 rounded-full" />
             inativo
           </span>
         )}
@@ -515,8 +515,8 @@ function initials(name: string): string {
 
 function Placeholder({ label }: { label: string }) {
   return (
-    <div className="rounded-lg bg-surface p-10 text-center shadow-elev-1">
-      <p className="text-sm text-ink-muted">
+    <div className="bg-surface shadow-elev-1 rounded-lg p-10 text-center">
+      <p className="text-ink-muted text-sm">
         A seção <span className="text-ink">{label}</span> ainda não tem detalhamento neste skeleton.
         Será implementada no próximo sprint com os respectivos contratos do backend Go.
       </p>
@@ -534,10 +534,10 @@ function SettingsCard({
   children: React.ReactNode
 }) {
   return (
-    <div className="rounded-lg bg-surface shadow-elev-1">
-      <div className="px-5 py-4 shadow-hairline-b">
-        <h3 className="text-sm font-medium text-ink">{title}</h3>
-        {description && <p className="mt-1 text-xs text-ink-muted">{description}</p>}
+    <div className="bg-surface shadow-elev-1 rounded-lg">
+      <div className="shadow-hairline-b px-5 py-4">
+        <h3 className="text-ink text-sm font-medium">{title}</h3>
+        {description && <p className="text-ink-muted mt-1 text-xs">{description}</p>}
       </div>
       <div className="space-y-4 p-5">{children}</div>
     </div>
@@ -547,7 +547,7 @@ function SettingsCard({
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div className="grid grid-cols-[200px_1fr] items-center gap-4">
-      <label className="text-xs text-ink-muted">{label}</label>
+      <label className="text-ink-muted text-xs">{label}</label>
       <div>{children}</div>
     </div>
   )
