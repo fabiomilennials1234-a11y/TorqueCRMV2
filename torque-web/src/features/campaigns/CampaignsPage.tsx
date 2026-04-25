@@ -16,11 +16,7 @@ import { EmptyState } from '@/ui/empty-state'
 import { PageHeader } from '@/ui/page-header'
 import { Skeleton } from '@/ui/skeleton'
 import { QueryBoundary } from '@/components/QueryBoundary'
-import {
-  useCampaigns,
-  type Campaign,
-  type CampaignStatus,
-} from '@/hooks/useCampaigns'
+import { useCampaigns, type Campaign, type CampaignStatus } from '@/hooks/useCampaigns'
 import { CreateCampaignModal } from '@/features/campaigns/CreateCampaignModal'
 
 const statusTone: Record<CampaignStatus, 'success' | 'danger' | 'neutral'> = {
@@ -95,7 +91,9 @@ export function CampaignsPage() {
         isEmpty={() => visible.length === 0}
         emptyFallback={
           <EmptyState
-            title={tab === 'active' ? 'Nenhuma campanha em andamento' : 'Nenhuma campanha arquivada'}
+            title={
+              tab === 'active' ? 'Nenhuma campanha em andamento' : 'Nenhuma campanha arquivada'
+            }
             description={
               tab === 'active'
                 ? 'Crie uma nova campanha para começar a disparar.'

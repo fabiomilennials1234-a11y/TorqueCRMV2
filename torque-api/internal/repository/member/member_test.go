@@ -155,7 +155,7 @@ func TestMember_CRUD_AndOverrides(t *testing.T) {
 		otherOrg, "other-"+runID, "Other"); err != nil {
 		t.Fatalf("create other org: %v", err)
 	}
-	defer pool.Exec(context.Background(), `DELETE FROM organizations WHERE id = $1`, otherOrg)
+	defer func() { _, _ = pool.Exec(context.Background(), `DELETE FROM organizations WHERE id = $1`, otherOrg) }()
 
 	_, err = repo.Get(ctx, otherOrg, m.ID)
 	if !errors.Is(err, memberrepo.ErrNotFound) {

@@ -2,12 +2,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { renderHook } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-import {
-  useArchivePipe,
-  useCreatePipe,
-  useCreateStage,
-  useUpdateStage,
-} from '@/hooks/usePipes'
+import { useArchivePipe, useCreatePipe, useCreateStage, useUpdateStage } from '@/hooks/usePipes'
 
 const fetchMock = vi.fn()
 beforeEach(() => vi.stubGlobal('fetch', fetchMock))
@@ -29,10 +24,15 @@ function wrap(client: QueryClient) {
 describe('usePipes admin', () => {
   it('useCreatePipe POSTs /api/v1/pipes', async () => {
     fetchMock.mockResolvedValueOnce({
-      ok: true, status: 201,
+      ok: true,
+      status: 201,
       json: async () => ({
-        id: 'p1', kind: 'custom', name: 'Upsell', is_default: false,
-        is_archived: false, position: 10,
+        id: 'p1',
+        kind: 'custom',
+        name: 'Upsell',
+        is_default: false,
+        is_archived: false,
+        position: 10,
       }),
       headers: new Headers(),
     } as Response)
@@ -47,7 +47,10 @@ describe('usePipes admin', () => {
 
   it('useArchivePipe DELETEs /api/v1/pipes/:id', async () => {
     fetchMock.mockResolvedValueOnce({
-      ok: true, status: 204, json: async () => null, headers: new Headers(),
+      ok: true,
+      status: 204,
+      json: async () => null,
+      headers: new Headers(),
     } as Response)
 
     const client = new QueryClient({ defaultOptions: { mutations: { retry: false } } })
@@ -60,9 +63,14 @@ describe('usePipes admin', () => {
 
   it('useCreateStage POSTs /api/v1/pipes/:id/stages', async () => {
     fetchMock.mockResolvedValueOnce({
-      ok: true, status: 201,
+      ok: true,
+      status: 201,
       json: async () => ({
-        id: 's1', name: 'New', position: 0, is_final_positive: false, is_final_negative: false,
+        id: 's1',
+        name: 'New',
+        position: 0,
+        is_final_positive: false,
+        is_final_negative: false,
       }),
       headers: new Headers(),
     } as Response)
@@ -76,9 +84,14 @@ describe('usePipes admin', () => {
 
   it('useUpdateStage PATCHes /api/v1/pipes/:pipeId/stages/:stageId', async () => {
     fetchMock.mockResolvedValueOnce({
-      ok: true, status: 200,
+      ok: true,
+      status: 200,
       json: async () => ({
-        id: 's1', name: 'Updated', position: 1, is_final_positive: false, is_final_negative: false,
+        id: 's1',
+        name: 'Updated',
+        position: 1,
+        is_final_positive: false,
+        is_final_negative: false,
       }),
       headers: new Headers(),
     } as Response)

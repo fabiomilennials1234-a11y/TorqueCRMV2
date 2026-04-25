@@ -99,17 +99,14 @@ export function useCreateLead() {
 
 /** PATCH /api/v1/leads/:id with optimistic update on the detail cache. */
 export function useUpdateLead(id: string) {
-  return useAppMutation<Lead, Partial<Lead>>(
-    (body) => patch<Lead>(`/api/v1/leads/${id}`, body),
-    {
-      optimistic: {
-        queryKey: queryKeys.leads.detail(id),
-        updater: (prev, patchBody) => (prev ? { ...prev, ...patchBody } : prev),
-      },
-      invalidate: [queryKeys.leads.detail(id), queryKeys.leads.list()],
-      errorContext: 'lead.update',
-    }
-  )
+  return useAppMutation<Lead, Partial<Lead>>((body) => patch<Lead>(`/api/v1/leads/${id}`, body), {
+    optimistic: {
+      queryKey: queryKeys.leads.detail(id),
+      updater: (prev, patchBody) => (prev ? { ...prev, ...patchBody } : prev),
+    },
+    invalidate: [queryKeys.leads.detail(id), queryKeys.leads.list()],
+    errorContext: 'lead.update',
+  })
 }
 
 /** DELETE /api/v1/leads/:id */

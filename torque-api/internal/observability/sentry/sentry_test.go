@@ -20,7 +20,7 @@ func TestScrubPII_HeadersAndCookies(t *testing.T) {
 				"X-Request-ID":   "req-123",
 			},
 			QueryString: "q=hello&api_key=secret&other=ok",
-			Data:        map[string]string{"password": "hunter2"},
+			Data:        `{"password":"hunter2"}`,
 		},
 		User: sentrygo.User{
 			Email:     "user@example.com",

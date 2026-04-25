@@ -110,24 +110,24 @@ export function useCreateWorkflow() {
 }
 
 export function usePublishWorkflow(id: string) {
-  return useAppMutation<void, void>(
-    () => post<void>(`/api/v1/workflows/${id}/publish`, {}),
-    { invalidate: [keys().list(), keys().detail(id)], errorContext: 'workflow.publish' }
-  )
+  return useAppMutation<void, void>(() => post<void>(`/api/v1/workflows/${id}/publish`, {}), {
+    invalidate: [keys().list(), keys().detail(id)],
+    errorContext: 'workflow.publish',
+  })
 }
 
 export function usePauseWorkflow(id: string) {
-  return useAppMutation<void, void>(
-    () => post<void>(`/api/v1/workflows/${id}/pause`, {}),
-    { invalidate: [keys().list(), keys().detail(id)], errorContext: 'workflow.pause' }
-  )
+  return useAppMutation<void, void>(() => post<void>(`/api/v1/workflows/${id}/pause`, {}), {
+    invalidate: [keys().list(), keys().detail(id)],
+    errorContext: 'workflow.pause',
+  })
 }
 
 export function useArchiveWorkflow(id: string) {
-  return useAppMutation<void, void>(
-    () => post<void>(`/api/v1/workflows/${id}/archive`, {}),
-    { invalidate: [keys().list(), keys().detail(id)], errorContext: 'workflow.archive' }
-  )
+  return useAppMutation<void, void>(() => post<void>(`/api/v1/workflows/${id}/archive`, {}), {
+    invalidate: [keys().list(), keys().detail(id)],
+    errorContext: 'workflow.archive',
+  })
 }
 
 // -------- steps -----------------------------------------------------
@@ -138,8 +138,7 @@ export function useWorkflowSteps(workflowId: string | undefined) {
   useWSSubscribe(
     ['workflow_step.upserted', 'workflow_step.deleted'],
     () => {
-      if (workflowId)
-        void client.invalidateQueries({ queryKey: keys().steps(workflowId) })
+      if (workflowId) void client.invalidateQueries({ queryKey: keys().steps(workflowId) })
     },
     [workflowId]
   )
@@ -197,8 +196,7 @@ export function useWorkflowRuns(workflowId: string | undefined) {
   useWSSubscribe(
     ['workflow_run.enqueued', 'workflow_run.cancelled'],
     () => {
-      if (workflowId)
-        void client.invalidateQueries({ queryKey: keys().runs(workflowId) })
+      if (workflowId) void client.invalidateQueries({ queryKey: keys().runs(workflowId) })
     },
     [workflowId]
   )
@@ -215,17 +213,16 @@ export function useEnqueueRun(workflowId: string) {
   return useAppMutation<
     WorkflowRun,
     { lead_id?: string; trigger_source?: string; input?: unknown }
-  >(
-    (body) => post<WorkflowRun>(`/api/v1/workflows/${workflowId}/runs`, body ?? {}),
-    { invalidate: [keys().runs(workflowId)], errorContext: 'workflow.run.enqueue' }
-  )
+  >((body) => post<WorkflowRun>(`/api/v1/workflows/${workflowId}/runs`, body ?? {}), {
+    invalidate: [keys().runs(workflowId)],
+    errorContext: 'workflow.run.enqueue',
+  })
 }
 
 export function useCancelRun(runId: string) {
-  return useAppMutation<void, void>(
-    () => post<void>(`/api/v1/runs/${runId}/cancel`, {}),
-    { errorContext: 'workflow.run.cancel' }
-  )
+  return useAppMutation<void, void>(() => post<void>(`/api/v1/runs/${runId}/cancel`, {}), {
+    errorContext: 'workflow.run.cancel',
+  })
 }
 
 // -------- S45 run-step trace ----------------------------------------

@@ -96,9 +96,7 @@ describe('useIntegrations — hooks', () => {
   })
 
   it('useSyncTinyERPProducts POSTs /integrations/tinyerp/sync-products and returns the result', async () => {
-    fetchMock.mockResolvedValueOnce(
-      mockJSON({ fetched: 10, inserted: 3, updated: 6, skipped: 1 })
-    )
+    fetchMock.mockResolvedValueOnce(mockJSON({ fetched: 10, inserted: 3, updated: 6, skipped: 1 }))
     const client = new QueryClient({ defaultOptions: { mutations: { retry: false } } })
     const { result } = renderHook(() => useSyncTinyERPProducts(), { wrapper: wrap(client) })
     const res = await result.current.mutateAsync()

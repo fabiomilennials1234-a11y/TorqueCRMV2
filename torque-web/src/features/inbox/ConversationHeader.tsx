@@ -17,10 +17,7 @@ import { Button } from '@/ui/button'
 import { ChannelBadge } from '@/ui/channel-badge'
 import { initials } from '@/lib/utils'
 import type { Conversation } from '@/hooks/useInbox'
-import {
-  useAssignConversation,
-  useSetConversationState,
-} from '@/hooks/useInbox'
+import { useAssignConversation, useSetConversationState } from '@/hooks/useInbox'
 
 export interface ConversationHeaderProps {
   conversation: Conversation
@@ -46,10 +43,12 @@ export function ConversationHeader({ conversation, currentMemberId }: Conversati
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-2">
           <span className="truncate text-sm text-ink">{name}</span>
-          <ChannelBadge channel={channelOf(conversation.channel_kind)} variant="icon-only" size="sm" />
-          {isMine && (
-            <Badge tone="accent">Minha</Badge>
-          )}
+          <ChannelBadge
+            channel={channelOf(conversation.channel_kind)}
+            variant="icon-only"
+            size="sm"
+          />
+          {isMine && <Badge tone="accent">Minha</Badge>}
           {isResolved && <Badge tone="success">Resolvida</Badge>}
         </div>
         {conversation.contact_handle && conversation.contact_name && (
@@ -66,8 +65,7 @@ export function ConversationHeader({ conversation, currentMemberId }: Conversati
             variant="outline"
             disabled={assign.isPending}
             onClick={() =>
-              currentMemberId &&
-              void assign.mutateAsync({ assigned_to: currentMemberId })
+              currentMemberId && void assign.mutateAsync({ assigned_to: currentMemberId })
             }
           >
             <UserPlus2 className="mr-1.5 h-3.5 w-3.5" />

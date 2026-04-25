@@ -42,8 +42,7 @@ export function QuotaMeter({ quota, label, className }: QuotaMeterProps) {
     >
       <div className="flex items-baseline justify-between text-[11px] text-ink-muted">
         <span>
-          {label ?? quota.resource} —{' '}
-          <span className="text-ink">{quota.current_usage}</span>
+          {label ?? quota.resource} — <span className="text-ink">{quota.current_usage}</span>
           <span className="text-ink-subtle"> / {quota.effective_limit}</span>
         </span>
         <span

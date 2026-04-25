@@ -296,7 +296,7 @@ func NormalizeAsaasWebhook(raw []byte) (NormalizedEvent, error) {
 	if w.Payment.ID == "" {
 		return NormalizedEvent{}, errors.New("asaas webhook: empty payment id")
 	}
-	mapped := "unknown"
+	var mapped string
 	switch w.Event {
 	case "PAYMENT_CONFIRMED", "PAYMENT_RECEIVED":
 		mapped = "charge.paid"

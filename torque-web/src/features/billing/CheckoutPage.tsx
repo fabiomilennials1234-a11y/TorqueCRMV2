@@ -78,8 +78,8 @@ function NoSubscription() {
     <div className="mt-6 rounded-lg bg-surface p-8 shadow-elev-1">
       <h2 className="font-display text-xl text-ink">Você ainda não tem uma assinatura ativa</h2>
       <p className="mt-2 text-sm text-ink-muted">
-        Escolha um plano e gere a cobrança PIX. Após o pagamento, sua organização é
-        habilitada automaticamente.
+        Escolha um plano e gere a cobrança PIX. Após o pagamento, sua organização é habilitada
+        automaticamente.
       </p>
 
       <div className="mt-6 flex items-center justify-between rounded-md bg-elevated/40 px-5 py-4 shadow-hairline">

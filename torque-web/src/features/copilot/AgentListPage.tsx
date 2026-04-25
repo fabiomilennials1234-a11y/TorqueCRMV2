@@ -38,7 +38,13 @@ export function AgentListPage() {
         title="Time de agentes"
         description="Vendedores sintéticos com tom humano e handoff gracioso. Clique em um agente para abrir o playground."
         actions={
-          <Button variant="primary" size="md" className="gap-1.5" disabled title="Criação via wizard chega em S39">
+          <Button
+            variant="primary"
+            size="md"
+            className="gap-1.5"
+            disabled
+            title="Criação via wizard chega em S39"
+          >
             <Plus className="h-4 w-4" />
             Novo agente
           </Button>
@@ -120,9 +126,7 @@ function AgentCard({ agent }: { agent: Agent }) {
           variant="ghost"
           size="xs"
           disabled={toggleKill.isPending}
-          onClick={() =>
-            void toggleKill.mutateAsync({ enabled: !agent.kill_switch })
-          }
+          onClick={() => void toggleKill.mutateAsync({ enabled: !agent.kill_switch })}
           title="Kill-switch bloqueia todas as mensagens em vôo"
         >
           <AlertTriangle className="mr-1 h-3 w-3" />

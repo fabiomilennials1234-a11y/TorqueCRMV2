@@ -2,11 +2,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { renderHook } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-import {
-  useConfirm,
-  useMarkNoShow,
-  useUpsertConfirmation,
-} from '@/hooks/useConfirmations'
+import { useConfirm, useMarkNoShow, useUpsertConfirmation } from '@/hooks/useConfirmations'
 
 const fetchMock = vi.fn()
 beforeEach(() => vi.stubGlobal('fetch', fetchMock))
@@ -24,10 +20,13 @@ function wrap(client: QueryClient) {
 describe('useConfirmations', () => {
   it('useUpsertConfirmation PUTs /api/v1/confirmations/:entryId', async () => {
     fetchMock.mockResolvedValueOnce({
-      ok: true, status: 200,
+      ok: true,
+      status: 200,
       json: async () => ({
-        pipe_entry_id: 'e1', meeting_at: '2026-04-20T10:00:00Z',
-        confirmed_at: null, no_show: false,
+        pipe_entry_id: 'e1',
+        meeting_at: '2026-04-20T10:00:00Z',
+        confirmed_at: null,
+        no_show: false,
       }),
       headers: new Headers(),
     } as Response)
@@ -45,7 +44,10 @@ describe('useConfirmations', () => {
 
   it('useConfirm POSTs /api/v1/confirmations/:entryId/confirm', async () => {
     fetchMock.mockResolvedValueOnce({
-      ok: true, status: 204, json: async () => null, headers: new Headers(),
+      ok: true,
+      status: 204,
+      json: async () => null,
+      headers: new Headers(),
     } as Response)
 
     const client = new QueryClient({ defaultOptions: { mutations: { retry: false } } })
@@ -57,7 +59,10 @@ describe('useConfirmations', () => {
 
   it('useMarkNoShow POSTs /api/v1/confirmations/:entryId/no-show', async () => {
     fetchMock.mockResolvedValueOnce({
-      ok: true, status: 204, json: async () => null, headers: new Headers(),
+      ok: true,
+      status: 204,
+      json: async () => null,
+      headers: new Headers(),
     } as Response)
 
     const client = new QueryClient({ defaultOptions: { mutations: { retry: false } } })

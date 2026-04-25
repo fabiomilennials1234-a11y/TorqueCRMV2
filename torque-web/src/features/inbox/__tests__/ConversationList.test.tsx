@@ -59,7 +59,7 @@ describe('ConversationList', () => {
         stateFilter="all"
         onStateFilterChange={() => {}}
       />,
-      { wrapper: wrap(client) },
+      { wrapper: wrap(client) }
     )
 
     await waitFor(() => expect(screen.getByText('Alice')).toBeDefined())
@@ -74,7 +74,7 @@ describe('ConversationList', () => {
         onSearchChange={() => {}}
         stateFilter="all"
         onStateFilterChange={() => {}}
-      />,
+      />
     )
     expect(screen.queryByText('Alice')).not.toBeNull()
     expect(screen.queryByText('Bob')).toBeNull()
@@ -98,7 +98,7 @@ describe('ConversationList', () => {
         stateFilter="open"
         onStateFilterChange={() => {}}
       />,
-      { wrapper: wrap(client) },
+      { wrapper: wrap(client) }
     )
 
     await waitFor(() => expect(fetchMock).toHaveBeenCalled())
@@ -125,7 +125,7 @@ describe('ConversationList', () => {
         stateFilter="all"
         onStateFilterChange={() => {}}
       />,
-      { wrapper: wrap(client) },
+      { wrapper: wrap(client) }
     )
 
     await waitFor(() => expect(screen.getByText('Click me')).toBeDefined())

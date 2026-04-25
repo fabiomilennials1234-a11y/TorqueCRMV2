@@ -48,8 +48,7 @@ export function useSystemHealth() {
 export function useMasterOrganizations() {
   return useQuery<MasterOrg[]>({
     queryKey: ['master', 'organizations'],
-    queryFn: async () =>
-      (await get<{ data: MasterOrg[] }>('/api/v1/master/organizations')).data,
+    queryFn: async () => (await get<{ data: MasterOrg[] }>('/api/v1/master/organizations')).data,
     staleTime: 60 * 1000,
   })
 }

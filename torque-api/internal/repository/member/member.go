@@ -15,8 +15,8 @@ import (
 	"strings"
 
 	"github.com/google/uuid"
-	"github.com/jackc/pgconn"
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
 
 	"github.com/milennials/torque-api/internal/domain"
@@ -203,7 +203,8 @@ func (r *Repository) Update(ctx context.Context, orgID, id uuid.UUID, in UpdateI
 	if in.IsActive != nil {
 		sets = append(sets, fmt.Sprintf("is_active = $%d", idx))
 		args = append(args, *in.IsActive)
-		idx++
+		// idx not bumped — IsActive is the last $N field; deactivated_at uses
+		// a literal expression, not a placeholder.
 		if !*in.IsActive {
 			sets = append(sets, "deactivated_at = now()")
 		} else {

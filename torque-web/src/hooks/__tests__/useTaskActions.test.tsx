@@ -70,7 +70,7 @@ describe('useTaskActions', () => {
       makeBundle({
         queue: [makeTask('a'), makeTask('b', { queuePosition: 2 })],
         counts: { queue: 2, backlog: 0, missed: 0, completedToday: 0 },
-      }),
+      })
     )
 
     const { result } = renderHook(() => useTaskActions(), { wrapper: wrap(client) })
@@ -89,7 +89,7 @@ describe('useTaskActions', () => {
       COCKPIT_QUERY_KEY,
       makeBundle({
         inProgress: makeTask('a', { status: 'in_progress', inQueue: false, queuePosition: null }),
-      }),
+      })
     )
 
     const { result } = renderHook(() => useTaskActions(), { wrapper: wrap(client) })
@@ -108,7 +108,7 @@ describe('useTaskActions', () => {
         missed: [makeTask('m1', { missedReason: 'no_show' })],
         queue: [makeTask('q1', { queuePosition: 1 })],
         counts: { queue: 1, backlog: 0, missed: 1, completedToday: 0 },
-      }),
+      })
     )
 
     const { result } = renderHook(() => useTaskActions(), { wrapper: wrap(client) })

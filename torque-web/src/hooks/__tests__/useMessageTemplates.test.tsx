@@ -2,11 +2,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { renderHook, waitFor } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-import {
-  renderTemplate,
-  useCreateTemplate,
-  useMessageTemplates,
-} from '@/hooks/useMessageTemplates'
+import { renderTemplate, useCreateTemplate, useMessageTemplates } from '@/hooks/useMessageTemplates'
 
 const fetchMock = vi.fn()
 beforeEach(() => vi.stubGlobal('fetch', fetchMock))
@@ -55,8 +51,13 @@ describe('useMessageTemplates', () => {
       ok: true,
       status: 201,
       json: async () => ({
-        id: 't1', name: 'x', body: 'y', variables: [], is_active: true,
-        created_at: '2026-04-20T00:00:00Z', updated_at: '2026-04-20T00:00:00Z',
+        id: 't1',
+        name: 'x',
+        body: 'y',
+        variables: [],
+        is_active: true,
+        created_at: '2026-04-20T00:00:00Z',
+        updated_at: '2026-04-20T00:00:00Z',
       }),
       headers: new Headers(),
     } as Response)
@@ -76,9 +77,7 @@ describe('renderTemplate', () => {
   })
 
   it('leaves unknown variables intact for the user to see', () => {
-    expect(renderTemplate('Oi {{nome}}, {{empresa}}', { nome: 'A' })).toBe(
-      'Oi A, {{empresa}}',
-    )
+    expect(renderTemplate('Oi {{nome}}, {{empresa}}', { nome: 'A' })).toBe('Oi A, {{empresa}}')
   })
 
   it('handles multiple occurrences + whitespace', () => {

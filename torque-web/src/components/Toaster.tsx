@@ -41,7 +41,10 @@ export function Toaster() {
       // With exactOptionalPropertyTypes=true, omit undefined fields rather
       // than assigning `undefined` to an optional string property.
       const toast: Toast = {
-        id: typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : String(Math.random()),
+        id:
+          typeof crypto !== 'undefined' && crypto.randomUUID
+            ? crypto.randomUUID()
+            : String(Math.random()),
         level: detail.level ?? 'info',
         message: detail.message,
         ...(detail.code !== undefined ? { code: detail.code } : {}),

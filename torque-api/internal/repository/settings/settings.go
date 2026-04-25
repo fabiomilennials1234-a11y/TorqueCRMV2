@@ -10,8 +10,8 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/jackc/pgconn"
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
@@ -133,7 +133,7 @@ func (r *Repository) UpdateOrganization(ctx context.Context, orgID uuid.UUID, in
 	if in.LogoURL != nil {
 		sets = append(sets, fmt.Sprintf("logo_url = $%d", idx))
 		args = append(args, *in.LogoURL)
-		idx++
+		// idx not bumped — LogoURL is the last optional UpdateOrganization field.
 	}
 	if len(sets) == 0 {
 		return r.GetOrganization(ctx, orgID)
@@ -256,7 +256,7 @@ func (r *Repository) UpdateWebhook(ctx context.Context, orgID, id uuid.UUID, in 
 	if in.IsActive != nil {
 		sets = append(sets, fmt.Sprintf("is_active = $%d", idx))
 		args = append(args, *in.IsActive)
-		idx++
+		// idx not bumped — IsActive is the last optional UpdateWebhook field.
 	}
 	if len(sets) == 0 {
 		return r.GetWebhook(ctx, orgID, id)

@@ -66,8 +66,7 @@ export function useUpdateOrganization() {
 export function useWebhooks() {
   return useQuery<WebhookEndpoint[]>({
     queryKey: ['settings', 'webhooks'],
-    queryFn: async () =>
-      (await get<{ data: WebhookEndpoint[] }>('/api/v1/webhooks')).data,
+    queryFn: async () => (await get<{ data: WebhookEndpoint[] }>('/api/v1/webhooks')).data,
     staleTime: 60 * 1000,
   })
 }
@@ -93,17 +92,16 @@ export function useUpdateWebhook(id: string) {
 }
 
 export function useDeleteWebhook(id: string) {
-  return useAppMutation<void, void>(
-    () => del<void>(`/api/v1/webhooks/${id}`),
-    { invalidate: [['settings', 'webhooks']], errorContext: 'webhook.delete' }
-  )
+  return useAppMutation<void, void>(() => del<void>(`/api/v1/webhooks/${id}`), {
+    invalidate: [['settings', 'webhooks']],
+    errorContext: 'webhook.delete',
+  })
 }
 
 export function useNotificationPrefs() {
   return useQuery<NotificationPref[]>({
     queryKey: ['settings', 'notifications'],
-    queryFn: async () =>
-      (await get<{ data: NotificationPref[] }>('/api/v1/me/notifications')).data,
+    queryFn: async () => (await get<{ data: NotificationPref[] }>('/api/v1/me/notifications')).data,
     staleTime: 60 * 1000,
   })
 }

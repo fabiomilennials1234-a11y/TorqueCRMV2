@@ -47,9 +47,8 @@ type Hub struct {
 	cfg    HubConfig
 	logger zerolog.Logger
 
-	mu     sync.RWMutex
-	byOrg  map[uuid.UUID]map[uuid.UUID]*Conn
-	closed atomic.Bool
+	mu    sync.RWMutex
+	byOrg map[uuid.UUID]map[uuid.UUID]*Conn
 }
 
 // NewHub returns a Hub ready to Register connections.

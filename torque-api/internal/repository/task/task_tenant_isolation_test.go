@@ -67,7 +67,7 @@ func TestTask_CrossTenantRefuses(t *testing.T) {
 	created, err := repo.Create(ctx, taskrepo.CreateInput{
 		OrganizationID: orgA,
 		AssignedTo:     memberA,
-		CreatedBy:      memberA,
+		CreatedBy:      &memberA,
 		Title:          "Ligar para Alice",
 	})
 	if err != nil {

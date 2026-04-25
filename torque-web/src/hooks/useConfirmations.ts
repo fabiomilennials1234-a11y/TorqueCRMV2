@@ -79,7 +79,9 @@ export function useOverdueConfirmations(limit = 50) {
   return useQuery<Confirmation[]>({
     queryKey: ['confirmations', 'overdue', limit],
     queryFn: async () => {
-      const res = await get<{ data: Confirmation[] }>(`/api/v1/confirmations/overdue?limit=${limit}`)
+      const res = await get<{ data: Confirmation[] }>(
+        `/api/v1/confirmations/overdue?limit=${limit}`
+      )
       return res.data
     },
     staleTime: 30 * 1000,

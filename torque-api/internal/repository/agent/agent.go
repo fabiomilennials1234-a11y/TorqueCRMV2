@@ -275,15 +275,15 @@ func (r *Repository) UpdateAgent(ctx context.Context, orgID, id uuid.UUID, in Up
 		if v == "" {
 			sets = append(sets, fmt.Sprintf("tts_voice_id = $%d", idx))
 			args = append(args, nil)
-			idx++
 		} else {
 			if len(v) < 2 || len(v) > 80 {
 				return Agent{}, errors.New("tts_voice_id must be 2-80 chars")
 			}
 			sets = append(sets, fmt.Sprintf("tts_voice_id = $%d", idx))
 			args = append(args, v)
-			idx++
 		}
+		// idx not bumped — TTSVoiceID is the last optional field; no further
+		// $N placeholders are emitted after this branch.
 	}
 	if len(sets) == 0 {
 		return r.GetAgent(ctx, orgID, id)

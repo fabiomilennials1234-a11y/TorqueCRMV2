@@ -100,7 +100,9 @@ export function useProposalsSummary(w: AnalyticsWindow) {
 
 export function useStageVolume(pipeId: string | undefined) {
   return useQuery<StageVolume[]>({
-    queryKey: pipeId ? ['analytics', 'stage-volume', pipeId] : ['analytics', 'stage-volume', 'disabled'],
+    queryKey: pipeId
+      ? ['analytics', 'stage-volume', pipeId]
+      : ['analytics', 'stage-volume', 'disabled'],
     enabled: Boolean(pipeId),
     queryFn: async () =>
       (await get<{ data: StageVolume[] }>(`/api/v1/analytics/pipes/${pipeId}/stages`)).data,

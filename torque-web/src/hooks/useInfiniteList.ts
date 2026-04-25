@@ -45,21 +45,16 @@ export interface UseInfiniteListOptions {
   staleTime?: number
 }
 
-export interface UseInfiniteListResult<T>
-  extends Omit<UseInfiniteQueryResult<InfiniteData<CursorPage<T>, string | null>, unknown>, 'data'> {
+export interface UseInfiniteListResult<T> extends Omit<
+  UseInfiniteQueryResult<InfiniteData<CursorPage<T>, string | null>, unknown>,
+  'data'
+> {
   items: T[]
   totalPagesLoaded: number
 }
 
 export function useInfiniteList<T>(opts: UseInfiniteListOptions): UseInfiniteListResult<T> {
-  const {
-    path,
-    queryKey,
-    params,
-    pageSize,
-    enabled = true,
-    staleTime,
-  } = opts
+  const { path, queryKey, params, pageSize, enabled = true, staleTime } = opts
 
   // TanStack Query v5 wants the 5 generics to flow: TQueryFnData, TError,
   // TData, TQueryKey, TPageParam. With them inferred from the queryFn return

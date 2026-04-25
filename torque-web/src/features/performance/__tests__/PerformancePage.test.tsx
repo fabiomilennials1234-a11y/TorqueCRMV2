@@ -60,7 +60,9 @@ describe('S47 — PerformancePage', () => {
 
   it('switches to commissions tab and shows empty state', async () => {
     // Ranking call on initial render.
-    fetchMock.mockResolvedValueOnce(mockJSON({ data: [], since: '2026-03-21T00:00:00Z', until: '2026-04-20T00:00:00Z' }))
+    fetchMock.mockResolvedValueOnce(
+      mockJSON({ data: [], since: '2026-03-21T00:00:00Z', until: '2026-04-20T00:00:00Z' })
+    )
     // Commissions call after tab click.
     fetchMock.mockResolvedValueOnce(mockJSON({ data: [] }))
     render(wrap(<PerformancePage />))

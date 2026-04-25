@@ -11,7 +11,7 @@
 //
 //  1. Source row already exists with status='queued' (enqueued by handler).
 //  2. Ingest() flips status → ingesting.
-//  3. Chunks the payload (ai.Chunk).
+//  3. Chunks the payload (ai.ChunkText).
 //  4. Embeds each chunk's content (ai.Embedder).
 //  5. Writes chunks + embeddings in a single tx (repo.InsertChunks).
 //  6. Flips status → ready with ingested_at = now(), OR → failed + error.
@@ -68,7 +68,7 @@ func (s *Service) Ingest(ctx context.Context, orgID, sourceID uuid.UUID, text st
 	}
 
 	// Chunk.
-	chunks := ai.Chunk(text, ai.DefaultChunkOptions())
+	chunks := ai.ChunkText(text, ai.DefaultChunkOptions())
 	if len(chunks) == 0 {
 		msg := "empty source after chunking"
 		_ = s.repo.UpdateSourceStatus(ctx, orgID, sourceID, "failed", &msg, nil)

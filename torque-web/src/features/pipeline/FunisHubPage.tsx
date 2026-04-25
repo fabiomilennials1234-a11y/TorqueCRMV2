@@ -29,8 +29,9 @@ export function FunisHubPage() {
           Escolha um funil para começar
         </h1>
         <p className="mt-2 max-w-xl text-sm text-ink-muted">
-          Cada funil é um pipeline independente: WhatsApp para qualificar, confirmação para reuniões,
-          propostas para fechamento. Mova leads entre etapas e o histórico fica registrado.
+          Cada funil é um pipeline independente: WhatsApp para qualificar, confirmação para
+          reuniões, propostas para fechamento. Mova leads entre etapas e o histórico fica
+          registrado.
         </p>
         {leadsQuota.data && (
           <div className="mt-4 max-w-xs">

@@ -82,10 +82,10 @@ export function googleConnectURL(): string {
 }
 
 export function useDisconnectGoogle() {
-  return useAppMutation<void, void>(
-    () => post<void>('/integrations/google/disconnect', {}),
-    { invalidate: [keys().list], errorContext: 'Desconectar Google' }
-  )
+  return useAppMutation<void, void>(() => post<void>('/integrations/google/disconnect', {}), {
+    invalidate: [keys().list],
+    errorContext: 'Desconectar Google',
+  })
 }
 
 // ---------------- TinyERP --------------------------------------------
@@ -98,10 +98,10 @@ export function useConnectTinyERP() {
 }
 
 export function useDisconnectTinyERP() {
-  return useAppMutation<void, void>(
-    () => post<void>('/integrations/tinyerp/disconnect', {}),
-    { invalidate: [keys().list], errorContext: 'Desconectar TinyERP' }
-  )
+  return useAppMutation<void, void>(() => post<void>('/integrations/tinyerp/disconnect', {}), {
+    invalidate: [keys().list],
+    errorContext: 'Desconectar TinyERP',
+  })
 }
 
 export function useSyncTinyERPProducts() {
@@ -126,10 +126,10 @@ export function useConnectMeta() {
 }
 
 export function useDisconnectMeta() {
-  return useAppMutation<void, void>(
-    () => post<void>('/integrations/meta/disconnect', {}),
-    { invalidate: [keys().list], errorContext: 'Desconectar Meta Ads' }
-  )
+  return useAppMutation<void, void>(() => post<void>('/integrations/meta/disconnect', {}), {
+    invalidate: [keys().list],
+    errorContext: 'Desconectar Meta Ads',
+  })
 }
 
 /**
@@ -172,8 +172,8 @@ export function useConnectSZChat() {
 }
 
 export function useDisconnectSZChat() {
-  return useAppMutation<void, void>(
-    () => post<void>('/integrations/szchat/disconnect', {}),
-    { invalidate: [keys().list], errorContext: 'Desconectar SZ.Chat' }
-  )
+  return useAppMutation<void, void>(() => post<void>('/integrations/szchat/disconnect', {}), {
+    invalidate: [keys().list],
+    errorContext: 'Desconectar SZ.Chat',
+  })
 }

@@ -41,7 +41,7 @@ export function IntegrationsSection() {
     return (
       <div className="grid gap-3 sm:grid-cols-2">
         {[0, 1, 2, 3].map((k) => (
-          <div key={k} className="h-28 rounded-lg bg-elevated/40 shadow-elev-1 animate-pulse" />
+          <div key={k} className="h-28 animate-pulse rounded-lg bg-elevated/40 shadow-elev-1" />
         ))}
       </div>
     )
@@ -455,7 +455,7 @@ function ProviderCard({
         <div className="text-sm font-medium text-ink">{name}</div>
         <div className="text-xs text-ink-muted">{desc}</div>
         {cred?.external_account_id && (
-          <div className="mt-1 truncate font-mono text-[11px] text-ink-subtle">
+          <div className="text-ink-subtle mt-1 truncate font-mono text-[11px]">
             {cred.external_account_id}
           </div>
         )}
@@ -469,7 +469,7 @@ function ProviderCard({
             <Badge tone="neutral">desconectado</Badge>
           )}
           {connected && cred?.last_success_at && (
-            <span className="text-[11px] text-ink-subtle">
+            <span className="text-ink-subtle text-[11px]">
               sincronizado {relativeTime(cred.last_success_at)}
             </span>
           )}

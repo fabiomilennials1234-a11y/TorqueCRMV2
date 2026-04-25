@@ -41,7 +41,7 @@ describe('useAgentStream', () => {
         'event: delta\ndata: {"content":", "}\n\n',
         'event: delta\ndata: {"content":"mundo!"}\n\n',
         'event: done\ndata: {"input_tokens":4,"output_tokens":3}\n\n',
-      ]),
+      ])
     )
     const onToken = vi.fn()
     const onDone = vi.fn()
@@ -65,9 +65,7 @@ describe('useAgentStream', () => {
 
   it('surfaces server-sent error frames with code + message', async () => {
     fetchMock.mockResolvedValueOnce(
-      sseResponse([
-        'event: error\ndata: {"code":"AUTH_FAILED","message":"bad key"}\n\n',
-      ]),
+      sseResponse(['event: error\ndata: {"code":"AUTH_FAILED","message":"bad key"}\n\n'])
     )
     const onError = vi.fn()
     const { result } = renderHook(() => useAgentStream('a1'))
@@ -84,7 +82,10 @@ describe('useAgentStream', () => {
 
   it('maps HTTP non-2xx to HTTP_<status> before reading the body', async () => {
     fetchMock.mockResolvedValueOnce({
-      ok: false, status: 503, body: null, headers: new Headers(),
+      ok: false,
+      status: 503,
+      body: null,
+      headers: new Headers(),
     } as unknown as Response)
     const { result } = renderHook(() => useAgentStream('a1'))
     await act(async () => {
@@ -101,7 +102,7 @@ describe('useAgentStream', () => {
         'event: delta\ndata: not-json\n\n',
         'event: delta\ndata: {"content":"ok"}\n\n',
         'event: done\ndata: {"input_tokens":0,"output_tokens":0}\n\n',
-      ]),
+      ])
     )
     const { result } = renderHook(() => useAgentStream('a1'))
     await act(async () => {

@@ -75,10 +75,27 @@ export function QueryBoundary<TData>(props: QueryBoundaryProps<TData>) {
   }
   if (query.isError || !query.isSuccess || query.data === undefined) {
     const retry = () => void query.refetch()
-    return <>{errorFallback ? errorFallback(query.error, retry) : <DefaultError error={query.error} retry={retry} />}</>
+    return (
+      <>
+        {errorFallback ? (
+          errorFallback(query.error, retry)
+        ) : (
+          <DefaultError error={query.error} retry={retry} />
+        )}
+      </>
+    )
   }
   if (isEmpty && isEmpty(query.data)) {
-    return <>{emptyFallback ?? <EmptyState title="Nada aqui ainda." description="Quando houver dados, eles aparecem aqui." />}</>
+    return (
+      <>
+        {emptyFallback ?? (
+          <EmptyState
+            title="Nada aqui ainda."
+            description="Quando houver dados, eles aparecem aqui."
+          />
+        )}
+      </>
+    )
   }
   return <>{children(query.data)}</>
 }

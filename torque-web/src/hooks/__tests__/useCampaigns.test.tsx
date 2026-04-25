@@ -20,7 +20,10 @@ function wrap(client: QueryClient) {
 describe('useCampaigns', () => {
   it('list hits /api/v1/campaigns without status', async () => {
     fetchMock.mockResolvedValueOnce({
-      ok: true, status: 200, json: async () => ({ data: [] }), headers: new Headers(),
+      ok: true,
+      status: 200,
+      json: async () => ({ data: [] }),
+      headers: new Headers(),
     } as Response)
 
     const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
@@ -31,7 +34,10 @@ describe('useCampaigns', () => {
 
   it('list appends ?status=running when filter provided', async () => {
     fetchMock.mockResolvedValueOnce({
-      ok: true, status: 200, json: async () => ({ data: [] }), headers: new Headers(),
+      ok: true,
+      status: 200,
+      json: async () => ({ data: [] }),
+      headers: new Headers(),
     } as Response)
 
     const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
@@ -43,12 +49,23 @@ describe('useCampaigns', () => {
   it('create then launch hit the right endpoints in sequence', async () => {
     fetchMock
       .mockResolvedValueOnce({
-        ok: true, status: 201,
-        json: async () => ({ id: 'c1', name: 'x', template_body: 't', status: 'draft', stats_queued: 0, stats_sent: 0, stats_failed: 0, stats_skipped: 0 }),
+        ok: true,
+        status: 201,
+        json: async () => ({
+          id: 'c1',
+          name: 'x',
+          template_body: 't',
+          status: 'draft',
+          stats_queued: 0,
+          stats_sent: 0,
+          stats_failed: 0,
+          stats_skipped: 0,
+        }),
         headers: new Headers(),
       } as Response)
       .mockResolvedValueOnce({
-        ok: true, status: 202,
+        ok: true,
+        status: 202,
         json: async () => ({ queued: 12 }),
         headers: new Headers(),
       } as Response)

@@ -55,7 +55,8 @@ export function usePipeStages(pipeId: string | undefined) {
   return useQuery<PipeStage[]>({
     queryKey: pipeId ? queryKeys.pipes.stages(pipeId) : ['pipes', 'stages', 'disabled'],
     enabled: Boolean(pipeId),
-    queryFn: async () => (await get<DataEnvelope<PipeStage>>(`/api/v1/pipes/${pipeId}/stages`)).data,
+    queryFn: async () =>
+      (await get<DataEnvelope<PipeStage>>(`/api/v1/pipes/${pipeId}/stages`)).data,
     staleTime: 5 * 60 * 1000,
   })
 }
@@ -94,7 +95,8 @@ export function usePipeEntries(pipeId: string | undefined) {
   return useQuery<PipeEntry[]>({
     queryKey: pipeId ? queryKeys.pipes.entries(pipeId) : ['pipes', 'entries', 'disabled'],
     enabled: Boolean(pipeId),
-    queryFn: async () => (await get<DataEnvelope<PipeEntry>>(`/api/v1/pipes/${pipeId}/entries`)).data,
+    queryFn: async () =>
+      (await get<DataEnvelope<PipeEntry>>(`/api/v1/pipes/${pipeId}/entries`)).data,
   })
 }
 
@@ -115,7 +117,12 @@ export interface MovePayload {
 export function useCreatePipe() {
   return useAppMutation<
     Pipe,
-    { kind: 'whatsapp' | 'confirmation' | 'proposal' | 'custom'; name: string; is_default?: boolean; position?: number }
+    {
+      kind: 'whatsapp' | 'confirmation' | 'proposal' | 'custom'
+      name: string
+      is_default?: boolean
+      position?: number
+    }
   >((body) => post<Pipe>('/api/v1/pipes', body), {
     invalidate: [queryKeys.pipes.list()],
     errorContext: 'pipe.create',
@@ -130,10 +137,10 @@ export function useUpdatePipe(id: string) {
 }
 
 export function useArchivePipe(id: string) {
-  return useAppMutation<void, void>(
-    () => del<void>(`/api/v1/pipes/${id}`),
-    { invalidate: [queryKeys.pipes.list()], errorContext: 'pipe.archive' }
-  )
+  return useAppMutation<void, void>(() => del<void>(`/api/v1/pipes/${id}`), {
+    invalidate: [queryKeys.pipes.list()],
+    errorContext: 'pipe.archive',
+  })
 }
 
 export function useCreateStage(pipeId: string) {
@@ -169,10 +176,10 @@ export function useUpdateStage(pipeId: string, stageId: string) {
 }
 
 export function useDeleteStage(pipeId: string, stageId: string) {
-  return useAppMutation<void, void>(
-    () => del<void>(`/api/v1/pipes/${pipeId}/stages/${stageId}`),
-    { invalidate: [queryKeys.pipes.stages(pipeId)], errorContext: 'pipe.stage.delete' }
-  )
+  return useAppMutation<void, void>(() => del<void>(`/api/v1/pipes/${pipeId}/stages/${stageId}`), {
+    invalidate: [queryKeys.pipes.stages(pipeId)],
+    errorContext: 'pipe.stage.delete',
+  })
 }
 
 export function useMovePipeEntry(pipeId: string) {

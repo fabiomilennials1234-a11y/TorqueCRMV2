@@ -23,24 +23,37 @@ describe('MasterPage', () => {
       const url = typeof input === 'string' ? input : input.toString()
       if (url.endsWith('/master/health')) {
         return {
-          ok: true, status: 200,
+          ok: true,
+          status: 200,
           json: async () => ({
-            org_count: 3, active_org_count: 3, user_count: 10, lead_count: 42,
-            active_subscriptions: 2, pending_subscriptions: 1,
-            operations_running: 0, operations_failed_24h: 0,
+            org_count: 3,
+            active_org_count: 3,
+            user_count: 10,
+            lead_count: 42,
+            active_subscriptions: 2,
+            pending_subscriptions: 1,
+            operations_running: 0,
+            operations_failed_24h: 0,
           }),
           headers: new Headers(),
         } as Response
       }
       if (url.endsWith('/master/organizations')) {
         return {
-          ok: true, status: 200,
+          ok: true,
+          status: 200,
           json: async () => ({
-            data: [{
-              id: 'o1', slug: 'orgA', name: 'Org A',
-              payment_status: 'active', member_count: 1, lead_count: 20,
-              created_at: '2026-04-20T00:00:00Z',
-            }],
+            data: [
+              {
+                id: 'o1',
+                slug: 'orgA',
+                name: 'Org A',
+                payment_status: 'active',
+                member_count: 1,
+                lead_count: 20,
+                created_at: '2026-04-20T00:00:00Z',
+              },
+            ],
           }),
           headers: new Headers(),
         } as Response

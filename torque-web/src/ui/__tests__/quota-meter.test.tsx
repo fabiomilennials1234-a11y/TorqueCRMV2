@@ -24,9 +24,7 @@ describe('QuotaMeter', () => {
   })
 
   it('renders nothing when effective_limit <= 0 (unconfigured)', () => {
-    const { container } = render(
-      <QuotaMeter quota={q({ effective_limit: 0, remaining: 0 })} />
-    )
+    const { container } = render(<QuotaMeter quota={q({ effective_limit: 0, remaining: 0 })} />)
     expect(container.firstChild).toBeNull()
   })
 

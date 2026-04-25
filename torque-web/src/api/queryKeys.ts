@@ -55,7 +55,9 @@ export const queryKeys = {
   inbox: {
     all: () => ['inbox'] as const,
     conversations: (filters?: Record<string, unknown>) =>
-      filters ? (['inbox', 'conversations', filters] as const) : (['inbox', 'conversations'] as const),
+      filters
+        ? (['inbox', 'conversations', filters] as const)
+        : (['inbox', 'conversations'] as const),
     conversation: (id: string) => ['inbox', 'conversations', 'detail', id] as const,
     messages: (id: string) => ['inbox', 'conversations', id, 'messages'] as const,
   },

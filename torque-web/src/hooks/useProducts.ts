@@ -110,10 +110,10 @@ export function useUpdateProduct(id: string) {
 }
 
 export function useArchiveProduct(id: string) {
-  return useAppMutation<void, void>(
-    () => del<void>(`/api/v1/products/${id}`),
-    { invalidate: [['products']], errorContext: 'product.archive' }
-  )
+  return useAppMutation<void, void>(() => del<void>(`/api/v1/products/${id}`), {
+    invalidate: [['products']],
+    errorContext: 'product.archive',
+  })
 }
 
 export { productKeys }

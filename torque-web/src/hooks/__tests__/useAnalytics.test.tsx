@@ -20,14 +20,17 @@ function wrap(client: QueryClient) {
 describe('useAnalytics', () => {
   it('leads summary serializes since/until', async () => {
     fetchMock.mockResolvedValueOnce({
-      ok: true, status: 200,
+      ok: true,
+      status: 200,
       json: async () => ({ total: 0, in_window: 0, assigned: 0, unassigned: 0 }),
       headers: new Headers(),
     } as Response)
     const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
     const since = '2026-04-01T00:00:00Z'
     const until = '2026-04-30T00:00:00Z'
-    const { result } = renderHook(() => useLeadsSummary({ since, until }), { wrapper: wrap(client) })
+    const { result } = renderHook(() => useLeadsSummary({ since, until }), {
+      wrapper: wrap(client),
+    })
     await waitFor(() => expect(result.current.isSuccess).toBe(true))
     const url = fetchMock.mock.calls[0]?.[0] as string
     expect(url.startsWith('/api/v1/analytics/leads?')).toBe(true)

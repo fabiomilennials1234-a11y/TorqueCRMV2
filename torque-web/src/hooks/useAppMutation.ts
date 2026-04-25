@@ -31,8 +31,10 @@ export interface OptimisticConfig<TData, TVariables> {
   updater: (current: TData | undefined, variables: TVariables) => TData | undefined
 }
 
-export interface UseAppMutationOptions<TData, TVariables, TContext>
-  extends Omit<UseMutationOptions<TData, unknown, TVariables, TContext>, 'mutationFn'> {
+export interface UseAppMutationOptions<TData, TVariables, TContext> extends Omit<
+  UseMutationOptions<TData, unknown, TVariables, TContext>,
+  'mutationFn'
+> {
   /** Keys to invalidate on success. */
   invalidate?: QueryKey[]
   /** Optional optimistic-update descriptor. */

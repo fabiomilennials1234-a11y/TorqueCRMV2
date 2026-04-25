@@ -293,7 +293,10 @@ function CanvasEditor({
     <div className="flex h-[calc(100vh-56px)] min-h-0">
       {/* Palette */}
       <aside className="flex w-64 shrink-0 flex-col gap-2 overflow-y-auto border-r border-hairline p-4">
-        <Link to="/workflows" className="mb-2 inline-flex items-center gap-1.5 text-xs text-ink-dim hover:text-ink-muted">
+        <Link
+          to="/workflows"
+          className="mb-2 inline-flex items-center gap-1.5 text-xs text-ink-dim hover:text-ink-muted"
+        >
           <ArrowLeft className="h-3.5 w-3.5" />
           Workflows
         </Link>
@@ -324,7 +327,9 @@ function CanvasEditor({
             description={workflow.description ?? undefined}
           />
           <div className="ml-auto flex items-center gap-2">
-            <Badge tone={workflow.status === 'active' ? 'success' : 'neutral'}>{workflow.status}</Badge>
+            <Badge tone={workflow.status === 'active' ? 'success' : 'neutral'}>
+              {workflow.status}
+            </Badge>
             <Link
               to={`/workflows/${workflowId}/executions`}
               className="text-xs text-accent underline"
@@ -426,7 +431,9 @@ function NodeInspector({
   workflowId: string
   step: WorkflowStep
   onDelete: () => Promise<void>
-  onUpdate: (patch: Partial<{ name: string; kind: WorkflowStepKind; config: unknown }>) => Promise<unknown>
+  onUpdate: (
+    patch: Partial<{ name: string; kind: WorkflowStepKind; config: unknown }>
+  ) => Promise<unknown>
   onSetEntry: () => Promise<unknown>
   isEntry: boolean
 }) {

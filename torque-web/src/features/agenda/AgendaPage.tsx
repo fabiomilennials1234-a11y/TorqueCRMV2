@@ -119,7 +119,9 @@ function MeetingRow({ meeting }: { meeting: Meeting }) {
           <span className="truncate text-sm text-ink">{meeting.title}</span>
           <Badge tone={statusTone[meeting.status]}>{meeting.status}</Badge>
         </div>
-        {meeting.location && <div className="truncate text-2xs text-ink-dim">{meeting.location}</div>}
+        {meeting.location && (
+          <div className="truncate text-2xs text-ink-dim">{meeting.location}</div>
+        )}
       </div>
       <Button
         type="button"
@@ -161,7 +163,7 @@ function CreateMeetingModal({ onClose }: { onClose: () => void }) {
         onSubmit={(e) => void handleSubmit(e)}
         className="w-full max-w-md rounded-xl bg-surface p-6 shadow-elev-2"
       >
-        <h2 className="mb-4 font-fraunces text-lg text-ink">Nova reunião</h2>
+        <h2 className="font-fraunces mb-4 text-lg text-ink">Nova reunião</h2>
         <div className="space-y-3">
           <Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Título" />
           <Input
@@ -174,11 +176,7 @@ function CreateMeetingModal({ onClose }: { onClose: () => void }) {
             value={startsAt}
             onChange={(e) => setStartsAt(e.target.value)}
           />
-          <Input
-            type="datetime-local"
-            value={endsAt}
-            onChange={(e) => setEndsAt(e.target.value)}
-          />
+          <Input type="datetime-local" value={endsAt} onChange={(e) => setEndsAt(e.target.value)} />
         </div>
         <div className="mt-5 flex items-center justify-between">
           <Button type="button" variant="ghost" size="sm" onClick={onClose}>

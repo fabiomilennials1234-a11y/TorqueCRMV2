@@ -120,22 +120,22 @@ export function useLaunchCampaign(id: string) {
 }
 
 export function usePauseCampaign(id: string) {
-  return useAppMutation<void, void>(
-    () => post<void>(`/api/v1/campaigns/${id}/pause`, {}),
-    { invalidate: [['campaigns']], errorContext: 'campaign.pause' }
-  )
+  return useAppMutation<void, void>(() => post<void>(`/api/v1/campaigns/${id}/pause`, {}), {
+    invalidate: [['campaigns']],
+    errorContext: 'campaign.pause',
+  })
 }
 
 export function useResumeCampaign(id: string) {
-  return useAppMutation<void, void>(
-    () => post<void>(`/api/v1/campaigns/${id}/resume`, {}),
-    { invalidate: [['campaigns']], errorContext: 'campaign.resume' }
-  )
+  return useAppMutation<void, void>(() => post<void>(`/api/v1/campaigns/${id}/resume`, {}), {
+    invalidate: [['campaigns']],
+    errorContext: 'campaign.resume',
+  })
 }
 
 export function useCancelCampaign(id: string) {
-  return useAppMutation<void, void>(
-    () => post<void>(`/api/v1/campaigns/${id}/cancel`, {}),
-    { invalidate: [['campaigns']], errorContext: 'campaign.cancel' }
-  )
+  return useAppMutation<void, void>(() => post<void>(`/api/v1/campaigns/${id}/cancel`, {}), {
+    invalidate: [['campaigns']],
+    errorContext: 'campaign.cancel',
+  })
 }

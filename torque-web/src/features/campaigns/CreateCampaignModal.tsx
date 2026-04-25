@@ -90,10 +90,7 @@ export function CreateCampaignModal({ onClose }: { onClose: () => void }) {
             {[1, 2, 3].map((n) => (
               <span
                 key={n}
-                className={
-                  'h-2 w-6 rounded-full ' +
-                  (n <= step ? 'bg-accent' : 'bg-elevated/50')
-                }
+                className={'h-2 w-6 rounded-full ' + (n <= step ? 'bg-accent' : 'bg-elevated/50')}
               />
             ))}
           </div>

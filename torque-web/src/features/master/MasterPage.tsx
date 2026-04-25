@@ -43,7 +43,9 @@ function HealthCards() {
   if (h.isLoading) {
     return (
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        {Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-24 w-full" />)}
+        {Array.from({ length: 4 }).map((_, i) => (
+          <Skeleton key={i} className="h-24 w-full" />
+        ))}
       </div>
     )
   }
@@ -58,8 +60,18 @@ function HealthCards() {
   const d: SystemHealthT = h.data
   return (
     <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-      <Metric icon={Building2} label="Orgs ativas" value={d.active_org_count} subvalue={`de ${d.org_count} totais`} />
-      <Metric icon={Users} label="Usuários" value={d.user_count} subvalue={`${d.lead_count} leads`} />
+      <Metric
+        icon={Building2}
+        label="Orgs ativas"
+        value={d.active_org_count}
+        subvalue={`de ${d.org_count} totais`}
+      />
+      <Metric
+        icon={Users}
+        label="Usuários"
+        value={d.user_count}
+        subvalue={`${d.lead_count} leads`}
+      />
       <Metric
         icon={Building2}
         label="Assinaturas"
@@ -117,7 +129,9 @@ function OrganizationsTable() {
     return <Skeleton className="h-64 w-full" />
   }
   if (orgs.isError || !orgs.data) {
-    return <EmptyState title="Erro carregando organizações" description={friendlyMessage(orgs.error)} />
+    return (
+      <EmptyState title="Erro carregando organizações" description={friendlyMessage(orgs.error)} />
+    )
   }
   if (orgs.data.length === 0) {
     return <EmptyState title="Nenhuma organização ainda" description="Sistema em estado inicial." />
@@ -154,8 +168,8 @@ function OrganizationsTable() {
                   {o.payment_status}
                 </Badge>
               </td>
-              <td className="px-5 py-3 text-right font-metric text-ink">{o.member_count}</td>
-              <td className="px-5 py-3 text-right font-metric text-ink">{o.lead_count}</td>
+              <td className="font-metric px-5 py-3 text-right text-ink">{o.member_count}</td>
+              <td className="font-metric px-5 py-3 text-right text-ink">{o.lead_count}</td>
               <td className="px-5 py-3 text-right">
                 <Button
                   variant="ghost"

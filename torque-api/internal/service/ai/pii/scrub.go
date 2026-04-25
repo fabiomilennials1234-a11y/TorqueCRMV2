@@ -59,11 +59,21 @@ const (
 
 // ----- compiled patterns -------------------------------------------------
 
-// Ordering matters: CNPJ must run BEFORE CPF because a 14-digit CNPJ
-// contains an 11-digit CPF as a substring. Email must run BEFORE phone
-// so phone's digit-heavy regex does not eat the numeric prefix of an
-// email's localpart. Credit card runs LAST so it does not eat an already
-// redacted CPF/CNPJ/phone.
+// Ordering matters. Final order pos-fix dos test fails do CI repair:
+//
+//   1. Email (anchored em '@', mais especifico).
+//   2. CNPJ (14 digitos formatted).
+//   3. Phone (10-13 digitos com optional +55 prefix). DEVE rodar ANTES de
+//      Credit porque "+5511987654321" (13 digitos com prefix) matches AMBOS
+//      Phone (E.164) e Credit (13+ digitos seq). Phone wins por ser uso
+//      conversacional mais comum. rePhone tem `\b` prefix anchor pra evitar
+//      consumir parte de strings mais longas (e.g. nao engole 10 trailing
+//      digitos de um CPF unformatted "12345678900").
+//   4. Credit card (13-19 digitos sequencia continua). Roda antes de CPF
+//      pra capturar 16-digitos sem separator (e.g. 4111111111111111) que
+//      conteriam 11-digit CPF substrings.
+//   5. CPF (11 digitos formatted ou unformatted) — captura 11 digitos que
+//      nao satisfazem o "9 prefix trigger" do rePhone (e.g. "12345678900").
 //
 // Anchoring: every pattern uses lookaround-free boundary heuristics
 // (Go's regexp is RE2, no lookbehind) — the character-class boundaries
@@ -99,8 +109,16 @@ var (
 	//   11 91234 5678
 	// The `\b` at the start avoids matching the tail of a 20-digit
 	// credit card number by accident.
+	// Brazil phone shape com 2 alternatives pra distinguir cartoes de
+	// credito 13+ digitos sem separator:
+	//   A) E.164 com mandatory "+55" prefix — relaxado internamente
+	//      porque o "+" e marker inequivoco.
+	//   B) Domestic — DDD + (mandatory "9" mobile prefix OU mandatory
+	//      separator entre DDD e os 4 primeiros digitos do landline).
+	// Pattern original `(?:\+?55[\s-]?)?...9?...` aceitava "5555-4444-..."
+	// como "55" prefix + DDD + 4 + 4, engolindo cartao 13-19 digitos.
 	rePhone = regexp.MustCompile(
-		`(?:\+?55[\s-]?)?\(?\d{2}\)?[\s-]?9?\d{4}[\s-]?\d{4}\b`,
+		`(?:\+55[\s-]?\(?\d{2}\)?[\s-]?9?\d{4}[\s-]?\d{4}|\b\(?\d{2}\)?(?:[\s-]?9\d{4}|[\s-]\d{4})[\s-]?\d{4})\b`,
 	)
 
 	// Credit card — 13-19 digits with optional single spaces or hyphens
@@ -122,37 +140,37 @@ func Scrub(text string) (string, Counts) {
 	}
 	out := text
 
-	// CNPJ first (longest digit sequence).
-	out = reCNPJ.ReplaceAllStringFunc(out, func(m string) string {
-		c.CNPJ++
-		return SentinelCNPJ
-	})
-	// CPF second.
-	out = reCPF.ReplaceAllStringFunc(out, func(m string) string {
-		c.CPF++
-		return SentinelCPF
-	})
-	// Email before phone — phone's digit class would eat the numeric
-	// prefix of localparts like `123abc@x.com`.
+	// 1. Email primeiro (anchored em '@', mais especifico).
 	out = reEmail.ReplaceAllStringFunc(out, func(m string) string {
 		c.Email++
 		return SentinelEmail
 	})
-	// Phone.
+	// 2. CNPJ (14 digitos formatted).
+	out = reCNPJ.ReplaceAllStringFunc(out, func(m string) string {
+		c.CNPJ++
+		return SentinelCNPJ
+	})
+	// 3. Phone antes de Credit — E.164 "+5511987654321" matches ambos;
+	// phone wins por ser uso conversacional. \b prefix evita engolir
+	// parte de CPF unformatted como "12345678900".
 	out = rePhone.ReplaceAllStringFunc(out, func(m string) string {
 		c.Phone++
 		return SentinelPhone
 	})
-	// Credit card — only after everything else has been consumed so
-	// we don't redact a phone twice.
+	// 4. Credit card antes de CPF — cartoes 16-digitos sem separator
+	// conteriam 11-digit CPF substrings se CPF rodasse antes.
 	out = reCredit.ReplaceAllStringFunc(out, func(m string) string {
-		// A long token that was already redacted (contains `[` or `]`)
-		// won't match \b\d sequences, so this guard is defensive only.
 		if strings.ContainsAny(m, "[]") {
 			return m
 		}
 		c.Credit++
 		return SentinelCredit
+	})
+	// 5. CPF captura 11-digit sequences que nao satisfizeram o "9 prefix
+	// trigger" do phone regex (e.g. "12345678900").
+	out = reCPF.ReplaceAllStringFunc(out, func(m string) string {
+		c.CPF++
+		return SentinelCPF
 	})
 	return out, c
 }
