@@ -408,6 +408,9 @@ func (r *Repository) ReclaimOrphanedRuns(ctx context.Context, staleAfter time.Du
 	if staleAfter <= 0 {
 		staleAfter = 10 * time.Minute
 	}
+	// pgx v5.9+ strict type encoding: o mesmo $1 nao pode ser usado como
+	// int em jsonb_build_object E como text em (||) sem ambiguidade. Usar
+	// make_interval(secs => $1) evita concat de string e mantem $1 como int.
 	q := `
 		UPDATE workflow_runs
 		   SET status = 'failed',
@@ -420,7 +423,7 @@ func (r *Repository) ReclaimOrphanedRuns(ctx context.Context, staleAfter time.Du
 		            )
 		 WHERE status = 'running'
 		   AND started_at IS NOT NULL
-		   AND started_at < (now() - ($1 || ' seconds')::interval)
+		   AND started_at < (now() - make_interval(secs => $1))
 	 RETURNING id, organization_id, workflow_id, current_step_id, attempts, started_at
 	`
 	rows, err := r.pool.Query(ctx, q, int(staleAfter.Seconds()))
