@@ -1,0 +1,25 @@
+version: "2"
+
+# golangci-lint v2 default-on linters: errcheck, govet, ineffassign,
+# staticcheck, unused. errcheck v2 mais estrito que v1 — flagged
+# centenas de fmt.Fprintf/Body.Close pre-existentes que nao sao
+# bugs reais. Excluir essas funcoes mantem o gate em algo significativo
+# (assignments ineffectuais, typecheck, vet) sem ruido.
+
+run:
+  timeout: 5m
+
+linters:
+  default: standard
+  settings:
+    errcheck:
+      # Funcoes cujo erro de retorno raramente importa. fmt.Fprintf em
+      # http.ResponseWriter falha = client desconectou; *.Body.Close
+      # em response ja consumido = best-effort.
+      exclude-functions:
+        - fmt.Fprintf
+        - fmt.Fprint
+        - fmt.Fprintln
+        - (io.Closer).Close
+        - (*net/http.Response).Body.Close
+        - (net.Conn).Close
