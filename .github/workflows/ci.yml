@@ -149,11 +149,11 @@ jobs:
 
       - uses: golangci/golangci-lint-action@v7
         with:
-          # v2.1.0 builds com Go 1.24/1.25 support — necessario apos
-          # Dependabot rebases auto-bumparem toolchain em go.mod. v1.61
-          # build com Go 1.23 recusava 'targeted Go version 1.25.0'.
-          # action@v7 requerido pra carregar golangci-lint v2.x.
-          version: v2.1.0
+          # v2.5.0 built com Go 1.25 — minimo pra carregar projetos cujo
+          # go.mod targeta 1.25 (Dependabot rebases auto-bumpam toolchain
+          # via deps Go 1.25 like x/crypto 0.50, sentry-go 0.45, x/time 0.15).
+          # action@v7 requerido pra v2.x golangci-lint.
+          version: v2.5.0
           working-directory: torque-api
           args: --timeout=5m
 
