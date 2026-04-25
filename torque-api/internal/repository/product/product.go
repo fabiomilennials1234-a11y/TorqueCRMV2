@@ -280,7 +280,7 @@ func (r *Repository) Update(ctx context.Context, orgID, id uuid.UUID, in UpdateI
 	if len(in.Metadata) > 0 {
 		sets = append(sets, fmt.Sprintf("metadata = $%d", idx))
 		args = append(args, in.Metadata)
-		idx++
+		// idx not bumped — Metadata is the last optional field.
 	}
 	if len(sets) == 0 {
 		return r.Get(ctx, orgID, id)
