@@ -32,7 +32,7 @@ exports[`Sheet > renders open with title + description 1`] = `
   />
   <div
     aria-hidden="true"
-    class="fixed inset-0 z-40 bg-bg/50 backdrop-blur-[16px] data-[state=open]:animate-fade-in"
+    class="bg-bg/50 data-[state=open]:animate-fade-in fixed inset-0 z-40 backdrop-blur-[16px]"
     data-aria-hidden="true"
     data-state="open"
     style="pointer-events: auto;"
@@ -40,7 +40,7 @@ exports[`Sheet > renders open with title + description 1`] = `
   <div
     aria-describedby="radix-:r5:"
     aria-labelledby="radix-:r4:"
-    class="fixed top-0 z-50 h-full w-full max-w-[520px] bg-surface shadow-[inset_1px_0_0_0_hsl(var(--hairline))] shadow-elev-3 data-[state=open]:duration-300 data-[state=open]:animate-in data-[state=open]:slide-in-from-right data-[state=closed]:duration-200 data-[state=closed]:animate-out data-[state=closed]:slide-out-to-right right-0 flex flex-col"
+    class="bg-surface fixed top-0 z-50 h-full w-full max-w-[520px] shadow-elev-3 shadow-[inset_1px_0_0_0_hsl(var(--hairline))] data-[state=open]:animate-in data-[state=open]:slide-in-from-right data-[state=open]:duration-300 data-[state=closed]:animate-out data-[state=closed]:slide-out-to-right data-[state=closed]:duration-200 right-0 flex flex-col"
     data-state="open"
     id="radix-:r3:"
     role="dialog"
@@ -48,24 +48,24 @@ exports[`Sheet > renders open with title + description 1`] = `
     tabindex="-1"
   >
     <div
-      class="flex items-start justify-between gap-4 px-6 py-5 shadow-hairline-b"
+      class="shadow-hairline-b flex items-start justify-between gap-4 px-6 py-5"
     >
       <div>
         <h2
-          class="font-display text-lg tracking-tightest text-ink"
+          class="font-display tracking-tightest text-ink text-lg"
           id="radix-:r4:"
         >
           Lead
         </h2>
         <p
-          class="mt-1 text-sm text-ink-muted"
+          class="text-ink-muted mt-1 text-sm"
           id="radix-:r5:"
         >
           Detalhes do lead
         </p>
       </div>
       <button
-        class="rounded-sm p-1 text-ink-dim transition-colors hover:bg-elevated hover:text-ink"
+        class="text-ink-dim hover:bg-elevated hover:text-ink rounded-sm p-1 transition-colors"
         type="button"
       >
         <svg

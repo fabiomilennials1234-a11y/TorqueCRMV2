@@ -3,7 +3,7 @@
 exports[`Avatar > renders large size with ring 1`] = `
 <div>
   <span
-    class="font-metric relative inline-flex shrink-0 select-none overflow-hidden rounded-full uppercase h-10 w-10 text-sm shadow-hairline ring-2 ring-bg"
+    class="font-metric relative inline-flex shrink-0 overflow-hidden rounded-full uppercase select-none h-10 w-10 text-sm shadow-hairline ring-bg ring-2"
   />
 </div>
 `;
@@ -11,7 +11,7 @@ exports[`Avatar > renders large size with ring 1`] = `
 exports[`Avatar > renders with fallback initials 1`] = `
 <div>
   <span
-    class="font-metric relative inline-flex shrink-0 select-none overflow-hidden rounded-full uppercase h-8 w-8 text-xs"
+    class="font-metric relative inline-flex shrink-0 overflow-hidden rounded-full uppercase select-none h-8 w-8 text-xs"
   />
 </div>
 `;

@@ -28,16 +28,16 @@ exports[`StepProgress > renders at step 1/5 (nothing completed) 1`] = `
           class="relative mx-1 h-px flex-1"
         >
           <div
-            class="absolute inset-0 bg-hairline"
+            class="bg-hairline absolute inset-0"
           />
           <div
-            class="duration-[280ms] ease-[var(--ease-in-out-precise)] absolute inset-y-0 left-0 bg-success transition-[width]"
+            class="bg-success absolute inset-y-0 left-0 transition-[width] duration-[280ms] ease-[var(--ease-in-out-precise)]"
             style="width: 0%;"
           />
         </div>
       </div>
       <span
-        class="duration-[280ms] ease-[var(--ease-in-out-precise)] mt-2 text-2xs font-medium transition-colors text-ink"
+        class="text-2xs mt-2 font-medium transition-colors duration-[280ms] ease-[var(--ease-in-out-precise)] text-ink"
       >
         Identidade
       </span>
@@ -63,16 +63,16 @@ exports[`StepProgress > renders at step 1/5 (nothing completed) 1`] = `
           class="relative mx-1 h-px flex-1"
         >
           <div
-            class="absolute inset-0 bg-hairline"
+            class="bg-hairline absolute inset-0"
           />
           <div
-            class="duration-[280ms] ease-[var(--ease-in-out-precise)] absolute inset-y-0 left-0 bg-success transition-[width]"
+            class="bg-success absolute inset-y-0 left-0 transition-[width] duration-[280ms] ease-[var(--ease-in-out-precise)]"
             style="width: 0%;"
           />
         </div>
       </div>
       <span
-        class="duration-[280ms] ease-[var(--ease-in-out-precise)] mt-2 text-2xs font-medium transition-colors text-ink-dim"
+        class="text-2xs mt-2 font-medium transition-colors duration-[280ms] ease-[var(--ease-in-out-precise)] text-ink-dim"
       >
         Tom
       </span>
@@ -98,16 +98,16 @@ exports[`StepProgress > renders at step 1/5 (nothing completed) 1`] = `
           class="relative mx-1 h-px flex-1"
         >
           <div
-            class="absolute inset-0 bg-hairline"
+            class="bg-hairline absolute inset-0"
           />
           <div
-            class="duration-[280ms] ease-[var(--ease-in-out-precise)] absolute inset-y-0 left-0 bg-success transition-[width]"
+            class="bg-success absolute inset-y-0 left-0 transition-[width] duration-[280ms] ease-[var(--ease-in-out-precise)]"
             style="width: 0%;"
           />
         </div>
       </div>
       <span
-        class="duration-[280ms] ease-[var(--ease-in-out-precise)] mt-2 text-2xs font-medium transition-colors text-ink-dim"
+        class="text-2xs mt-2 font-medium transition-colors duration-[280ms] ease-[var(--ease-in-out-precise)] text-ink-dim"
       >
         Skills
       </span>
@@ -133,16 +133,16 @@ exports[`StepProgress > renders at step 1/5 (nothing completed) 1`] = `
           class="relative mx-1 h-px flex-1"
         >
           <div
-            class="absolute inset-0 bg-hairline"
+            class="bg-hairline absolute inset-0"
           />
           <div
-            class="duration-[280ms] ease-[var(--ease-in-out-precise)] absolute inset-y-0 left-0 bg-success transition-[width]"
+            class="bg-success absolute inset-y-0 left-0 transition-[width] duration-[280ms] ease-[var(--ease-in-out-precise)]"
             style="width: 0%;"
           />
         </div>
       </div>
       <span
-        class="duration-[280ms] ease-[var(--ease-in-out-precise)] mt-2 text-2xs font-medium transition-colors text-ink-dim"
+        class="text-2xs mt-2 font-medium transition-colors duration-[280ms] ease-[var(--ease-in-out-precise)] text-ink-dim"
       >
         Gatilho
       </span>
@@ -166,7 +166,7 @@ exports[`StepProgress > renders at step 1/5 (nothing completed) 1`] = `
         </div>
       </div>
       <span
-        class="duration-[280ms] ease-[var(--ease-in-out-precise)] mt-2 text-2xs font-medium transition-colors text-ink-dim"
+        class="text-2xs mt-2 font-medium transition-colors duration-[280ms] ease-[var(--ease-in-out-precise)] text-ink-dim"
       >
         Revisão
       </span>
@@ -213,16 +213,16 @@ exports[`StepProgress > renders at step 3/5 with first two completed 1`] = `
           class="relative mx-1 h-px flex-1"
         >
           <div
-            class="absolute inset-0 bg-hairline"
+            class="bg-hairline absolute inset-0"
           />
           <div
-            class="duration-[280ms] ease-[var(--ease-in-out-precise)] absolute inset-y-0 left-0 bg-success transition-[width]"
+            class="bg-success absolute inset-y-0 left-0 transition-[width] duration-[280ms] ease-[var(--ease-in-out-precise)]"
             style="width: 100%;"
           />
         </div>
       </div>
       <span
-        class="duration-[280ms] ease-[var(--ease-in-out-precise)] mt-2 text-2xs font-medium transition-colors text-success"
+        class="text-2xs mt-2 font-medium transition-colors duration-[280ms] ease-[var(--ease-in-out-precise)] text-success"
       >
         Identidade
       </span>
@@ -259,16 +259,16 @@ exports[`StepProgress > renders at step 3/5 with first two completed 1`] = `
           class="relative mx-1 h-px flex-1"
         >
           <div
-            class="absolute inset-0 bg-hairline"
+            class="bg-hairline absolute inset-0"
           />
           <div
-            class="duration-[280ms] ease-[var(--ease-in-out-precise)] absolute inset-y-0 left-0 bg-success transition-[width]"
+            class="bg-success absolute inset-y-0 left-0 transition-[width] duration-[280ms] ease-[var(--ease-in-out-precise)]"
             style="width: 100%;"
           />
         </div>
       </div>
       <span
-        class="duration-[280ms] ease-[var(--ease-in-out-precise)] mt-2 text-2xs font-medium transition-colors text-success"
+        class="text-2xs mt-2 font-medium transition-colors duration-[280ms] ease-[var(--ease-in-out-precise)] text-success"
       >
         Tom
       </span>
@@ -295,16 +295,16 @@ exports[`StepProgress > renders at step 3/5 with first two completed 1`] = `
           class="relative mx-1 h-px flex-1"
         >
           <div
-            class="absolute inset-0 bg-hairline"
+            class="bg-hairline absolute inset-0"
           />
           <div
-            class="duration-[280ms] ease-[var(--ease-in-out-precise)] absolute inset-y-0 left-0 bg-success transition-[width]"
+            class="bg-success absolute inset-y-0 left-0 transition-[width] duration-[280ms] ease-[var(--ease-in-out-precise)]"
             style="width: 0%;"
           />
         </div>
       </div>
       <span
-        class="duration-[280ms] ease-[var(--ease-in-out-precise)] mt-2 text-2xs font-medium transition-colors text-ink"
+        class="text-2xs mt-2 font-medium transition-colors duration-[280ms] ease-[var(--ease-in-out-precise)] text-ink"
       >
         Skills
       </span>
@@ -330,16 +330,16 @@ exports[`StepProgress > renders at step 3/5 with first two completed 1`] = `
           class="relative mx-1 h-px flex-1"
         >
           <div
-            class="absolute inset-0 bg-hairline"
+            class="bg-hairline absolute inset-0"
           />
           <div
-            class="duration-[280ms] ease-[var(--ease-in-out-precise)] absolute inset-y-0 left-0 bg-success transition-[width]"
+            class="bg-success absolute inset-y-0 left-0 transition-[width] duration-[280ms] ease-[var(--ease-in-out-precise)]"
             style="width: 0%;"
           />
         </div>
       </div>
       <span
-        class="duration-[280ms] ease-[var(--ease-in-out-precise)] mt-2 text-2xs font-medium transition-colors text-ink-dim"
+        class="text-2xs mt-2 font-medium transition-colors duration-[280ms] ease-[var(--ease-in-out-precise)] text-ink-dim"
       >
         Gatilho
       </span>
@@ -363,7 +363,7 @@ exports[`StepProgress > renders at step 3/5 with first two completed 1`] = `
         </div>
       </div>
       <span
-        class="duration-[280ms] ease-[var(--ease-in-out-precise)] mt-2 text-2xs font-medium transition-colors text-ink-dim"
+        class="text-2xs mt-2 font-medium transition-colors duration-[280ms] ease-[var(--ease-in-out-precise)] text-ink-dim"
       >
         Revisão
       </span>
@@ -410,16 +410,16 @@ exports[`StepProgress > renders at step 5/5 all completed 1`] = `
           class="relative mx-1 h-px flex-1"
         >
           <div
-            class="absolute inset-0 bg-hairline"
+            class="bg-hairline absolute inset-0"
           />
           <div
-            class="duration-[280ms] ease-[var(--ease-in-out-precise)] absolute inset-y-0 left-0 bg-success transition-[width]"
+            class="bg-success absolute inset-y-0 left-0 transition-[width] duration-[280ms] ease-[var(--ease-in-out-precise)]"
             style="width: 100%;"
           />
         </div>
       </div>
       <span
-        class="duration-[280ms] ease-[var(--ease-in-out-precise)] mt-2 text-2xs font-medium transition-colors text-success"
+        class="text-2xs mt-2 font-medium transition-colors duration-[280ms] ease-[var(--ease-in-out-precise)] text-success"
       >
         Identidade
       </span>
@@ -456,16 +456,16 @@ exports[`StepProgress > renders at step 5/5 all completed 1`] = `
           class="relative mx-1 h-px flex-1"
         >
           <div
-            class="absolute inset-0 bg-hairline"
+            class="bg-hairline absolute inset-0"
           />
           <div
-            class="duration-[280ms] ease-[var(--ease-in-out-precise)] absolute inset-y-0 left-0 bg-success transition-[width]"
+            class="bg-success absolute inset-y-0 left-0 transition-[width] duration-[280ms] ease-[var(--ease-in-out-precise)]"
             style="width: 100%;"
           />
         </div>
       </div>
       <span
-        class="duration-[280ms] ease-[var(--ease-in-out-precise)] mt-2 text-2xs font-medium transition-colors text-success"
+        class="text-2xs mt-2 font-medium transition-colors duration-[280ms] ease-[var(--ease-in-out-precise)] text-success"
       >
         Tom
       </span>
@@ -502,16 +502,16 @@ exports[`StepProgress > renders at step 5/5 all completed 1`] = `
           class="relative mx-1 h-px flex-1"
         >
           <div
-            class="absolute inset-0 bg-hairline"
+            class="bg-hairline absolute inset-0"
           />
           <div
-            class="duration-[280ms] ease-[var(--ease-in-out-precise)] absolute inset-y-0 left-0 bg-success transition-[width]"
+            class="bg-success absolute inset-y-0 left-0 transition-[width] duration-[280ms] ease-[var(--ease-in-out-precise)]"
             style="width: 100%;"
           />
         </div>
       </div>
       <span
-        class="duration-[280ms] ease-[var(--ease-in-out-precise)] mt-2 text-2xs font-medium transition-colors text-success"
+        class="text-2xs mt-2 font-medium transition-colors duration-[280ms] ease-[var(--ease-in-out-precise)] text-success"
       >
         Skills
       </span>
@@ -548,16 +548,16 @@ exports[`StepProgress > renders at step 5/5 all completed 1`] = `
           class="relative mx-1 h-px flex-1"
         >
           <div
-            class="absolute inset-0 bg-hairline"
+            class="bg-hairline absolute inset-0"
           />
           <div
-            class="duration-[280ms] ease-[var(--ease-in-out-precise)] absolute inset-y-0 left-0 bg-success transition-[width]"
+            class="bg-success absolute inset-y-0 left-0 transition-[width] duration-[280ms] ease-[var(--ease-in-out-precise)]"
             style="width: 100%;"
           />
         </div>
       </div>
       <span
-        class="duration-[280ms] ease-[var(--ease-in-out-precise)] mt-2 text-2xs font-medium transition-colors text-success"
+        class="text-2xs mt-2 font-medium transition-colors duration-[280ms] ease-[var(--ease-in-out-precise)] text-success"
       >
         Gatilho
       </span>
@@ -582,7 +582,7 @@ exports[`StepProgress > renders at step 5/5 all completed 1`] = `
         </div>
       </div>
       <span
-        class="duration-[280ms] ease-[var(--ease-in-out-precise)] mt-2 text-2xs font-medium transition-colors text-ink"
+        class="text-2xs mt-2 font-medium transition-colors duration-[280ms] ease-[var(--ease-in-out-precise)] text-ink"
       >
         Revisão
       </span>
@@ -612,10 +612,10 @@ exports[`StepProgress > renders minimal variant 1`] = `
           class="relative mx-1 h-px flex-1"
         >
           <div
-            class="absolute inset-0 bg-hairline"
+            class="bg-hairline absolute inset-0"
           />
           <div
-            class="duration-[280ms] ease-[var(--ease-in-out-precise)] absolute inset-y-0 left-0 bg-success transition-[width]"
+            class="bg-success absolute inset-y-0 left-0 transition-[width] duration-[280ms] ease-[var(--ease-in-out-precise)]"
             style="width: 100%;"
           />
         </div>
@@ -636,10 +636,10 @@ exports[`StepProgress > renders minimal variant 1`] = `
           class="relative mx-1 h-px flex-1"
         >
           <div
-            class="absolute inset-0 bg-hairline"
+            class="bg-hairline absolute inset-0"
           />
           <div
-            class="duration-[280ms] ease-[var(--ease-in-out-precise)] absolute inset-y-0 left-0 bg-success transition-[width]"
+            class="bg-success absolute inset-y-0 left-0 transition-[width] duration-[280ms] ease-[var(--ease-in-out-precise)]"
             style="width: 100%;"
           />
         </div>
@@ -661,10 +661,10 @@ exports[`StepProgress > renders minimal variant 1`] = `
           class="relative mx-1 h-px flex-1"
         >
           <div
-            class="absolute inset-0 bg-hairline"
+            class="bg-hairline absolute inset-0"
           />
           <div
-            class="duration-[280ms] ease-[var(--ease-in-out-precise)] absolute inset-y-0 left-0 bg-success transition-[width]"
+            class="bg-success absolute inset-y-0 left-0 transition-[width] duration-[280ms] ease-[var(--ease-in-out-precise)]"
             style="width: 0%;"
           />
         </div>
@@ -685,10 +685,10 @@ exports[`StepProgress > renders minimal variant 1`] = `
           class="relative mx-1 h-px flex-1"
         >
           <div
-            class="absolute inset-0 bg-hairline"
+            class="bg-hairline absolute inset-0"
           />
           <div
-            class="duration-[280ms] ease-[var(--ease-in-out-precise)] absolute inset-y-0 left-0 bg-success transition-[width]"
+            class="bg-success absolute inset-y-0 left-0 transition-[width] duration-[280ms] ease-[var(--ease-in-out-precise)]"
             style="width: 0%;"
           />
         </div>

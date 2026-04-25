@@ -3,7 +3,7 @@
 exports[`Card > renders bare card 1`] = `
 <div>
   <div
-    class="relative overflow-hidden rounded-lg bg-surface shadow-elev-1 ease-[var(--ease-out-soft)] transition-shadow duration-200 hover:shadow-neu-hover"
+    class="bg-surface shadow-elev-1 relative overflow-hidden rounded-lg transition-shadow duration-200 ease-[var(--ease-out-soft)] hover:shadow-neu-hover"
   >
     content
   </div>
@@ -13,13 +13,13 @@ exports[`Card > renders bare card 1`] = `
 exports[`Card > renders full composition 1`] = `
 <div>
   <div
-    class="relative overflow-hidden rounded-lg bg-surface shadow-elev-1 ease-[var(--ease-out-soft)] transition-shadow duration-200 hover:shadow-neu-hover"
+    class="bg-surface shadow-elev-1 relative overflow-hidden rounded-lg transition-shadow duration-200 ease-[var(--ease-out-soft)] hover:shadow-neu-hover"
   >
     <div
-      class="flex items-start justify-between gap-4 px-6 pb-3 pt-6"
+      class="flex items-start justify-between gap-4 px-6 pt-6 pb-3"
     >
       <h3
-        class="text-2xs font-medium uppercase tracking-[0.12em] text-ink-dim"
+        class="text-2xs text-ink-dim font-medium tracking-[0.12em] uppercase"
       >
         Funil
       </h3>
@@ -30,7 +30,7 @@ exports[`Card > renders full composition 1`] = `
       Corpo
     </div>
     <div
-      class="px-6 py-3 text-xs text-ink-muted shadow-[inset_0_1px_0_0_hsl(var(--hairline)/0.5)]"
+      class="text-ink-muted px-6 py-3 text-xs shadow-[inset_0_1px_0_0_hsl(var(--hairline)/0.5)]"
     >
       rodapé
     </div>
