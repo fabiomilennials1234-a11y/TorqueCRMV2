@@ -107,7 +107,7 @@ func TestAsaas_CreateCharge_HappyPath(t *testing.T) {
 	if ch.ExpiresAt.IsZero() {
 		t.Fatal("expires_at not parsed")
 	}
-	if !(seenCustomer && seenPayment && seenPix) {
+	if !seenCustomer || !seenPayment || !seenPix {
 		t.Fatalf("missing hop: customer=%v payment=%v pix=%v", seenCustomer, seenPayment, seenPix)
 	}
 }
