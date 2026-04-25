@@ -8,11 +8,51 @@
 /* Tailwind v4: substituicao das tres @tailwind directives por single import.
  * Engine novo (Oxide). Plugin tailwindcss-animate aposentado em v4 →
  * substituido por tw-animate-css que reexporta as mesmas utilities animate-*.
- * @config aponta pro tailwind.config.ts legacy (v4 mantem support pra
- * extends de cores/tipografia/keyframes ja definidos). */
+ * @config aponta pro tailwind.config.ts legacy (v4 mantem extends de
+ * tipografia/spacing/keyframes/shadows). Cores HSL via <alpha-value> NAO
+ * sao mais suportadas em v4 — definidas no @theme inline abaixo
+ * (utilities bg-bg/text-ink/etc geradas pelo @theme via --color-* tokens). */
 @import 'tailwindcss';
 @import 'tw-animate-css';
 @config '../../tailwind.config.ts';
+
+/* Tailwind v4 dark variant — selector class-based em vez de media query.
+ * Mirrors v3 darkMode: 'class'. */
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* Map HSL CSS vars (definidos em :root + .dark abaixo) para utilities
+ * bg-/text-/border-. v4 gera classes a partir de --color-{name}. */
+@theme inline {
+  --color-bg: hsl(var(--bg));
+  --color-surface: hsl(var(--surface));
+  --color-elevated: hsl(var(--elevated));
+  --color-hairline: hsl(var(--hairline));
+  --color-ink: hsl(var(--ink));
+  --color-ink-muted: hsl(var(--ink-muted));
+  --color-ink-dim: hsl(var(--ink-dim));
+  --color-accent: hsl(var(--accent));
+  --color-accent-soft: hsl(var(--accent-soft));
+  --color-success: hsl(var(--success));
+  --color-warning: hsl(var(--warning));
+  --color-danger: hsl(var(--danger));
+  --color-info: hsl(var(--info));
+  --color-heat-1: hsl(var(--heat-1));
+  --color-heat-2: hsl(var(--heat-2));
+  --color-heat-3: hsl(var(--heat-3));
+  --color-heat-4: hsl(var(--heat-4));
+  --color-heat-5: hsl(var(--heat-5));
+  --color-channel-whatsapp: hsl(var(--channel-whatsapp));
+  --color-channel-messenger: hsl(var(--channel-messenger));
+  --color-channel-instagram: hsl(var(--channel-instagram));
+  --color-channel-sz: hsl(var(--channel-sz));
+  --color-countdown-safe: hsl(var(--countdown-safe));
+  --color-countdown-warn: hsl(var(--countdown-warn));
+  --color-countdown-urgent: hsl(var(--countdown-urgent));
+  --color-job-pending: hsl(var(--job-pending));
+  --color-job-running: hsl(var(--job-running));
+  --color-job-completed: hsl(var(--job-completed));
+  --color-job-failed: hsl(var(--job-failed));
+}
 
 /* ------------------------------------------------------------------
  * Torque — Design Tokens
