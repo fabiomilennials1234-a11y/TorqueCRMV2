@@ -171,7 +171,7 @@ func (r *Repository) Update(ctx context.Context, orgID, id uuid.UUID, in UpdateI
 	if in.IsActive != nil {
 		sets = append(sets, fmt.Sprintf("is_active = $%d", idx))
 		args = append(args, *in.IsActive)
-		idx++
+		// idx not bumped — IsActive is the last optional UpdateTemplate field.
 	}
 	if len(sets) == 0 {
 		return r.Get(ctx, orgID, id)
