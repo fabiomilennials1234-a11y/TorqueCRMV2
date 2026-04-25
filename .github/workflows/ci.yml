@@ -48,7 +48,7 @@ jobs:
 
       - name: Upload build artifact
         if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop'
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: torque-web-dist-${{ github.sha }}
           path: torque-web/dist
