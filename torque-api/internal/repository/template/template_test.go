@@ -136,7 +136,7 @@ func TestTemplate_CRUD(t *testing.T) {
 	otherOrg := uuid.New()
 	mustExec(`INSERT INTO organizations (id, slug, name, plan_id) VALUES ($1,$2,$3,'free')`,
 		otherOrg, "tpl-iso-"+runID, "OtherOrg")
-	defer pool.Exec(context.Background(), `DELETE FROM organizations WHERE id = $1`, otherOrg)
+	defer func() { _, _ = pool.Exec(context.Background(), `DELETE FROM organizations WHERE id = $1`, otherOrg) }()
 
 	t3, err := repo.Create(ctx, orgID, templaterepo.CreateInput{Name: "Ouro A", Body: "hi"})
 	if err != nil {

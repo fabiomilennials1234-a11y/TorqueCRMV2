@@ -59,10 +59,13 @@ func (b *Bus) Subscribe(buf int) (<-chan ws.Event, func()) {
 
 	return ch, func() {
 		b.mu.Lock()
-		if c, ok := b.subscribers[id]; ok {
-			delete(b.subscribers, id)
-			close(c)
-		}
+		// Apenas remove from map; NAO close(c). Close(c) racing com Bus.deliver
+		// (ainda pode ter deliver mid-flight com snapshot anterior do subscriber
+		// list) gera "send on closed channel" panic + race. Subscribers detectam
+		// que devem parar via ctx.Done() ou stop channel; o canal vira orfao e
+		// GC recolhe quando o reader goroutine drop a ref. Tradeoff aceito:
+		// receivers que usam `for range ch` precisam de outro sinal pra sair.
+		delete(b.subscribers, id)
 		b.mu.Unlock()
 	}
 }

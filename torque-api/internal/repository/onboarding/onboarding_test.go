@@ -129,7 +129,7 @@ func TestOnboarding_Flow(t *testing.T) {
 	otherOrg := uuid.New()
 	mustExec(`INSERT INTO organizations (id, slug, name, plan_id) VALUES ($1,$2,$3,'free')`,
 		otherOrg, "other-"+runID, "Other")
-	defer pool.Exec(context.Background(), `DELETE FROM organizations WHERE id = $1`, otherOrg)
+	defer func() { _, _ = pool.Exec(context.Background(), `DELETE FROM organizations WHERE id = $1`, otherOrg) }()
 
 	_, err = repo.Get(ctx, otherOrg, memberID)
 	if !errors.Is(err, obrepo.ErrNotFound) {

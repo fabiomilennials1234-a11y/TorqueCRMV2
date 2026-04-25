@@ -203,7 +203,8 @@ func (r *Repository) Update(ctx context.Context, orgID, id uuid.UUID, in UpdateI
 	if in.IsActive != nil {
 		sets = append(sets, fmt.Sprintf("is_active = $%d", idx))
 		args = append(args, *in.IsActive)
-		idx++
+		// idx not bumped — IsActive is the last $N field; deactivated_at uses
+		// a literal expression, not a placeholder.
 		if !*in.IsActive {
 			sets = append(sets, "deactivated_at = now()")
 		} else {

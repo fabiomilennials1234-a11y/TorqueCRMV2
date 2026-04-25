@@ -99,7 +99,7 @@ func (r *Repository) UpdatePipe(ctx context.Context, orgID, id uuid.UUID, in Upd
 	if in.Position != nil {
 		sets = append(sets, fmt.Sprintf("position = $%d", idx))
 		args = append(args, *in.Position)
-		idx++
+		// idx not bumped — Position is the last optional field on UpdatePipe.
 	}
 	if len(sets) == 0 {
 		return r.GetPipe(ctx, orgID, id)
@@ -256,7 +256,7 @@ func (r *Repository) UpdateStage(ctx context.Context, orgID, id uuid.UUID, in Up
 	if in.IsFinalNegative != nil {
 		sets = append(sets, fmt.Sprintf("is_final_negative = $%d", idx))
 		args = append(args, *in.IsFinalNegative)
-		idx++
+		// idx not bumped — IsFinalNegative is the last optional UpdateStage field.
 	}
 	if len(sets) == 0 {
 		return r.getStage(ctx, orgID, id)
