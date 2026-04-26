@@ -22,6 +22,7 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/cors"
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/rs/zerolog"
 
 	"github.com/milennials/torque-api/internal/config"
@@ -249,7 +250,11 @@ func run() error {
 	// AssignAgent calls when a tenant's active triggers match. Closes
 	// the S40 gap where triggers had a matcher but no runtime.
 	agentRepoForSub := agentrepo.New(pool)
-	triggerSub := aitrigger.New(bus, agentRepoForSub, logger)
+	// S63 (D074-k): LeadResolver hidrata LeadFacts (Origin/Segment/UTMs/
+	// Rating) a partir do conversation_id pre-match. Sem isso, triggers
+	// com filtros em atributos do lead silenciosamente falham.
+	triggerLeadResolver := &poolLeadResolver{pool: pool}
+	triggerSub := aitrigger.New(bus, agentRepoForSub, logger).WithLeads(triggerLeadResolver)
 	triggerSub.Start(ctx)
 	defer func() {
 		shutdownCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
@@ -756,4 +761,30 @@ func (s productSyncSink) UpsertBySKU(
 		PriceCents: priceCents, Currency: currency,
 	})
 	return inserted, err
+}
+
+// poolLeadResolver implementa aitrigger.LeadResolver via SQL direto.
+// S63 (D074-k): JOIN conversations -> leads na ida pra evitar 2
+// roundtrips. Mantemos a query inline aqui (cmd/api e o composition
+// root) ao inves de poluir leadrepo com um metodo cross-aggregate.
+type poolLeadResolver struct {
+	pool *pgxpool.Pool
+}
+
+func (r *poolLeadResolver) LeadFactsByConversation(
+	ctx context.Context, orgID, conversationID uuid.UUID,
+) (aitrigger.LeadAttrs, error) {
+	const q = `
+		SELECT l.origin, l.segment, l.utm_source, l.utm_medium, l.utm_campaign, l.rating
+		FROM conversations c
+		INNER JOIN leads l ON l.id = c.lead_id AND l.organization_id = c.organization_id
+		WHERE c.organization_id = $1 AND c.id = $2 AND l.deleted_at IS NULL
+	`
+	var attrs aitrigger.LeadAttrs
+	if err := r.pool.QueryRow(ctx, q, orgID, conversationID).Scan(
+		&attrs.Origin, &attrs.Segment, &attrs.UTMSource, &attrs.UTMMedium, &attrs.UTMCampaign, &attrs.Rating,
+	); err != nil {
+		return aitrigger.LeadAttrs{}, err
+	}
+	return attrs, nil
 }
