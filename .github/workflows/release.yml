@@ -64,8 +64,9 @@ jobs:
       # immutable). --yes skips the interactive confirmation; the
       # OIDC token is picked up automatically from GITHUB_ACTIONS.
       - name: Sign API image
-        env:
-          COSIGN_EXPERIMENTAL: '1'
+        # S67 — COSIGN_EXPERIMENTAL=1 is deprecated em cosign v2 (keyless
+        # OIDC e default). Removido. Sign extrai OIDC token automaticamente
+        # de GITHUB_ACTIONS_OIDC_TOKEN (jobs com id-token: write).
         run: |
           cosign sign --yes \
             ghcr.io/${{ github.repository }}/torque-api@${{ steps.build_api.outputs.digest }}
@@ -83,8 +84,7 @@ jobs:
           cache-to: type=gha,scope=torque-web,mode=max
 
       - name: Sign web image
-        env:
-          COSIGN_EXPERIMENTAL: '1'
+        # S67 — COSIGN_EXPERIMENTAL=1 deprecated em cosign v2.
         run: |
           cosign sign --yes \
             ghcr.io/${{ github.repository }}/torque-web@${{ steps.build_web.outputs.digest }}

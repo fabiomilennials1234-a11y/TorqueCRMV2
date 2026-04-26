@@ -20,7 +20,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: actions/setup-node@v6
+      - uses: actions/setup-node@v4
         with:
           node-version: '20'
           cache: 'npm'
@@ -161,6 +161,8 @@ jobs:
       # high-severity gate keeps the main branch free of known-bad
       # patterns; lower-severity findings are tracked in security-scan.yml.
       - name: gosec (high severity gate)
-        uses: securego/gosec@master
+        # S67 — pin gosec to released tag instead of @master (supply chain).
+        # Bump in lockstep with security-scan.yml.
+        uses: securego/gosec@v2.22.0
         with:
           args: '-severity=high -confidence=medium ./...'

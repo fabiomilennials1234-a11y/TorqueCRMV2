@@ -29,16 +29,53 @@ services:
       SENTRY_DSN: ${SENTRY_DSN}
       SENTRY_PUBLIC_DSN: ${SENTRY_PUBLIC_DSN}
       SENTRY_ENVIRONMENT: prod
+      SENTRY_TRACES_RATE: ${SENTRY_TRACES_RATE:-0.1}
       CORS_ORIGINS: ${CORS_ORIGINS}
       RATELIMIT_TRUST_PROXY: "true"
-      BILLING_WEBHOOK_SECRET: ${BILLING_WEBHOOK_SECRET}
       LOG_LEVEL: info
+
+      # S67 — chaves de webhook + integration encryption (S49+).
+      BILLING_WEBHOOK_SECRET: ${BILLING_WEBHOOK_SECRET}
+      LEAD_WEBHOOK_SECRET: ${LEAD_WEBHOOK_SECRET}
+      INTEGRATION_ENCRYPTION_KEY: ${INTEGRATION_ENCRYPTION_KEY}
+      INTEGRATION_STATE_SECRET: ${INTEGRATION_STATE_SECRET}
+
+      # S67 — billing provider (Asaas real ou mock fallback). Vazio
+      # ASAAS_API_KEY força fallback mock + log warn (D072 dual-review tripwire).
+      BILLING_PROVIDER: ${BILLING_PROVIDER:-mock}
+      ASAAS_API_KEY: ${ASAAS_API_KEY}
+      ASAAS_BASE_URL: ${ASAAS_BASE_URL:-https://api.asaas.com/v3}
+
+      # S67 — AI providers (LLM, embeddings, TTS). Vazios → mocks.
+      OPENROUTER_API_KEY: ${OPENROUTER_API_KEY}
+      OPENROUTER_BASE_URL: ${OPENROUTER_BASE_URL:-https://openrouter.ai/api/v1}
+      GEMINI_API_KEY: ${GEMINI_API_KEY}
+      GEMINI_BASE_URL: ${GEMINI_BASE_URL:-https://generativelanguage.googleapis.com}
+      ELEVENLABS_API_KEY: ${ELEVENLABS_API_KEY}
+      ELEVENLABS_BASE_URL: ${ELEVENLABS_BASE_URL:-https://api.elevenlabs.io}
+      ELEVENLABS_MODEL_ID: ${ELEVENLABS_MODEL_ID:-eleven_multilingual_v2}
+
+      # S67 — Google OAuth (Calendar) + Meta Ads + SZ.Chat + TinyERP.
+      GOOGLE_OAUTH_CLIENT_ID: ${GOOGLE_OAUTH_CLIENT_ID}
+      GOOGLE_OAUTH_CLIENT_SECRET: ${GOOGLE_OAUTH_CLIENT_SECRET}
+      GOOGLE_OAUTH_REDIRECT_URL: ${GOOGLE_OAUTH_REDIRECT_URL}
+      META_GRAPH_BASE_URL: ${META_GRAPH_BASE_URL:-https://graph.facebook.com/v18.0}
+      META_APP_SECRET: ${META_APP_SECRET}
+      SZCHAT_BASE_URL: ${SZCHAT_BASE_URL}
+      TINYERP_BASE_URL: ${TINYERP_BASE_URL:-https://api.tiny.com.br/api2}
     expose:
       - "8080"
     healthcheck:
       # Not a shell-based healthcheck (distroless). EasyPanel polls
       # GET /healthz externally instead.
       disable: true
+    # S67 — driver json-file caps log volume on the host (sem driver,
+    # /var/lib/docker/containers/.../*-json.log cresce indefinidamente).
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
     deploy:
       resources:
         limits:
@@ -57,11 +94,15 @@ services:
       - /var/run
     expose:
       - "8080"
+    # S67 — healthcheck disabled. base nginx-unprivileged:1.27-alpine
+    # nao tem wget nem curl. EasyPanel poll /healthz externamente.
     healthcheck:
-      test: ["CMD", "wget", "-qO-", "http://localhost:8080/"]
-      interval: 30s
-      timeout: 3s
-      retries: 3
+      disable: true
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
 
 # Postgres runs as a managed service on Hostinger, not inside this compose.
 # DATABASE_URL points at the managed instance.
