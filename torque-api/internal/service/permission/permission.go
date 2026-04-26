@@ -11,17 +11,32 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/google/uuid"
+
 	"github.com/milennials/torque-api/internal/domain"
 	userrepo "github.com/milennials/torque-api/internal/repository/user"
 )
 
+// EffectivePermissionsRepo is the narrow slice of the user repository
+// the resolver needs. Keeping it local lets the unit tests drop in a
+// fake without spinning a pgxpool — S69 (D080).
+type EffectivePermissionsRepo interface {
+	EffectivePermissions(ctx context.Context, teamMemberID uuid.UUID, role domain.Role) ([]domain.FeaturePermission, error)
+}
+
 // Resolver is the PermissionResolver wiring the RBAC middleware expects.
 type Resolver struct {
-	users *userrepo.Repository
+	users EffectivePermissionsRepo
 }
 
 // New returns a resolver backed by the user repository.
 func New(users *userrepo.Repository) *Resolver {
+	return &Resolver{users: users}
+}
+
+// NewWithRepo returns a resolver backed by any EffectivePermissionsRepo.
+// Used in tests to inject a fake without pgxpool.
+func NewWithRepo(users EffectivePermissionsRepo) *Resolver {
 	return &Resolver{users: users}
 }
 
