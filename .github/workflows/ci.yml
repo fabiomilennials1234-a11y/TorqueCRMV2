@@ -116,8 +116,31 @@ jobs:
       - name: Build
         run: go build ./...
 
-      - name: Test with race detector
-        run: go test -race -timeout 5m ./...
+      - name: Test with race detector + coverage
+        # S69 (D080): coverprofile habilitado pra gate progressivo. Soft
+        # gate em D080 (so imprime); hard gate ≥75% nos 8 packages
+        # criticos chega em S69.5 quando todos atingirem o threshold.
+        run: |
+          go test -race -timeout 5m -coverprofile=coverage.out -covermode=atomic ./...
+
+      - name: Coverage report (critical packages — soft gate)
+        # Imprime coverage por package critico. Nao falha a build (gate
+        # soft). Lista alinhada com Plano de Finalizacao S57-S70 §4.
+        run: |
+          echo "Coverage critical packages:"
+          for pkg in service/billing service/jwt service/permission httpx/middleware repository/lead repository/quota service/workflow service/ai; do
+            line=$(go tool cover -func=coverage.out 2>/dev/null | grep "torque-api/internal/$pkg" | tail -1 || true)
+            echo "  $pkg: ${line:-<no test files>}"
+          done
+
+      - name: Upload coverage artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-coverage
+          path: torque-api/coverage.out
+          if-no-files-found: warn
+          retention-days: 7
 
   lint-go:
     name: golangci-lint
