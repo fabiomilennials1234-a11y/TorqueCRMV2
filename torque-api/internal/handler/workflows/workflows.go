@@ -16,6 +16,8 @@
 //   POST   /workflows/:id/runs                — enqueue manual run
 //   GET    /workflows/:id/runs                — list recent runs
 //   POST   /runs/:id/cancel                   — cancel pending/running run
+//   GET    /runs/:id/steps                    — per-step trace timeline (S45)
+//   GET    /runs/:id/failures                 — DLQ retry trail (S63 / D074-d)
 //
 // Admin-only subrouter; member-facing view comes with `workflows.view` key
 // gating in a future sprint.
@@ -100,6 +102,7 @@ func (h *Handler) Routes(r chi.Router) {
 	r.Post("/runs/{id}/cancel", h.cancelRun)
 	// S45 — per-run step trace for the executions UI + debug run.
 	r.Get("/runs/{id}/steps", h.listRunSteps)
+	r.Get("/runs/{id}/failures", h.listRunFailures)
 }
 
 // -------- DTOs -------------------------------------------------------
@@ -488,6 +491,47 @@ func (h *Handler) listRunSteps(w http.ResponseWriter, r *http.Request) {
 			ID: s.ID, RunID: s.RunID, StepID: s.StepID, Status: s.Status,
 			Input: s.Input, Output: s.Output, ErrorPayload: s.ErrorPayload,
 			StartedAt: s.StartedAt, EndedAt: s.EndedAt, CreatedAt: s.CreatedAt,
+		}
+	}
+	httpx.WriteJSON(w, http.StatusOK, map[string]any{"data": out})
+}
+
+// runFailureView is the DLQ trail surface — one row per attempt, newest
+// first. Used by admin UIs to debug why a workflow_run terminated or is
+// looping in retry. snapshot_json carries the dispatcher's per-step
+// input snapshot (truncated by repo on insert).
+//
+// S63 (D074-d): handler exposto como GET /runs/:id/failures. ListRunFailures
+// no repo (executor_queries.go:361) ja existia desde S53 mas nunca foi wireado.
+type runFailureView struct {
+	ID           uuid.UUID       `json:"id"`
+	RunID        uuid.UUID       `json:"run_id"`
+	WorkflowID   uuid.UUID       `json:"workflow_id"`
+	StepID       *uuid.UUID      `json:"step_id,omitempty"`
+	Attempt      int             `json:"attempt"`
+	ErrorCode    string          `json:"error_code"`
+	ErrorMessage string          `json:"error_message"`
+	Snapshot     json.RawMessage `json:"snapshot,omitempty"`
+	CreatedAt    time.Time       `json:"created_at"`
+}
+
+func (h *Handler) listRunFailures(w http.ResponseWriter, r *http.Request) {
+	orgID, _ := mw.OrgIDFrom(r.Context())
+	id, ok := parseID(w, r, "id")
+	if !ok {
+		return
+	}
+	failures, err := h.repo.ListRunFailures(r.Context(), orgID, id)
+	if err != nil {
+		httpx.WriteError(w, http.StatusInternalServerError, "INTERNAL", "could not list run failures")
+		return
+	}
+	out := make([]runFailureView, len(failures))
+	for i, f := range failures {
+		out[i] = runFailureView{
+			ID: f.ID, RunID: f.RunID, WorkflowID: f.WorkflowID, StepID: f.StepID,
+			Attempt: f.Attempt, ErrorCode: f.ErrorCode, ErrorMessage: f.ErrorMessage,
+			Snapshot: f.Snapshot, CreatedAt: f.CreatedAt,
 		}
 	}
 	httpx.WriteJSON(w, http.StatusOK, map[string]any{"data": out})
