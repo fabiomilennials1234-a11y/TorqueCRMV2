@@ -5,7 +5,7 @@
 #   Stage 2: runtime  — distroless, no shell, minimal attack surface.
 # -----------------------------------------------------------------------------
 
-ARG GO_VERSION=1.22
+ARG GO_VERSION=1.25
 
 # -------- builder ------------------------------------------------------------
 FROM golang:${GO_VERSION}-alpine AS builder
@@ -35,6 +35,9 @@ FROM gcr.io/distroless/static-debian12:nonroot
 COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
 COPY --from=builder /usr/share/zoneinfo              /usr/share/zoneinfo
 COPY --from=builder /out/torque-api                  /torque-api
+COPY --from=builder /src/api                         /api
+
+WORKDIR /
 
 EXPOSE 8080
 

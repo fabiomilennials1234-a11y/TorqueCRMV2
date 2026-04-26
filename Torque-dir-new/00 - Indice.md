@@ -4,7 +4,7 @@ tags:
   - indice
   - raiz
 created: 2026-04-15
-last_updated: 2026-04-24 (Sprint S53 Fase H Onda 1+2+3 executadas — workflow engine real + AI safety + quota wiring + impersonation cookie + api.gen.ts regen 4398 linhas; frontend 296/296 verde pós-regen; Gate §10 pending apenas itens que exigem staging provisionada)
+last_updated: 2026-04-26 (Sprint S55 — Infra Docker compose dev bootavel ENTREGUE: Dockerfile Go 1.22→1.25, COPY api/ no runtime distroless, JWT_SECRET dev. `docker compose up` → db+migrate+api healthy em :8080, Vite :5173 conectado. Sprint S56 Responsive Foundation EM ANDAMENTO — Onda 1: AppShell adaptativo, Sidebar drawer mobile, TopBar hamburger, button touch targets 44px, Dialog full-screen sheet <sm, tipografia fluida clamp(), safe-area iOS, meta viewport viewport-fit=cover. Ondas 2-5 — Pipes/Inbox/Tabelas/Forms/Charts/QA — em sprints separadas S57-S60.)
 status: vivo
 ---
 

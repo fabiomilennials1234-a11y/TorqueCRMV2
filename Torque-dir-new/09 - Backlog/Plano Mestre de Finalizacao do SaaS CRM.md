@@ -1006,6 +1006,34 @@ O bloco da sprint em §8 muda de "prospectivo" para "entregue":
 
 ---
 
+### Sprint S55 — Infra: Docker compose dev bootavel ✅ ENTREGUE (2026-04-26)
+
+| Campo | Valor |
+|-------|-------|
+| **Objetivo** | Tornar `docker compose up` no `torque-api/` funcional pra dev local. Pre-requisito pra qualquer trabalho de frontend (dev precisa rodar a API). |
+| **Escopo** | Infra puro. 2 arquivos: `torque-api/Dockerfile` + `torque-api/docker-compose.yml`. |
+| **Resultado entregue** | (1) Dockerfile `ARG GO_VERSION=1.22 → 1.25` (alinha com `go.mod` que requer 1.25.0). (2) Dockerfile runtime stage adiciona `COPY --from=builder /src/api /api` + `WORKDIR /` (cmd/api/main.go le `api/openapi.yaml` em runtime; distroless precisa do arquivo). (3) docker-compose.yml api service ganha `JWT_SECRET` env (>=32 bytes — `internal/config/config.go:267` exige). |
+| **Validacao runtime** | `docker compose up -d`: torque-db (pgvector pg15) healthy → torque-migrate exit 0 (30 migrations) → torque-api Up :8080. `curl /healthz` `{"status":"ok"}`; `curl /readyz` `{"status":"ok","db":"ok"}`. Vite :5173 conecta. |
+| **Branch** | `sprint/S55-infra-bootable` → PR para `develop` |
+| **STATE** | D075 |
+| **Proximo passo** | S56 — Frontend Responsive Foundation (Onda 1: shell adaptativo + primitivos UI mobile + tipografia fluida + safe-area). |
+
+---
+
+### Sprint S56 — Frontend Responsive Foundation (Onda 1) — EM ANDAMENTO (2026-04-26)
+
+| Campo | Valor |
+|-------|-------|
+| **Objetivo** | Tornar o app utilizavel em mobile/tablet/desktop. Onda 1 entrega a foundation cross-cutting (shell + primitivos + tokens) que destrava as ondas 2-5. |
+| **Escopo** | Frontend puro. 9 arquivos: `index.html` viewport viewport-fit=cover + `tailwind.config.ts` breakpoints check + `src/styles/globals.css` clamp() type scale + safe-area utilities + `src/shell/AppShell.tsx` grid responsive + `src/shell/Sidebar.tsx` Radix Sheet drawer mobile + `src/shell/TopBar.tsx` hamburger + kebab + `src/ui/button.tsx` min 44x44px touch + `src/ui/dialog.tsx` <sm full-screen sheet variant. |
+| **Sequencia** | `agent-architect` (ADR-007 breakpoints/escala fluida/safe-area) → `agent-frontend` (impl) → `agent-qa` (vitest snapshots + axe a11y AppShell mobile). |
+| **Out-of-scope (sprints separadas)** | S57 Pipes Kanban scroll-snap + Inbox 3→1 col + LeadDetail mobile. S58 Tabelas→cards (`md:hidden`/`hidden md:block`) + Dashboard + Charts ResponsiveContainer + ParentSize Visx. S59 Forms 1-col mobile + Wizard Copilot step-por-tela. S60 QA pass final (Playwright mobile viewports + touch target audit + hover→focus migration). |
+| **Branch** | `sprint/S56-responsive-foundation` → PR para `develop` |
+| **STATE** | D076 (a registrar) |
+| **ADR** | ADR-007 (`Torque-dir-new/08 - Decisoes/`) — contrato de responsividade do design system Torque |
+
+---
+
 ## 9. Tarefas Granulares por Sprint
 
 ### Sprint S00 — Fechar Sistema Base Frontend
