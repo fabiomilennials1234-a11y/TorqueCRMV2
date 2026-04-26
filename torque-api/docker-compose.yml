@@ -64,6 +64,7 @@ services:
       DATABASE_URL: "postgres://torque:torque@db:5432/torque?sslmode=disable"
       LOG_LEVEL: debug
       CORS_ORIGINS: "http://localhost:5173"
+      JWT_SECRET: "dev-secret-do-not-use-in-prod-32bytes-minimum-please"
     ports:
       - "8080:8080"
     # No container-level healthcheck: the distroless runtime has no shell or
