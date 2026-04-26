@@ -43,12 +43,41 @@ type Repo interface {
 	AssignAgent(ctx context.Context, orgID, conversationID uuid.UUID, agentID *uuid.UUID) error
 }
 
+// LeadResolver hydrates LeadFacts from a conversation_id. Optional —
+// when nil, the subscriber falls back to the empty/Custom-only path
+// (catch-all rules still match; predicates against Origin/Segment/UTMs
+// silently miss).
+//
+// S63 (D074-k): wiring this resolver lets triggers filter on real lead
+// attributes (origin/segment/UTMs/rating) instead of only the patch
+// payload that the publisher happened to attach. Tags multi-value
+// hydration is deferred — requires a join on `lead_tags` and is rarely
+// the discriminator in practice.
+type LeadResolver interface {
+	LeadFactsByConversation(ctx context.Context, orgID, conversationID uuid.UUID) (LeadAttrs, error)
+}
+
+// LeadAttrs is the projection a LeadResolver returns. Pointers are nil
+// when the column is NULL on the lead row. Resolver implementations
+// should return ErrLeadNotFound (or any error) silently — the
+// subscriber falls back to empty facts on lookup failure (race with
+// soft-delete is not an alert-worthy event).
+type LeadAttrs struct {
+	Origin      *string
+	Segment     *string
+	UTMSource   *string
+	UTMMedium   *string
+	UTMCampaign *string
+	Rating      *int16
+}
+
 // Subscriber subscribes to the domain event bus and dispatches agent
 // assignments whenever a bus event's tenant has at least one active
 // trigger whose filter matches.
 type Subscriber struct {
 	bus    *event.Bus
 	repo   Repo
+	leads  LeadResolver // optional; nil → catch-all-only matching
 	logger zerolog.Logger
 
 	// handledTypes is the allow-list of event types that can trigger
@@ -76,6 +105,15 @@ func New(bus *event.Bus, repo Repo, logger zerolog.Logger) *Subscriber {
 		},
 		stop: make(chan struct{}),
 	}
+}
+
+// WithLeads attaches an optional LeadResolver so handle() hydrates
+// LeadFacts.{Origin,Segment,UTMs,Rating} from the leads row before
+// running the matcher. Without it, only catch-all rules (empty filter)
+// reliably match — D074-k gap.
+func (s *Subscriber) WithLeads(resolver LeadResolver) *Subscriber {
+	s.leads = resolver
+	return s
 }
 
 // Start subscribes to the bus and begins consuming in a single
@@ -158,6 +196,36 @@ func (s *Subscriber) handle(parent context.Context, evt ws.Event) {
 	}
 
 	facts := buildLeadFacts(evt)
+	// S63 (D074-k): hydrate facts from the leads row when a resolver
+	// is wired. Failure is logged at Debug and degrades to the empty
+	// projection (catch-all rules still match). conversation_id IS the
+	// EntityID for handled types — see early-return guard above.
+	if s.leads != nil {
+		attrs, err := s.leads.LeadFactsByConversation(ctx, evt.TenantID, *evt.EntityID)
+		if err != nil {
+			s.logger.Debug().
+				Err(err).
+				Str("conversation_id", evt.EntityID.String()).
+				Msg("lead hydration miss; matching with empty facts")
+		} else {
+			if attrs.Origin != nil {
+				facts.Origin = *attrs.Origin
+			}
+			if attrs.Segment != nil {
+				facts.Segment = *attrs.Segment
+			}
+			if attrs.UTMSource != nil {
+				facts.UTMSource = *attrs.UTMSource
+			}
+			if attrs.UTMMedium != nil {
+				facts.UTMMedium = *attrs.UTMMedium
+			}
+			if attrs.UTMCampaign != nil {
+				facts.UTMCampaign = *attrs.UTMCampaign
+			}
+			facts.Rating = attrs.Rating
+		}
+	}
 
 	rule, found := ai.Match(rules, facts)
 	if !found {
