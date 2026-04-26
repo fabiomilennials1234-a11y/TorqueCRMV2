@@ -40,7 +40,7 @@ exports[`Sheet > renders open with title + description 1`] = `
   <div
     aria-describedby="radix-:r5:"
     aria-labelledby="radix-:r4:"
-    class="bg-surface fixed top-0 z-50 h-full w-full max-w-[520px] shadow-elev-3 shadow-[inset_1px_0_0_0_hsl(var(--hairline))] data-[state=open]:animate-in data-[state=open]:slide-in-from-right data-[state=open]:duration-300 data-[state=closed]:animate-out data-[state=closed]:slide-out-to-right data-[state=closed]:duration-200 right-0 flex flex-col"
+    class="bg-surface fixed z-50 flex flex-col shadow-elev-3 top-0 h-full w-full max-w-[520px] shadow-[inset_1px_0_0_0_hsl(var(--hairline))] right-0 data-[state=open]:animate-in data-[state=open]:slide-in-from-right data-[state=open]:duration-300 data-[state=closed]:animate-out data-[state=closed]:slide-out-to-right data-[state=closed]:duration-200"
     data-state="open"
     id="radix-:r3:"
     role="dialog"
@@ -65,11 +65,11 @@ exports[`Sheet > renders open with title + description 1`] = `
         </p>
       </div>
       <button
-        class="text-ink-dim hover:bg-elevated hover:text-ink rounded-sm p-1 transition-colors"
+        class="text-ink-dim hover:bg-elevated hover:text-ink min-h-[44px] min-w-[44px] rounded-sm p-1 transition-colors"
         type="button"
       >
         <svg
-          class="lucide lucide-x h-4 w-4"
+          class="lucide lucide-x mx-auto h-4 w-4"
           fill="none"
           height="24"
           stroke="currentColor"

@@ -26,6 +26,10 @@ const button = cva(
         lg: 'h-11 px-6 text-[0.9375rem] rounded-md',
         icon: 'h-8 w-8 rounded-sm',
         'icon-lg': 'h-10 w-10 rounded-md',
+        // S56 — touch-comfortable variants. Apple HIG / Material 44px min.
+        // Use in mobile-only flows or via lg:size-md for adaptive sizing.
+        touch: 'h-11 min-w-[44px] px-4 text-sm rounded-md',
+        'icon-touch': 'h-11 w-11 rounded-md',
       },
     },
     defaultVariants: { variant: 'secondary', size: 'md' },

@@ -1016,21 +1016,24 @@ O bloco da sprint em §8 muda de "prospectivo" para "entregue":
 | **Validacao runtime** | `docker compose up -d`: torque-db (pgvector pg15) healthy → torque-migrate exit 0 (30 migrations) → torque-api Up :8080. `curl /healthz` `{"status":"ok"}`; `curl /readyz` `{"status":"ok","db":"ok"}`. Vite :5173 conecta. |
 | **Branch** | `sprint/S55-infra-bootable` → PR para `develop` |
 | **STATE** | D075 |
-| **Proximo passo** | S56 — Frontend Responsive Foundation (Onda 1: shell adaptativo + primitivos UI mobile + tipografia fluida + safe-area). |
+| **Proximo passo** | S56 — Frontend Responsive Foundation Onda 1. |
 
 ---
 
-### Sprint S56 — Frontend Responsive Foundation (Onda 1) — EM ANDAMENTO (2026-04-26)
+### Sprint S56 — Frontend Responsive Foundation Onda 1 ✅ ENTREGUE (2026-04-26)
 
 | Campo | Valor |
 |-------|-------|
 | **Objetivo** | Tornar o app utilizavel em mobile/tablet/desktop. Onda 1 entrega a foundation cross-cutting (shell + primitivos + tokens) que destrava as ondas 2-5. |
-| **Escopo** | Frontend puro. 9 arquivos: `index.html` viewport viewport-fit=cover + `tailwind.config.ts` breakpoints check + `src/styles/globals.css` clamp() type scale + safe-area utilities + `src/shell/AppShell.tsx` grid responsive + `src/shell/Sidebar.tsx` Radix Sheet drawer mobile + `src/shell/TopBar.tsx` hamburger + kebab + `src/ui/button.tsx` min 44x44px touch + `src/ui/dialog.tsx` <sm full-screen sheet variant. |
-| **Sequencia** | `agent-architect` (ADR-007 breakpoints/escala fluida/safe-area) → `agent-frontend` (impl) → `agent-qa` (vitest snapshots + axe a11y AppShell mobile). |
-| **Out-of-scope (sprints separadas)** | S57 Pipes Kanban scroll-snap + Inbox 3→1 col + LeadDetail mobile. S58 Tabelas→cards (`md:hidden`/`hidden md:block`) + Dashboard + Charts ResponsiveContainer + ParentSize Visx. S59 Forms 1-col mobile + Wizard Copilot step-por-tela. S60 QA pass final (Playwright mobile viewports + touch target audit + hover→focus migration). |
+| **Escopo** | Frontend puro. 6 arquivos modificados + 1 ADR + 1 snapshot atualizado: `index.html` confirmado + `src/styles/globals.css` + `src/shell/{AppShell,Sidebar,TopBar}.tsx` + `src/ui/{button,sheet}.tsx` + `Torque-dir-new/08 - Decisoes/ADR-008-responsive-foundation.md` + `src/ui/__tests__/__snapshots__/sheet.test.tsx.snap`. |
+| **Resultado entregue** | (1) `globals.css @layer utilities` ganha 4 classes fluid type via `clamp()` (`text-fluid-display`/`h1`/`h2`/`h3`) + 6 utilities safe-area iOS (`pt-safe`/`pb-safe`/`pl-safe`/`pr-safe`/`px-safe`/`py-safe`) + `min-h-screen-safe` (100dvh fallback 100vh). (2) `AppShell.tsx` orquestra mobile drawer: state `sidebarOpen`, useEffect em `location.pathname` fecha drawer ao navegar, `<Sheet side="left" w-[280px]>` em `<lg`, container raiz `h-[100dvh]` (iOS Safari URL bar fix). (3) `Sidebar.tsx` extraido em `Sidebar` (`<aside hidden lg:flex>`) + `SidebarContent` (body reusavel, props `onNavigate?`); `SidebarLink` ganha `h-11 lg:h-9` (touch 44px mobile, density 36px desktop). (4) `TopBar.tsx` recebe optional `onOpenSidebar`, hamburger `Menu` icon `<lg`; search bar `flex-1 sm:w-[260px] md:w-[340px]`; UiModeToggle + theme button escondem `<md` (theme migra pro UserMenu); Bell/UserMenu touch-sized `h-11 w-11 md:h-8 md:w-8`. (5) `button.tsx` ganha `size: 'touch' \| 'icon-touch'` (44px) preservando 6 sizes legacy. (6) `sheet.tsx` extendido com `side="bottom"` (max-h 90dvh + rounded top + pb-safe) + `side="fullscreen"` (100dvh + pt-safe pb-safe edge-to-edge); close button ganha `min-h-[44px] min-w-[44px]`. |
+| **Decisao deliberada** | **Nao criar `Dialog` primitivo separado** — reuso de `Sheet` com `side="fullscreen"` em mobile + `side="right"` em desktop atende casos com inventario menor. ADR-008 documenta. |
+| **Validacao** | `tsc --noEmit` verde, `eslint --max-warnings 0` verde em src/shell + src/ui/{button,sheet}, `vitest run` **296/296 em 86 files** (1 snapshot atualizado em sheet.test.tsx, esperado pelo refactor). |
+| **Out-of-scope explicito** | **S57 Pipes Kanban** scroll-snap horizontal mobile + Inbox 3-col→1-col stack + LeadDetail mobile. **S58 Tabelas→Cards** (`md:hidden table` + `hidden md:block cards`) + Dashboard + Charts (Recharts ResponsiveContainer + Visx ParentSize). **S59 Forms 1-col** mobile + Wizard Copilot 20+ steps step-por-tela + Settings sections. **S60 QA pass final** — Playwright mobile viewports + axe a11y + touch target audit + hover→focus migration. **Honesto vs user**: foundation pronta, app **nao esta totalmente responsivo end-to-end** ate ondas 2-5. |
 | **Branch** | `sprint/S56-responsive-foundation` → PR para `develop` |
-| **STATE** | D076 (a registrar) |
-| **ADR** | ADR-007 (`Torque-dir-new/08 - Decisoes/`) — contrato de responsividade do design system Torque |
+| **STATE** | D076 |
+| **ADR** | ADR-008 (`Torque-dir-new/08 - Decisoes/ADR-008-responsive-foundation.md`) |
+| **Proximo passo** | S57 — Pipes Kanban scroll-snap mobile + Inbox 3→1 col + LeadDetail mobile. |
 
 ---
 

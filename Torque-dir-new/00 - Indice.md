@@ -4,7 +4,7 @@ tags:
   - indice
   - raiz
 created: 2026-04-15
-last_updated: 2026-04-26 (Sprint S55 — Infra Docker compose dev bootavel ENTREGUE: Dockerfile Go 1.22→1.25, COPY api/ no runtime distroless, JWT_SECRET dev. `docker compose up` → db+migrate+api healthy em :8080, Vite :5173 conectado. Sprint S56 Responsive Foundation EM ANDAMENTO — Onda 1: AppShell adaptativo, Sidebar drawer mobile, TopBar hamburger, button touch targets 44px, Dialog full-screen sheet <sm, tipografia fluida clamp(), safe-area iOS, meta viewport viewport-fit=cover. Ondas 2-5 — Pipes/Inbox/Tabelas/Forms/Charts/QA — em sprints separadas S57-S60.)
+last_updated: 2026-04-26 (Sprint S55 Infra Docker dev bootavel ENTREGUE + Sprint S56 Responsive Foundation Onda 1 ENTREGUE — shell adaptativo, primitivos UI mobile-aware, tipografia fluida clamp(), safe-area iOS. ADR-008 registra contrato de responsividade. Vitest 296/296 verde. Ondas 2-5 — Pipes/Inbox/Tabelas/Forms/Charts/QA — em sprints separadas S57-S60.)
 status: vivo
 ---
 
@@ -100,6 +100,7 @@ status: vivo
 - [[ADR-005-tipografia-self-hosted]]
 - [[ADR-006-jobs-assincronos-202-poll]]
 - [[ADR-007-modo-vendedor-gerente]] — modos de UI Vendedor/Gerente; Task unifica Follow-up; rota /cockpit; claymorphism escopado
+- [[ADR-008-responsive-foundation]] — responsividade do design system: 5 breakpoints Tailwind, shell adaptativo (Sidebar drawer <lg + TopBar hamburger), Sheet `bottom`/`fullscreen` mobile, button `touch`/`icon-touch` 44px, tipografia fluida clamp(), safe-area iOS. S56 Onda 1 chassi; ondas 2-5 em S57-S60.
 
 ### 09 - Backlog
 - [[Plano Mestre de Finalizacao do SaaS CRM]]
