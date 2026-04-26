@@ -731,7 +731,7 @@ func (a *HTTPRequestAction) Execute(ctx context.Context, sc StepContext) (StepOu
 	}
 
 	// SSRF + scheme guard.
-	if err := validateHTTPSURL(cfg.URL); err != nil {
+	if err := validateHTTPSURL(ctx, cfg.URL); err != nil {
 		return failOutput("http", ErrNonRetryable, err.Error())
 	}
 
@@ -911,7 +911,12 @@ func (a *HTTPRequestAction) executeUnchecked(ctx context.Context, rawCfg []byte)
 // The DNS check catches `http://localhost` and
 // `http://metadata.google.internal` style attacks; without it, an
 // admin could craft a workflow that hits the cloud metadata endpoint.
-func validateHTTPSURL(raw string) error {
+//
+// S63 (deferred D074-h): DNS lookup honra ctx do step. net.LookupIP
+// nao aceitava ctx (problema: resolver lento bloqueava executor por ate
+// 2min do runCtx). DefaultResolver.LookupIPAddr propaga timeout/cancel
+// imediato.
+func validateHTTPSURL(ctx context.Context, raw string) error {
 	if raw == "" {
 		return errors.New("url required")
 	}
@@ -934,14 +939,14 @@ func validateHTTPSURL(raw string) error {
 	}
 	// Resolve + check each IP. An attacker-controlled hostname that
 	// resolves to 10.0.0.1 is blocked here.
-	ips, err := net.LookupIP(host)
+	addrs, err := net.DefaultResolver.LookupIPAddr(ctx, host)
 	if err != nil {
 		// DNS failure is NOT a silent allow — reject.
 		return fmt.Errorf("dns lookup: %w", err)
 	}
-	for _, ip := range ips {
-		if isBlockedIP(ip) {
-			return fmt.Errorf("host %q resolves to blocked range (%s)", host, ip.String())
+	for _, a := range addrs {
+		if isBlockedIP(a.IP) {
+			return fmt.Errorf("host %q resolves to blocked range (%s)", host, a.IP.String())
 		}
 	}
 	return nil
