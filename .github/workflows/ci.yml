@@ -86,7 +86,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: actions/setup-go@v5
+      - uses: actions/setup-go@v6
         with:
           # Track Go version directly from go.mod so dep bumps that push
           # the toolchain higher (Dependabot rebases) dont break CI.
@@ -150,7 +150,7 @@ jobs:
         working-directory: torque-api
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-go@v5
+      - uses: actions/setup-go@v6
         with:
           # Track Go version directly from go.mod so dep bumps that push
           # the toolchain higher (Dependabot rebases) dont break CI.
